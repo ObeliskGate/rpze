@@ -2,6 +2,8 @@
 #include "pch.h"
 #include "SharedMemory.h"
 
+#define __until(expr) do {} while (!(expr))
+
 void setConsole()
 {
 	AllocConsole();
@@ -20,48 +22,37 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		case PhaseCode::CONTINUE:
 			return;
 		case PhaseCode::WAIT:
-			do {} while (phaseCode == PhaseCode::WAIT);
+			__until(phaseCode != PhaseCode::WAIT);
 			continue;
 		case PhaseCode::RUN_CODE:
 		{
+			phaseCode = PhaseCode::WAIT;
 			// todo
+			continue;
 		}
-		return;
 		case PhaseCode::JUMP_FRAME:
 		{
+			std::cout << "jumping" << std::endl;
 			auto pBoard = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value();
-			do {
+			while (phaseCode == PhaseCode::JUMP_FRAME)
+			{
 				__asm
 				{
 					mov ecx, pBoard
 					mov edx, 0x415D40
 					call edx
 				}
-			} while (phaseCode == PhaseCode::JUMP_FRAME);
+			}
 			continue;
 		}
 		case PhaseCode::READ_MEMORY:
-		{
+			SharedMemory::getInstance()->readMemory();
 			phaseCode = PhaseCode::WAIT;
-			auto pMemory = SharedMemory::getInstance();
-			do { } while (pMemory->getReadWriteState() != ReadWriteState::FUNCTIONING);
-			auto b = pMemory->readMemory();
-			pMemory->getReadWriteState() = b ? ReadWriteState::SUCCESS : ReadWriteState::FAIL;
-			do { } while (pMemory->getReadWriteState() != ReadWriteState::READY);
-			assert(pMemory->getReadWriteState() == ReadWriteState::READY);
-		}
-		continue;
+			continue;
 		case PhaseCode::WRITE_MEMORY:
-		{
+			SharedMemory::getInstance()->writeMemory();
 			phaseCode = PhaseCode::WAIT;
-			auto pMemory = SharedMemory::getInstance();
-			do {} while (pMemory->getReadWriteState() != ReadWriteState::FUNCTIONING);
-			std::cout << "start" << std::endl;
-			auto b = pMemory->writeMemory();
-			pMemory->getReadWriteState() = b ? ReadWriteState::SUCCESS : ReadWriteState::FAIL;
-			do {} while (pMemory->getReadWriteState() != ReadWriteState::READY);
-		}
-		continue;
+			continue;
 		default:
 			return;
 		}
@@ -70,13 +61,12 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 
 void __stdcall script(DWORD isInIZombie, SharedMemory* pSharedMemory)
 {
-	auto time = readMemory<uint32_t>(0x6a9ec0, { 0x768, 0x556c });
-	if (isInIZombie)
+	if (isInIZombie && pSharedMemory->getPhaseCode() != PhaseCode::JUMP_FRAME)
 	{
 		if (pSharedMemory->getPhaseCode() != PhaseCode::JUMP_FRAME) return;
 		pSharedMemory->getJumpingPhaseCode() = PhaseCode::WAIT;
 		pSharedMemory->getJumpingRunState() = RunState::OVER;
-		if (time.has_value()) pSharedMemory->getGameTime() = time.value();
+		pSharedMemory->getGameTime() = readMemory<uint32_t>(0x6a9ec0, { 0x768, 0x556c }).value_or(0);
 		doAsPhaseCode(pSharedMemory->getJumpingPhaseCode());
 		pSharedMemory->getJumpingRunState() = RunState::RUNNING;
 	}
@@ -84,7 +74,7 @@ void __stdcall script(DWORD isInIZombie, SharedMemory* pSharedMemory)
 	{
 		pSharedMemory->getPhaseCode() = PhaseCode::WAIT;
 		pSharedMemory->getRunState() = RunState::OVER;
-		if (time.has_value()) pSharedMemory->getGameTime() = time.value();
+		pSharedMemory->getGameTime() = readMemory<uint32_t>(0x6a9ec0, { 0x768, 0x556c }).value_or(0);
 		doAsPhaseCode(pSharedMemory->getPhaseCode());
 		pSharedMemory->getRunState() = RunState::RUNNING;
 	}
@@ -115,7 +105,7 @@ void injectScript(SharedMemory* pSharedMemory)
 	writeMemory<DWORD>(reinterpret_cast<DWORD>(script) - tmp - 4, tmp);  tmp += 4;// call script
 
 	writeMemory<BYTE>(0xe9, tmp);  tmp += 1;
-	writeMemory<DWORD>(0x42b52b - tmp - 4, tmp); // jmp 42bb52b
+	writeMemory<DWORD>(0x42b52b - tmp - 4, tmp); // jmp 42b52b
 
 	// out of izupdate
 	tmp = 0x6b0100;
@@ -138,3 +128,5 @@ void injectScript(SharedMemory* pSharedMemory)
 	writeMemory<BYTE>(0xe9, 0x452732);
 	writeMemory<DWORD>(0x6b0100 - 0x452732 - 5, 0x452733); // jmp 6b0100
 }
+
+#undef __until

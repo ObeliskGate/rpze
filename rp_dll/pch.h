@@ -36,7 +36,7 @@ std::optional<T> readMemory(DWORD basePtr, const std::initializer_list<DWORD>& o
 
 // 写入内存, 成功返回true不成功返回false
 template <typename T>
-bool writeMemory(const T& data, DWORD basePtr, const std::initializer_list<DWORD>& offsets = {})
+bool writeMemory(T&& data, DWORD basePtr, const std::initializer_list<DWORD>& offsets = {})
 {
 	for (auto it : offsets)
 	{

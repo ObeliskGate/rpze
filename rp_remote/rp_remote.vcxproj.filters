@@ -30,6 +30,9 @@
     <ClInclude Include="tests.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="Controller.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -44,10 +47,10 @@
     <ClCompile Include="Memory.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="PhaseCode.cpp">
+    <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="stdafx.cpp">
+    <ClCompile Include="Controller.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

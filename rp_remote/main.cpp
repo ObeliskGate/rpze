@@ -6,7 +6,7 @@
 
 int main()
 {    
-	std::locale::global(std::locale(".936"));
+
 	auto hProc = getProcessHandleOfWindow(L"Plants vs. Zombies");
 	if (!hProc.has_value()) return 1;
 
@@ -17,11 +17,10 @@ int main()
 #else
 	constexpr auto route  = L"C:\\space\\projects\\rpze\\Release\\rp_dll.dll";
 #endif // _DEBUG
-	injectDll(hProc.value(), route);
+	injectDll(*hProc, route);
+#endif // _WIN64
 
-#endif
-
-	auto mem = Memory(hProc.value());
+	auto mem = Memory(GetProcessId(*hProc));
 
 	testReadWriteMemory(mem);
 }
