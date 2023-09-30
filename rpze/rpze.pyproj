@@ -21,7 +21,9 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="inject.py" />
     <Compile Include="rpze.py" />
+    <Compile Include="__init__.py" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\rp_extend\rp_extend.vcxproj">
