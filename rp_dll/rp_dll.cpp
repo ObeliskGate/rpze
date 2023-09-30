@@ -60,7 +60,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 
 void __stdcall script(DWORD isInIZombie, SharedMemory* pSharedMemory)
 {
-	if (isInIZombie && pSharedMemory->getPhaseCode() != PhaseCode::JUMP_FRAME)
+	if (isInIZombie)
 	{
 		if (pSharedMemory->getPhaseCode() != PhaseCode::JUMP_FRAME) return;
 		pSharedMemory->getJumpingPhaseCode() = PhaseCode::WAIT;

@@ -10,6 +10,8 @@ class Controller
 public:
 	Controller(DWORD pid) : mem(pid) {}
 
+	inline int32_t get_time() { return mem.getGameTime(); }
+
 	inline void next() { mem.next(); }
 
 	inline bool is_blocked() { return mem.isBlocked(); }

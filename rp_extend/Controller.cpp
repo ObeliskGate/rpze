@@ -9,6 +9,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("is_blocked", &Controller::is_blocked)
 		.def("start_jump_frame", &Controller::start_jump_frame)
 		.def("end_jump_frame", &Controller::end_jump_frame)
+		.def("get_time", &Controller::get_time)
 
 		// read
 		.def("read_i8", &Controller::read_memory<int8_t>)
