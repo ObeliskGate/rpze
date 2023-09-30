@@ -55,8 +55,7 @@ SharedMemory* const SharedMemory::getInstance()
 }
 
 bool SharedMemory::deleteInstance()
-{
-	if (instancePtr) return false;
+{ 
 	delete instancePtr;
 	instancePtr = nullptr;
 	return true;
@@ -64,16 +63,36 @@ bool SharedMemory::deleteInstance()
 
 bool SharedMemory::readMemory()
 {
-	auto p = getReadWritePtr();
-	if (!p.has_value()) return false;
-	memcpy(getReadResult(), p.value(), getMemoryNum());
-	return true;
+	bool b = false;
+	do
+	{
+		auto p = getReadWritePtr();
+		if (!p.has_value())
+		{
+			b = false;
+			break;
+		}
+		memcpy(getReadResult(), p.value(), getMemoryNum());
+		b = true;
+	} while (false);
+	getExecuteResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
+	return b;
 }
 
 bool SharedMemory::writeMemory()
 {
-	auto p = getReadWritePtr();
-	if (!p.has_value()) return false;
-	memcpy(p.value(), const_cast<const void*>(getWrittenVal()), getMemoryNum());
-	return true;
+	bool b = false;
+	do {
+		auto p = getReadWritePtr();
+		if (!p.has_value())
+		{
+			b = false;
+			break;	
+
+		}
+		memcpy(p.value(), const_cast<const void*>(getWrittenVal()), getMemoryNum());
+		b = true;
+	} while (0);
+	getExecuteResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
+	return b;
 }

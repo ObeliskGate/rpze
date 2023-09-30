@@ -15,31 +15,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp">
+    <ClCompile Include="rp_injector.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="pch.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="rp_dll.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="SharedMemory.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="rp_dll.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="SharedMemory.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Enums.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

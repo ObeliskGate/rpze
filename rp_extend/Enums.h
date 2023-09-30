@@ -17,10 +17,9 @@ enum class RunState : int32_t
 	OVER // 游戏开始被阻塞
 };
 
-enum class ReadWriteState : int32_t
+enum class ExecuteResult : int32_t
 {
-	READY = 0, // 可以再次读写
-	FUNCTIONING, // 读写中
-	SUCCESS,  // 读写成功
-	FAIL, // 读写失败
+	END = 0, // 没在执行
+	SUCCESS, // 执行成功
+	FAIL // 执行失败
 };
