@@ -4,7 +4,7 @@
 
 class Controller
 {
-	std::unique_ptr<Memory> mem;
+	Memory mem;
 public:
 	void next();
 

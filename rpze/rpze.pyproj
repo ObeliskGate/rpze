@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>cc76568a-19a1-4de1-99c7-c0f0b48551cb</ProjectGuid>
+    <ProjectGuid>10ba62db-8c74-41df-8da3-2ecdb7f50c79</ProjectGuid>
     <ProjectHome>.</ProjectHome>
     <StartupFile>rpze.py</StartupFile>
     <SearchPath>
@@ -24,8 +24,8 @@
     <Compile Include="rpze.py" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\rp_main\rp_main.vcxproj">
-      <Name>rp_main</Name>
+    <ProjectReference Include="..\rp_extend\rp_extend.vcxproj">
+      <Name>rp_extend</Name>
       <Project>{9d3e4079-34b8-4754-9dd9-d6d0dedd4adb}</Project>
       <Private>True</Private>
     </ProjectReference>

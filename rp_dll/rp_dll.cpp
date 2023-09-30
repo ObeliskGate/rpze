@@ -32,7 +32,6 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		}
 		case PhaseCode::JUMP_FRAME:
 		{
-			std::cout << "jumping" << std::endl;
 			auto pBoard = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value();
 			while (phaseCode == PhaseCode::JUMP_FRAME)
 			{

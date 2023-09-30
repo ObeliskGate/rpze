@@ -9,14 +9,14 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (!hProc)
     {
-        std::cerr << "打开进程失败" << std::endl;
+        std::cerr << "open process failed" << std::endl;
         return false;
     }
 
     HMODULE hKernel32 = GetModuleHandleW(L"KERNEL32.DLL");
     if (!hKernel32)
     {
-        std::cerr << "未找到kernal32.dll" << std::endl;
+        std::cerr << "find kernal32.dll failed" << std::endl;
         CloseHandle(hProc);
         return false;
     }
@@ -24,7 +24,7 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     FARPROC pLoadLibraryA = GetProcAddress(hKernel32, "LoadLibraryA");
     if (!pLoadLibraryA)
     {
-        std::cerr << "获取LoadLibraryA地址失败" << std::endl;
+        std::cerr << "get LoadLibraryA addr failed" << std::endl;
         CloseHandle(hProc);
         return false;
     }
@@ -34,13 +34,13 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     LPVOID pMemory = VirtualAllocEx(hProc, NULL, size, MEM_COMMIT, PAGE_READWRITE);
     if (!pMemory)
     {
-        std::cerr << "创建虚拟内存失败" << std::endl;
+        std::cerr << "create vmemory failed" << std::endl;
         CloseHandle(hProc);
         return false;
     }
 
     if (!WriteProcessMemory(hProc, pMemory, dllPath, size, NULL)) {
-        std::cerr << "写入虚拟内存失败" << std::endl;
+        std::cerr << "write failed" << std::endl;
         CloseHandle(hProc);
         return false;
     }
@@ -48,7 +48,7 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     HANDLE hRemoteThread = CreateRemoteThread(hProc, NULL, 0, (LPTHREAD_START_ROUTINE)pLoadLibraryA, pMemory, 0, NULL);
     if (!hRemoteThread)
     {
-        std::cerr << "创建远程线程失败" << std::endl;
+        std::cerr << "create remote thread failed" << std::endl;
         CloseHandle(hProc);
         return false;
     }
@@ -56,11 +56,11 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     DWORD ret = WaitForSingleObject(hRemoteThread, INFINITE);
     if (ret == WAIT_OBJECT_0)
     {
-        std::cout << "DLL注入成功" << std::endl;
+        std::cout << "DLL inject success" << std::endl;
     }
     else
     {
-        std::cerr << "DLL注入失败" << std::endl;
+        std::cerr << "DLL inject failed" << std::endl;
         CloseHandle(hRemoteThread);
         VirtualFreeEx(hProc, pMemory, 0, MEM_RELEASE);
         CloseHandle(hProc);
@@ -80,14 +80,14 @@ int main(int argc, char* argv[])
 {
     if (argc <= 2)
     {
-        std::cerr << "传参错误!" << std::endl;
+        std::cerr << "wrong arguments" << std::endl;
         return 1;
     }
     char* dllAbsolutePath = argv[1];
     int gameNumber = atoi(argv[2]);
     if (argc != 3 + gameNumber)
     {
-        std::cerr << "传入pid的个数与gameNumber不符!" << std::endl;
+        std::cerr << "wrong pid number" << std::endl;
         return 1;
     }
     for (int i = 0; i < gameNumber; i++)
