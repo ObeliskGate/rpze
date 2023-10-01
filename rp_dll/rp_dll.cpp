@@ -66,23 +66,19 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 
 void __stdcall script(DWORD isInIZombie, SharedMemory* pSharedMemory)
 {
+	volatile PhaseCode* pPhaseCode = &pSharedMemory->getPhaseCode();
+	RunState* pRunState = &pSharedMemory->getRunState();
 	if (isInIZombie)
 	{
 		if (pSharedMemory->getPhaseCode() != PhaseCode::JUMP_FRAME) return;
-		pSharedMemory->getJumpingPhaseCode() = PhaseCode::WAIT;
-		pSharedMemory->getJumpingRunState() = RunState::OVER;
-		pSharedMemory->getGameTime() = readMemory<uint32_t>(0x6a9ec0, { 0x768, 0x556c }).value_or(0);
-		doAsPhaseCode(pSharedMemory->getJumpingPhaseCode());
-		pSharedMemory->getJumpingRunState() = RunState::RUNNING;
+		pPhaseCode = &pSharedMemory->getJumpingPhaseCode();
+		pRunState = &pSharedMemory->getJumpingRunState();
 	}
-	else
-	{
-		pSharedMemory->getPhaseCode() = PhaseCode::WAIT;
-		pSharedMemory->getRunState() = RunState::OVER;
-		pSharedMemory->getGameTime() = readMemory<uint32_t>(0x6a9ec0, { 0x768, 0x556c }).value_or(0);
-		doAsPhaseCode(pSharedMemory->getPhaseCode());
-		pSharedMemory->getRunState() = RunState::RUNNING;
-	}
+	*pPhaseCode = PhaseCode::WAIT;
+	*pRunState = RunState::OVER;
+	pSharedMemory->getGameTime() = readMemory<uint32_t>(0x6a9ec0, { 0x768, 0x556c }).value_or(-1);
+	doAsPhaseCode(*pPhaseCode);
+	*pRunState = RunState::RUNNING;
 }
 
 void injectScript(SharedMemory* pSharedMemory)

@@ -23,9 +23,10 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="asm.py" />
-    <Compile Include="inject.py" />
+    <Compile Include="basic\asm.py" />
+    <Compile Include="basic\inject.py" />
     <Compile Include="rpze.py" />
+    <Compile Include="structs\zombie.py" />
     <Compile Include="__init__.py" />
   </ItemGroup>
   <ItemGroup>
@@ -34,6 +35,10 @@
       <Project>{9d3e4079-34b8-4754-9dd9-d6d0dedd4adb}</Project>
       <Private>True</Private>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="basic\" />
+    <Folder Include="structs\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
