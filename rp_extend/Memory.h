@@ -58,6 +58,9 @@ public:
 	// 读写结果
 	inline volatile ExecuteResult& getExecuteResult() const { return getRef<ExecuteResult>(84); }
 
+	// 用来存放asm的指针, 从600开始
+	inline void* getAsmPtr() const { return getPtr() + 600; }
+
 	inline volatile PhaseCode& getCurrentPhaseCode() { return *pCurrentPhaseCode; }
 
 	inline volatile RunState& getCurrentRunState() { return *pCurrentRunState; }
@@ -91,6 +94,8 @@ public:
 	// 故请不要传入带有本地指针的对象
 	template<typename T>
 	bool writeMemory(T&& val, const std::vector<int32_t>& offsets);
+
+	bool runCode(const char* codes, int num);
 };
 
 template<typename T>

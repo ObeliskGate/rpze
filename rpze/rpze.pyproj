@@ -23,6 +23,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="asm.py" />
     <Compile Include="inject.py" />
     <Compile Include="rpze.py" />
     <Compile Include="__init__.py" />
