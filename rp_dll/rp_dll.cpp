@@ -26,8 +26,14 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 			continue;
 		case PhaseCode::RUN_CODE:
 		{
+			auto p = SharedMemory::getInstance()->getAsmPtr();
+			__asm
+			{
+				mov edx, p
+				call edx
+			}
+			SharedMemory::getInstance()->getExecuteResult() = ExecuteResult::SUCCESS;
 			phaseCode = PhaseCode::WAIT;
-			// todo
 			continue;
 		}
 		case PhaseCode::JUMP_FRAME:

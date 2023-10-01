@@ -27,4 +27,6 @@ public:
 	template <typename T>
 	inline bool write_memory(T&& val, const std::vector<int32_t>& offsets) 
 	{ return mem.writeMemory(val, offsets); }
+
+	inline bool run_code(const char* codes, int num) { return mem.runCode(codes, num); }
 };

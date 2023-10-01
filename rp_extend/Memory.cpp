@@ -85,4 +85,15 @@ bool Memory::endJumpFrame()
 	return true;
 }
 
+bool Memory::runCode(const char* codes, int num)
+{
+	memcpy(reinterpret_cast<char*>(getAsmPtr()), codes, num);
+
+	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
+	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
+	if (getExecuteResult() == ExecuteResult::SUCCESS) return true;
+	if (getExecuteResult() == ExecuteResult::FAIL) return false;
+	throw std::exception("unexpected behavior");
+}
+
 #undef __until

@@ -61,6 +61,9 @@ public:
 
 	inline ExecuteResult& getExecuteResult() const { return getRef<ExecuteResult>(84); }
 
+	// 用来存放asm的指针, 从600开始
+	inline void* getAsmPtr() const { return getPtr() + 600; }
+
 	// 读内存
 	bool readMemory();
 
