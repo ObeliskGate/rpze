@@ -25,7 +25,7 @@ SharedMemory::SharedMemory()
 		std::cout << "create shared memory success" << std::endl;
 	}
 
-	// 初始化getOffsets数组!!!
+	// 初始化getOffsets数组!!!, 四个一单位的应该不能用memset
 	for (size_t i = 0; i < LENGTH; i++)
 	{
 		getOffsets()[i] = OFFSET_END;
@@ -47,7 +47,7 @@ std::optional<void*> SharedMemory::getReadWritePtr() const
 	return reinterpret_cast<void*>(ptr);
 }
 
-SharedMemory* const SharedMemory::getInstance()
+SharedMemory* SharedMemory::getInstance()
 {
 	if (instancePtr != nullptr) return instancePtr;
 	instancePtr = new SharedMemory();
@@ -92,7 +92,7 @@ bool SharedMemory::writeMemory()
 		}
 		memcpy(p.value(), const_cast<const void*>(getWrittenVal()), getMemoryNum());
 		b = true;
-	} while (0);
+	} while (false);
 	getExecuteResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
 	return b;
 }

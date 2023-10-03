@@ -8,7 +8,8 @@ enum class PhaseCode : int32_t
 	RUN_CODE, // 执行汇编码
 	JUMP_FRAME, // 跳帧
 	READ_MEMORY, // 读内存
-	WRITE_MEMORY // 写内存
+	WRITE_MEMORY, // 写内存
+	READ_MEMORY_PTR // 读取sharedMemory在pvz进程中的位置
 };
 
 enum class RunState : int32_t
@@ -22,4 +23,10 @@ enum class ExecuteResult : int32_t
 	END = 0, // 没在执行
 	SUCCESS, // 执行成功
 	FAIL // 执行失败
+};
+
+enum class GlobalState : int32_t
+{
+	NOT_CONNECTED = 0, // 未连接
+	CONNECTED, // 已连接
 };

@@ -1,6 +1,6 @@
-#include "rp_dll.h"
 #include "pch.h"
 #include "SharedMemory.h"
+#include "rp_dll.h"
 
 #define __until(expr) do {} while (!(expr))
 
@@ -38,13 +38,13 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		}
 		case PhaseCode::JUMP_FRAME:
 		{
-			auto pBoard = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value();
+			auto pBoard = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
 			while (phaseCode == PhaseCode::JUMP_FRAME)
 			{
 				__asm
 				{
 					mov ecx, pBoard
-					mov edx, 0x415D40
+					mov edx, 0x415D40 // Board::Update
 					call edx
 				}
 			}
@@ -58,14 +58,22 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 			SharedMemory::getInstance()->writeMemory();
 			phaseCode = PhaseCode::WAIT;
 			continue;
-		default:
-			return;
+
+		case PhaseCode::READ_MEMORY_PTR:
+		{
+			auto s = SharedMemory::getInstance();
+			*static_cast<uint32_t*>(s->getReadResult()) = reinterpret_cast<uint32_t>(s->getSharedMemoryPtr());
+			s->getExecuteResult() = ExecuteResult::SUCCESS;
+			phaseCode = PhaseCode::WAIT;
+			continue;
+		}
 		}
 	}
 }
 
-void __stdcall script(DWORD isInIZombie, SharedMemory* pSharedMemory)
+void __stdcall script(const DWORD isInIZombie, const SharedMemory* pSharedMemory)
 {
+	if (pSharedMemory->getGlobalState() == GlobalState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode = &pSharedMemory->getPhaseCode();
 	RunState* pRunState = &pSharedMemory->getRunState();
 	if (isInIZombie)
@@ -85,7 +93,7 @@ void injectScript(SharedMemory* pSharedMemory)
 {
 
 	DWORD tmp;
-	VirtualProtect((void*)0x400000, 0x394000, PAGE_EXECUTE_READWRITE, &tmp);
+	VirtualProtect(reinterpret_cast<void*>(0x400000), 0x394000, PAGE_EXECUTE_READWRITE, &tmp);
 
 	// in izupdate
 	writeMemory<BYTE>(0x5f, 0x6b0000); // pop edi 
@@ -96,14 +104,14 @@ void injectScript(SharedMemory* pSharedMemory)
 
 	tmp = 0x6b0006;
 	writeMemory<BYTE>(0x68, 0x6b0005);
-	writeMemory<DWORD>((DWORD)pSharedMemory, 0x6b0006);
+	writeMemory<DWORD>(reinterpret_cast<DWORD>(pSharedMemory), 0x6b0006);
 	tmp += 4; // push pSharedMemory
 
 	writeMemory<BYTE>(0x68, tmp); tmp += 1;
 	writeMemory<DWORD>(1, tmp);  tmp += 4; // push 1
 
 	writeMemory<BYTE>(0xe8, tmp); tmp += 1;
-	writeMemory<DWORD>(reinterpret_cast<DWORD>(script) - tmp - 4, tmp);  tmp += 4;// call script
+	writeMemory<DWORD>(reinterpret_cast<DWORD>(&script) - tmp - 4, tmp);  tmp += 4;// call script
 
 	writeMemory<BYTE>(0xe9, tmp);  tmp += 1;
 	writeMemory<DWORD>(0x42b52b - tmp - 4, tmp); // jmp 42b52b
@@ -111,13 +119,13 @@ void injectScript(SharedMemory* pSharedMemory)
 	// out of izupdate
 	tmp = 0x6b0100;
 	writeMemory<BYTE>(0x68, tmp); tmp += 1;
-	writeMemory<DWORD>((DWORD)pSharedMemory, tmp); tmp += 4; // push pSharedMemory
+	writeMemory<DWORD>(reinterpret_cast<DWORD>(pSharedMemory), tmp); tmp += 4; // push pSharedMemory
 
 	writeMemory<BYTE>(0x68, tmp); tmp += 1;
 	writeMemory<DWORD>(0, tmp);  tmp += 4; // push 0
 
 	writeMemory<BYTE>(0xe8, tmp); tmp += 1;
-	writeMemory<DWORD>(reinterpret_cast<DWORD>(script) - tmp - 4, tmp);  tmp += 4;// call script
+	writeMemory<DWORD>(reinterpret_cast<DWORD>(&script) - tmp - 4, tmp);  tmp += 4;// call script
 
 	writeMemory<BYTE>(0xc3, tmp); // RET
 

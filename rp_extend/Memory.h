@@ -13,15 +13,20 @@ class Memory
 	volatile PhaseCode* pCurrentPhaseCode;
 	volatile RunState* pCurrentRunState;
 
+	// 在pvz中共享内存基址
+	uint32_t remoteMemoryAddress = 0;
+
 	template<typename T = BYTE>
-	inline T* getPtr() const { return reinterpret_cast<T*>(pBuf); }
+	inline T* getPtr() const { return static_cast<T*>(pBuf); }
 
 	template<typename T>
-	inline T& getRef(int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
-public:
-	Memory(DWORD pid);
+	inline T& getRef(const int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
 
-	~Memory() { CloseHandle(hMemory); }
+	void getRemoteMemoryAddress();
+public:
+	explicit Memory(DWORD pid);
+
+	~Memory() { endControl(); }
 
 	// 怎么运行游戏
 	inline volatile PhaseCode& getPhaseCode() const { return getRef<PhaseCode>(0); }
@@ -48,12 +53,13 @@ public:
 	inline int32_t* getOffsets() const { return reinterpret_cast<int32_t*>(getPtr() + 24); }
 
 	// 占位8个字节, 读写内存时 指向共享内存中写入的内存的内容的指针
-	inline void* const getWrittenVal() const { return static_cast<void*>(getPtr() + 64); }
+	inline void* getWrittenVal() const { return static_cast<void*>(getPtr() + 64); }
 
 	// 占位8个字节, 读写内存时 指向读取内存结果的指针
-	inline volatile void* const getReadResult() const { return static_cast<void*>(getPtr() + 72); }
+	inline volatile void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
 	
-	//这里空了4byte 在80
+	// 获得全局状态
+	inline volatile GlobalState& getGlobalState() const { return getRef<GlobalState>(80); }
 
 	// 读写结果
 	inline volatile ExecuteResult& getExecuteResult() const { return getRef<ExecuteResult>(84); }
@@ -61,9 +67,9 @@ public:
 	// 用来存放asm的指针, 从600开始
 	inline void* getAsmPtr() const { return getPtr() + 600; }
 
-	inline volatile PhaseCode& getCurrentPhaseCode() { return *pCurrentPhaseCode; }
+	inline volatile PhaseCode& getCurrentPhaseCode() const { return *pCurrentPhaseCode; }
 
-	inline volatile RunState& getCurrentRunState() { return *pCurrentRunState; }
+	inline volatile RunState& getCurrentRunState() const { return *pCurrentRunState; }
 
 
 	// 读取内存, 但是没有杂七杂八的检查
@@ -72,8 +78,8 @@ public:
 	// 写入内存, 但是没有杂七杂八的检查
 	bool _writeMemory(const void* pVal, BYTE size, const std::vector<int32_t>& offsets);
 
-	// 主要接口
 
+	// 主要接口
 
 	// 跳到下一帧
 	inline void next() { getCurrentPhaseCode() = PhaseCode::CONTINUE; }
@@ -84,7 +90,7 @@ public:
 	// 结束跳帧, 若不在跳帧返回false
 	bool endJumpFrame();
 
-	inline bool isBlocked() { return *pCurrentRunState == RunState::RUNNING; }
+	inline volatile bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING; }
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>
@@ -96,6 +102,10 @@ public:
 	bool writeMemory(T&& val, const std::vector<int32_t>& offsets);
 
 	bool runCode(const char* codes, int num);
+
+	void endControl();
+
+	uint32_t getWrittenAddress();
 };
 
 template<typename T>
@@ -105,7 +115,7 @@ inline std::optional<T> Memory::readMemory(const std::vector<int32_t>& offsets)
 	if (offsets.size() > 10) return {};
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p.has_value()) return {};
-	return *(T*)(p.value()); // 不知道为啥r_cast和s_cast都不行
+	return *(T*)(p.value());
 }
 
 template<typename T>

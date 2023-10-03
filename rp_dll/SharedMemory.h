@@ -13,21 +13,20 @@ class SharedMemory
 	~SharedMemory() { CloseHandle(hMapFile); }
 
 	template<typename T = BYTE>
-	inline T* getPtr() const { return reinterpret_cast<T*>(sharedMemoryPtr); }
+	inline T* getPtr() const { return static_cast<T*>(sharedMemoryPtr); }
 
 	template<typename T>
-	inline T& getRef(int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
+	inline T& getRef(const int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
 
 	// 返回用来read或write的指针
 	std::optional<void*> getReadWritePtr() const;
 
 public:
-	static SharedMemory* const getInstance();
+	void* getSharedMemoryPtr() const { return sharedMemoryPtr; }
+
+	static SharedMemory* getInstance();
 
 	static bool deleteInstance();
-
-	// 共享内存名称
-	inline std::wstring getName() const { return sharedMemoryName; }
 
 	// 怎么运行游戏
 	inline volatile PhaseCode& getPhaseCode() const { return getRef<PhaseCode>(0); }
@@ -54,11 +53,15 @@ public:
 	inline volatile int32_t* getOffsets() const { return reinterpret_cast<int32_t*>(getPtr() + 24); }
 
 	// 占位8个字节, 读写内存时 指向写入的内存的内容的指针
-	inline volatile const void* const getWrittenVal() const { return static_cast<void*>(getPtr() + 64); }
+	inline volatile const void* getWrittenVal() const { return static_cast<void*>(getPtr() + 64); }
 
 	// 占位8个字节, 读写内存时 指向读取内存结果的指针
-	inline void* const getReadResult() const { return static_cast<void*>(getPtr() + 72); }
+	inline void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
 
+	// 全局状态
+	inline volatile GlobalState& getGlobalState() const { return getRef<GlobalState>(80); }
+
+	// 执行结果
 	inline ExecuteResult& getExecuteResult() const { return getRef<ExecuteResult>(84); }
 
 	// 用来存放asm的指针, 从600开始

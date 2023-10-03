@@ -124,6 +124,8 @@ class Zombie:
     def __init__(self, ctler: Controller, base_ptr: int):
         self.ctler = ctler
         self.base_ptr = base_ptr
+        
+    SIZE = 0x158
 
     @property
     def int_x(self) -> int:
