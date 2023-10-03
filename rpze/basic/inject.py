@@ -1,7 +1,8 @@
-﻿import win32api as win
+﻿from configparser import RawConfigParser
 import win32gui as wing
 import win32process as winp
 import os
+import subprocess
 
 def find_window(window_name) -> int:
     """
@@ -11,9 +12,25 @@ def find_window(window_name) -> int:
     _, pid = winp.GetWindowThreadProcessId(handle)
     return pid
 
+def open_game(game_path: str, num=1) -> list:
+    """
+    通过路径, 将pvz作为python子进程打开游戏, 返回pids
+    """
+    route, exe_name = os.path.split(game_path)
+    current_directory = os.getcwd()
+    os.chdir(route)
+    ret = [None] * num
+    for i in range(num):
+        process = subprocess.Popen(f"\"{exe_name}\"")
+        ret[i] = process.pid
+    os.chdir(current_directory)
+    return ret
+
 def inject(pids : list, in_debug=False):
     tmp = "Debug" if in_debug else "Release"
-    s = f'..\\{tmp}\\rp_injector.exe \"C:\\space\\projects\\rpze\\{tmp}\\rp_dll.dll" {len(pids)} '
+    dll_path = os.path.abspath(f"..\\{tmp}\\rp_dll.dll")
+    print(dll_path)
+    s = f'..\\{tmp}\\rp_injector.exe \"{dll_path}\" {len(pids)} '
     print(s)
     for i in pids:
         s += str(i)

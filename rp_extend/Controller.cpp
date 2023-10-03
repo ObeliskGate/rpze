@@ -6,11 +6,14 @@ PYBIND11_MODULE(rp_extend, m)
 	py::class_<Controller>(m, "Controller")
 		.def(py::init<DWORD>())
 		.def("next", &Controller::next)
-		.def("is_blocked", &Controller::is_blocked)
+		.def("before", &Controller::before)
 		.def("start_jump_frame", &Controller::start_jump_frame)
 		.def("end_jump_frame", &Controller::end_jump_frame)
 		.def("get_time", &Controller::get_time)
 		.def("run_code", &Controller::run_code)
+		.def("start", &Controller::start)
+		.def("end", &Controller::end)
+		.def_property_readonly("result_address", &Controller::result_address)
 
 		// read
 		.def("read_i8", &Controller::read_memory<int8_t>)
@@ -27,5 +30,12 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("write_i64", &Controller::write_memory<int64_t>)
 		.def("write_f32", &Controller::write_memory<float>)
 		.def("write_f64", &Controller::write_memory<double>)
-		.def("write_memory", &Controller::write_memory<int32_t>);
+		.def("write_memory", &Controller::write_memory<int32_t>)
+
+		.def("result_i8", &Controller::get_result<int8_t>)
+		.def("result_i16", &Controller::get_result<int16_t>)
+		.def("result_i32", &Controller::get_result<int32_t>)
+		.def("result_i64", &Controller::get_result<int64_t>)
+		.def("result_f32", &Controller::get_result<float>)
+		.def("result_f64", &Controller::get_result<double>);
 }

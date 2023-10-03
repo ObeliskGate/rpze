@@ -1,5 +1,4 @@
 from rp_extend import Controller
-import keystone.x86_const as x86
 import keystone as ks
 
 def run(code: str, controller: Controller)-> bool:

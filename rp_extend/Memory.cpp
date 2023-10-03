@@ -3,6 +3,16 @@
 
 #define __until(expr) do {} while (!(expr))
 
+void Memory::getRemoteMemoryAddress()
+{
+	getCurrentPhaseCode() = PhaseCode::READ_MEMORY_PTR;
+	__until(getCurrentPhaseCode() == PhaseCode::WAIT);
+
+	if (getExecuteResult() == ExecuteResult::SUCCESS)
+		remoteMemoryAddress = *static_cast<volatile uint32_t*>(getReadResult());
+	else throw std::exception("unexpected behavior");
+}
+
 Memory::Memory(DWORD pid)
 {
 	auto fileName = std::wstring{ SHARED_MEMORY_NAME_AFFIX }.append(std::to_wstring(pid));
@@ -25,6 +35,7 @@ Memory::Memory(DWORD pid)
 
 	pCurrentPhaseCode = &getPhaseCode();
 	pCurrentRunState = &getRunState();
+	getGlobalState() = GlobalState::CONNECTED;
 }
 
 std::optional<volatile void*> Memory::_readMemory(BYTE size,const std::vector<int32_t>& offsets)
@@ -94,6 +105,20 @@ bool Memory::runCode(const char* codes, int num)
 	if (getExecuteResult() == ExecuteResult::SUCCESS) return true;
 	if (getExecuteResult() == ExecuteResult::FAIL) return false;
 	throw std::exception("unexpected behavior");
+}
+
+void Memory::endControl()
+{
+	getGlobalState() = GlobalState::NOT_CONNECTED;
+	getPhaseCode() = PhaseCode::CONTINUE;
+	getJumpingPhaseCode() = PhaseCode::CONTINUE;
+	CloseHandle(hMemory);
+}
+
+uint32_t Memory::getWrittenAddress()
+{
+	if (!remoteMemoryAddress) getRemoteMemoryAddress();
+	return remoteMemoryAddress + 72;
 }
 
 #undef __until

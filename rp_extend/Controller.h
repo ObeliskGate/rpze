@@ -8,13 +8,13 @@ class Controller
 {
 	Memory mem;
 public:
-	Controller(DWORD pid) : mem(pid) {}
+	explicit Controller(DWORD pid) : mem(pid) {}
 
 	inline int32_t get_time() { return mem.getGameTime(); }
 
 	inline void next() { mem.next(); }
 
-	inline bool is_blocked() { return mem.isBlocked(); }
+	inline void before() { while (mem.isBlocked()) {} }
 
 	inline bool start_jump_frame() { return mem.startJumpFrame(); }
 
@@ -29,4 +29,13 @@ public:
 	{ return mem.writeMemory(val, offsets); }
 
 	inline bool run_code(const char* codes, int num) { return mem.runCode(codes, num); }
+
+	inline void end() { mem.endControl(); }
+
+	inline void start() { mem.getGlobalState() = GlobalState::CONNECTED; }
+
+	inline uint32_t result_address() { return mem.getWrittenAddress(); }
+
+	template<typename T>
+	T get_result() { return *(T*)mem.getReadResult(); }
 };
