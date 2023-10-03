@@ -37,7 +37,7 @@ def normal_place_plant(x: int, y: int, _type: int, ctler: Controller):
         ret;'''
     print(code)
     asm.run(code, ctler)
-    return ctler.result_i32()
+    return ctler.result_i32
 
 def basic_test(controller):
     start_time = 0

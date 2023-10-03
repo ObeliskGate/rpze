@@ -4,18 +4,18 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rp_dll", "rp_dll\rp_dll.vcxproj", "{0255E5F2-50F5-43B7-9FF5-74792B403F08}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rp_injector", "rp_injector\rp_injector.vcxproj", "{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}"
-	ProjectSection(ProjectDependencies) = postProject
-		{0255E5F2-50F5-43B7-9FF5-74792B403F08} = {0255E5F2-50F5-43B7-9FF5-74792B403F08}
-	EndProjectSection
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rp_extend", "rp_extend\rp_extend.vcxproj", "{9D3E4079-34B8-4754-9DD9-D6D0DEDD4ADB}"
 	ProjectSection(ProjectDependencies) = postProject
 		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6} = {BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rp_extend", "rp_extend\rp_extend.vcxproj", "{9D3E4079-34B8-4754-9DD9-D6D0DEDD4ADB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0255E5F2-50F5-43B7-9FF5-74792B403F08} = {0255E5F2-50F5-43B7-9FF5-74792B403F08}
+	EndProjectSection
+EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "rpze", "rpze\rpze.pyproj", "{10BA62DB-8C74-41DF-8DA3-2ECDB7F50C79}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "rp_injector", "rp_injector\rp_injector.vcxproj", "{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,18 +39,6 @@ Global
 		{0255E5F2-50F5-43B7-9FF5-74792B403F08}.Release|x64.Build.0 = Release|Win32
 		{0255E5F2-50F5-43B7-9FF5-74792B403F08}.Release|x86.ActiveCfg = Release|Win32
 		{0255E5F2-50F5-43B7-9FF5-74792B403F08}.Release|x86.Build.0 = Release|Win32
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|Any CPU.Build.0 = Debug|x64
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|x64.ActiveCfg = Debug|Win32
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|x64.Build.0 = Debug|Win32
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|x86.ActiveCfg = Debug|Win32
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|x86.Build.0 = Debug|Win32
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|Any CPU.ActiveCfg = Release|x64
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|Any CPU.Build.0 = Release|x64
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|x64.ActiveCfg = Release|Win32
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|x64.Build.0 = Release|Win32
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|x86.ActiveCfg = Release|Win32
-		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|x86.Build.0 = Release|Win32
 		{9D3E4079-34B8-4754-9DD9-D6D0DEDD4ADB}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{9D3E4079-34B8-4754-9DD9-D6D0DEDD4ADB}.Debug|Any CPU.Build.0 = Debug|x64
 		{9D3E4079-34B8-4754-9DD9-D6D0DEDD4ADB}.Debug|x64.ActiveCfg = Debug|x64
@@ -69,6 +57,18 @@ Global
 		{10BA62DB-8C74-41DF-8DA3-2ECDB7F50C79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{10BA62DB-8C74-41DF-8DA3-2ECDB7F50C79}.Release|x64.ActiveCfg = Release|Any CPU
 		{10BA62DB-8C74-41DF-8DA3-2ECDB7F50C79}.Release|x86.ActiveCfg = Release|Any CPU
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|Any CPU.Build.0 = Debug|x64
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|x64.ActiveCfg = Debug|x64
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|x64.Build.0 = Debug|x64
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|x86.ActiveCfg = Debug|Win32
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Debug|x86.Build.0 = Debug|Win32
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|Any CPU.ActiveCfg = Release|x64
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|Any CPU.Build.0 = Release|x64
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|x64.ActiveCfg = Release|x64
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|x64.Build.0 = Release|x64
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|x86.ActiveCfg = Release|Win32
+		{BE75C4C3-8A18-4501-B909-84A5CD5CA5F6}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -115,7 +115,7 @@ inline std::optional<T> Memory::readMemory(const std::vector<int32_t>& offsets)
 	if (offsets.size() > 10) return {};
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p.has_value()) return {};
-	return *(T*)(p.value());
+	return *static_cast<volatile T*>(p.value());
 }
 
 template<typename T>

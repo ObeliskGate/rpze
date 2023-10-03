@@ -13,7 +13,6 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("run_code", &Controller::run_code)
 		.def("start", &Controller::start)
 		.def("end", &Controller::end)
-		.def_property_readonly("result_address", &Controller::result_address)
 
 		// read
 		.def("read_i8", &Controller::read_memory<int8_t>)
@@ -32,10 +31,11 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("write_f64", &Controller::write_memory<double>)
 		.def("write_memory", &Controller::write_memory<int32_t>)
 
-		.def("result_i8", &Controller::get_result<int8_t>)
-		.def("result_i16", &Controller::get_result<int16_t>)
-		.def("result_i32", &Controller::get_result<int32_t>)
-		.def("result_i64", &Controller::get_result<int64_t>)
-		.def("result_f32", &Controller::get_result<float>)
-		.def("result_f64", &Controller::get_result<double>);
+		.def_property_readonly("result_address", &Controller::result_address)
+		.def_property_readonly("result_i8", &Controller::get_result<int8_t>)
+		.def_property_readonly("result_i16", &Controller::get_result<int16_t>)
+		.def_property_readonly("result_i32", &Controller::get_result<int32_t>)
+		.def_property_readonly("result_i64", &Controller::get_result<int64_t>)
+		.def_property_readonly("result_f32", &Controller::get_result<float>)
+		.def_property_readonly("result_f64", &Controller::get_result<double>);
 }

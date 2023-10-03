@@ -37,5 +37,5 @@ public:
 	inline uint32_t result_address() { return mem.getWrittenAddress(); }
 
 	template<typename T>
-	T get_result() { return *(T*)mem.getReadResult(); }
+	T get_result() { return *static_cast<volatile T*>(mem.getReadResult()); }
 };
