@@ -7,7 +7,6 @@ import basic.asm as asm
 
 def izombie_place_zombie(x: int, y: int, _type: int, ctler: Controller):
     p_challenge = ctler.read_i32([0x6a9ec0, 0x768, 0x160])
-    print(p_challenge)
     code = f'''
         push edx;
         mov eax, {y};
@@ -40,7 +39,7 @@ def normal_place_plant(x: int, y: int, _type: int, ctler: Controller):
     asm.run(code, ctler)
     return ctler.result_i32
 
-def basic_test(controller):
+def basic_test(controller: Controller):
     start_time = 0
     b = False
     while True:
@@ -63,18 +62,18 @@ def basic_test(controller):
                 print(controller.read_i32([p_plant + 0x1c]))
             elif c == b'q':
                 print('q')
-                ctl.end()
+                controller.end()
                 break
         
         if (not b) and (controller.get_time() >= start_time + 1e6):
             controller.end_jump_frame()
             print("end", int(time.time()) - start_clock)
             b = True
-        controller.next()
+        controller.next_frame()
 
 if __name__ == "__main__":  
     pids = inject.open_game(r"C:\Users\32985\Desktop\pvz\Plants vs. Zombies 1.0.0.1051 EN\PlantsVsZombies.exe")
     inject.inject(pids)
-    ctl = Controller(pids[0])
-    basic_test(ctl)
+    ctler = Controller(pids[0])
+    basic_test(ctler)
     

@@ -27,7 +27,7 @@ def open_game(game_path: str, num=1) -> list[int]:
 
 def inject(pids: list[int]):
     """
-    注入dll, pids为pid列表, in_debug为是否使用debug模式
+    注入dll, pids为pid列表
     """
     dll_path = os.path.abspath(f".\\bin\\rp_dll.dll")
     s = f'.\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '

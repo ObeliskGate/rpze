@@ -42,6 +42,13 @@
   <ItemGroup>
     <Content Include="rp_extend.pyi" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\rp_extend\rp_extend.vcxproj">
+      <Name>rp_extend</Name>
+      <Project>{9d3e4079-34b8-4754-9dd9-d6d0dedd4adb}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
        Visual Studio and specify your pre- and post-build commands in

@@ -6,7 +6,7 @@ PYBIND11_MODULE(rp_extend, m)
 
 	py::class_<Controller>(m, "Controller")
 		.def(py::init<DWORD>())
-		.def("next", &Controller::next)
+		.def("next_frame", &Controller::next_frame)
 		.def("before", &Controller::before)
 		.def("start_jump_frame", &Controller::start_jump_frame)
 		.def("end_jump_frame", &Controller::end_jump_frame)

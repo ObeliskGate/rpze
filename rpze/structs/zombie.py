@@ -120,12 +120,11 @@ class ZombieAccessoriesType2(IntEnum):
     ladder = 0x3,
 
 class Zombie:
-    
     def __init__(self, ctler: Controller, base_ptr: int):
         self.ctler = ctler
         self.base_ptr = base_ptr
         
-    SIZE = 0x158
+    SIZE: int = 0x158
 
     @property
     def int_x(self) -> int:

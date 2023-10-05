@@ -12,7 +12,7 @@ public:
 
 	inline int32_t get_time() { return mem.getGameTime(); }
 
-	inline void next() { mem.next(); }
+	inline void next_frame() { mem.next(); }
 
 	inline void before() { while (mem.isBlocked()) {} }
 
