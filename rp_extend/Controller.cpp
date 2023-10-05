@@ -3,6 +3,7 @@
 
 PYBIND11_MODULE(rp_extend, m)
 {
+
 	py::class_<Controller>(m, "Controller")
 		.def(py::init<DWORD>())
 		.def("next", &Controller::next)

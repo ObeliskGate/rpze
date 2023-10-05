@@ -112,7 +112,6 @@ void Memory::endControl()
 	getGlobalState() = GlobalState::NOT_CONNECTED;
 	getPhaseCode() = PhaseCode::CONTINUE;
 	getJumpingPhaseCode() = PhaseCode::CONTINUE;
-	CloseHandle(hMemory);
 }
 
 uint32_t Memory::getWrittenAddress()

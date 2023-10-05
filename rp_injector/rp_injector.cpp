@@ -1,7 +1,10 @@
 ﻿#define WIN32_LEAN_AND_MEAN 
 #include <iostream>
 #include <Windows.h>
-#include <optional>
+
+#ifdef _WIN64
+static_assert(false, "请用32位编译")
+#endif
 
 bool injectDll(DWORD pid, LPCSTR dllPath)
 {   
