@@ -26,7 +26,7 @@ class Memory
 public:
 	explicit Memory(DWORD pid);
 
-	~Memory() { endControl(); }
+	~Memory() { endControl(); CloseHandle(hMemory);  }
 
 	// 怎么运行游戏
 	inline volatile PhaseCode& getPhaseCode() const { return getRef<PhaseCode>(0); }

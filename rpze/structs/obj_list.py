@@ -1,3 +1,4 @@
+from typing import TypeVar
 
 class ObjNode:
     def __init__(self, obj) -> None:
