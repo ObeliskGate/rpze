@@ -71,12 +71,12 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 	}
 }
 
-void __stdcall script(const DWORD isInIZombie, const SharedMemory* pSharedMemory)
+void __stdcall script(const DWORD isInGame, const SharedMemory* pSharedMemory)
 {
 	if (pSharedMemory->getGlobalState() == GlobalState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode = &pSharedMemory->getPhaseCode();
 	RunState* pRunState = &pSharedMemory->getRunState();
-	if (isInIZombie)
+	if (isInGame)
 	{
 		if (pSharedMemory->getPhaseCode() != PhaseCode::JUMP_FRAME) return;
 		pPhaseCode = &pSharedMemory->getJumpingPhaseCode();
@@ -95,12 +95,12 @@ void injectScript(SharedMemory* pSharedMemory)
 	DWORD tmp;
 	VirtualProtect(reinterpret_cast<void*>(0x400000), 0x394000, PAGE_EXECUTE_READWRITE, &tmp);
 
-	// in izupdate
-	writeMemory<BYTE>(0x5f, 0x6b0000); // pop edi 
-	writeMemory<BYTE>(0x5e, 0x6b0001); // pop esi
-	writeMemory<BYTE>(0x5d, 0x6b0002); // pop ebp	
-	writeMemory<BYTE>(0x5b, 0x6b0003); // pop ebx
-	writeMemory<BYTE>(0x59, 0x6b0004); // pop ecx
+	// in Board::UpdateGame
+	//writeMemory<BYTE>(0x5f, 0x6b0000); // pop edi 
+	//writeMemory<BYTE>(0x5e, 0x6b0001); // pop esi
+	//writeMemory<BYTE>(0x5d, 0x6b0002); // pop ebp	
+	//writeMemory<BYTE>(0x5b, 0x6b0003); // pop ebx
+	//writeMemory<BYTE>(0x59, 0x6b0004); // pop ecx
 
 	tmp = 0x6b0006;
 	writeMemory<BYTE>(0x68, 0x6b0005);
@@ -113,10 +113,11 @@ void injectScript(SharedMemory* pSharedMemory)
 	writeMemory<BYTE>(0xe8, tmp); tmp += 1;
 	writeMemory<DWORD>(reinterpret_cast<DWORD>(&script) - tmp - 4, tmp);  tmp += 4;// call script
 
-	writeMemory<BYTE>(0xe9, tmp);  tmp += 1;
-	writeMemory<DWORD>(0x42b52b - tmp - 4, tmp); // jmp 42b52b
+	//writeMemory<BYTE>(0xe9, tmp);  tmp += 1;
+	//writeMemory<DWORD>(0x42b52b - tmp - 4, tmp); // jmp 42b52b
+	writeMemory<BYTE>(0xc3, tmp); // RET
 
-	// out of izupdate
+	// out of Board::UpdateGame
 	tmp = 0x6b0100;
 	writeMemory<BYTE>(0x68, tmp); tmp += 1;
 	writeMemory<DWORD>(reinterpret_cast<DWORD>(pSharedMemory), tmp); tmp += 4; // push pSharedMemory
@@ -129,11 +130,11 @@ void injectScript(SharedMemory* pSharedMemory)
 
 	writeMemory<BYTE>(0xc3, tmp); // RET
 
-	// jmp in izupdate
-	writeMemory<BYTE>(0xe9, 0x42b526);
-	writeMemory<DWORD>(0x6b0000 - 0x42b526 - 5, 0x42b527); // jmp 6b0000
+	// jmp in Board::UpdateGame
+	writeMemory<BYTE>(0xe9, 0x415d3b);
+	writeMemory<DWORD>(0x6b0005 - 0x415d3b - 5, 0x415d3c); // jmp 6b0005
 
-	// jmp out of izupdate
+	// jmp out of Board::UpdateGame
 	writeMemory<BYTE>(0xe9, 0x452732);
 	writeMemory<DWORD>(0x6b0100 - 0x452732 - 5, 0x452733); // jmp 6b0100
 }
