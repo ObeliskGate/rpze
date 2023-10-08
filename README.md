@@ -8,6 +8,7 @@
 
 ### MSBuild
 
-Python依赖`pip install pybind11 pywin32 keystone-engine`
+> 100% certified works on my machine
 
+Python依赖`pip install pybind11 pywin32 keystone-engine`
 执行`python -m pybind11 --includes` 将结果中不带`-I`的两个路径替换到./rp_extend/rp_extend.vcxproj文件中目标buildmode和Platform的`<AdditionalIncludeDirectories>`标签中, 并向该文件对应编译方式中`<AdditionalLibraryDirectories>`标签添加Python安装目录下libs文件夹. 后执行MSBuild命令指定buildmode和Platform生成项目.
