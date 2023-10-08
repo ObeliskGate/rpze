@@ -28,7 +28,8 @@
     <Compile Include="basic\asm.py" />
     <Compile Include="basic\inject.py" />
     <Compile Include="rpze.py" />
-    <Compile Include="structs\obj_list.py" />
+    <Compile Include="structs\obj_base.py" />
+    <Compile Include="structs\plant.py" />
     <Compile Include="structs\zombie.py" />
     <Compile Include="__init__.py" />
   </ItemGroup>

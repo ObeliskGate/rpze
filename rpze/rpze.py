@@ -4,6 +4,8 @@ import msvcrt as vc
 import time
 from rp_extend import Controller
 import basic.asm as asm
+import structs.plant as Plant
+import structs.zombie as z
 
 def izombie_place_zombie(x: int, y: int, _type: int, ctler: Controller):
     p_challenge = ctler.read_i32([0x6a9ec0, 0x768, 0x160])
@@ -12,7 +14,7 @@ def izombie_place_zombie(x: int, y: int, _type: int, ctler: Controller):
         mov eax, {y};
         push {x};
         push {_type};
-        mov ecx, {p_challenge};
+        mov ecx, {p_challenge}; // 注释
         mov edx, 0x42a0f0;
         call edx;
         pop edx;
@@ -20,23 +22,6 @@ def izombie_place_zombie(x: int, y: int, _type: int, ctler: Controller):
     print(code)
     asm.run(code, ctler)
 
-def normal_place_plant(x: int, y: int, _type: int, ctler: Controller):
-    p_board = ctler.read_i32([0x6a9ec0, 0x768])
-    print(ctler.result_address)
-    code = f'''
-        push edx;
-        push -1;
-        push {_type};
-        mov eax, {y};
-        push {x};
-        push {p_board};
-        mov edx, 0x40d120;
-        call edx;
-        mov [{ctler.result_address}], eax;
-        pop edx;
-        ret;'''
-    print(code)
-    asm.run(code, ctler)
     return ctler.result_i32
 
 def basic_test(controller: Controller):
@@ -58,12 +43,17 @@ def basic_test(controller: Controller):
                 print("sun", controller.read_i32([0x6a9ec0, 0x768, 0x5560]))
             elif c == b'c':
                 print('c')
-                p_plant = normal_place_plant(3, 1, 1, controller)
-                print(controller.read_i32([p_plant + 0x1c]))
+                plant = Plant.normal_place_plant(3, 1, 1, controller)
+                print(plant.x)
+                plant.x = 400
+                print(plant.SIZE)
+                print(plant.x)
             elif c == b'q':
                 print('q')
                 controller.end()
                 break
+            elif c == b't':
+                print(c)
         
         if (not b) and (controller.get_time() >= start_time + 1e6):
             controller.end_jump_frame()

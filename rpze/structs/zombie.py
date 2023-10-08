@@ -1,6 +1,7 @@
 from rp_extend import Controller
 from enum import IntEnum
-# Êý¾Ý½á¹¹ºÍpvz_emulatorÃüÃû±£³ÖÒ»ÖÂ
+import structs.obj_base as ob
+# æ•°æ®ç»“æž„å’Œpvz_emulatorå‘½åä¿æŒä¸€è‡´
 
 class ZombieType(IntEnum):
     none = -1,
@@ -119,109 +120,42 @@ class ZombieAccessoriesType2(IntEnum):
     newspaper = 0x2,
     ladder = 0x3,
 
-class Zombie:
+class Zombie(ob.ObjBase):
     def __init__(self, ctler: Controller, base_ptr: int):
-        self.ctler = ctler
-        self.base_ptr = base_ptr
+        super.__init__(ctler, base_ptr)
         
-    SIZE: int = 0x158
+    @property
+    @classmethod
+    def SIZE(cls) -> int:
+        return 0x158
 
-    @property
-    def int_x(self) -> int:
-        return self.ctler.read_i32([self.base_ptr + 0x8])
-    @property.setter
-    def int_x(self, val: int):
-        self.ctler.write_i32(val, self.base_ptr + 0x8)
+    int_x: int = ob.property_i32(0x8, "int_x")
         
-    @property
-    def int_y(self) -> int:
-        return self.ctler.read_i32([self.base_ptr + 0xc])   
-    @property.setter
-    def int_y(self, val: int):
-        self.ctler.write_i32(val, [self.base_ptr + 0xc])
+    int_y: int = ob.property_i32(0xc, "int_y")
         
-    @property
-    def width(self) -> int:
-        return self.ctler.read_i32([self.base_ptr + 0x10])   
-    @property.setter
-    def width(self, val: int):
-        self.ctler.write_i32(val, [self.base_ptr + 0x10])
+    width: int = ob.property_i32(0x10, "width")
         
-    @property
-    def height(self) -> int:
-        return self.ctler.read_i32([self.base_ptr + 0x14])    
-    @property.setter
-    def height(self, val: int):
-        self.ctler.write_i32(val, [self.base_ptr + 0x14])
+    height: int = ob.property_i32(0x14, "height")
         
-    @property
-    def row(self):
-        return self.ctler.read_i32([self.base_ptr + 0x1c])    
-    @property.setter
-    def row(self, val: int):
-        self.ctler.write_i32(val, [self.base_ptr + 0x1c])
+    row: int = ob.property_i32(0x1c, "row")
         
-    @property
-    def zombie_type(self) -> ZombieType:
-        return ZombieType(self.ctler.read_i32([self.base_ptr + 0x24]))    
-    @property.setter
-    def zombie_type(self, val: ZombieType):
-        self.ctler.write_i32(val, [self.base_ptr + 0x24])
+    zombie_type: ZombieType = ob.property_i32(0x24, "zombie_type")
+
+    status: ZombieStatus = ob.property_i32(0x28, "zombie_status")
+
+    x: float = ob.property_f32(0x2c, "float_x")
         
-    @property
-    def status(self) -> ZombieStatus:
-        return ZombieStatus(self.ctler.read_i32([self.base_ptr + 0x28]))    
-    @property.setter
-    def status(self, val: ZombieStatus):
-        self.ctler.write_i32(val, [self.base_ptr + 0x28])
+    y: float = ob.property_f32(0x30, "float_y")
         
-    @property
-    def x(self) -> float:
-        return self.ctler.read_f32([self.base_ptr + 0x2c])   
-    @property.setter
-    def x(self, val: float):
-        self.ctler.write_f32(val, [self.base_ptr + 0x2c])
+    # xçš„å˜åŒ–çŽ‡, æ¨ªå‘é€Ÿåº¦
+    dx: float = ob.property_f32(0x34, "dx")
         
-    @property
-    def y(self) -> float:
-        return self.ctler.read_f32([self.base_ptr + 0x30])   
-    @property.setter
-    def y(self, val: float):
-        self.ctler.write_f32(val, [self.base_ptr + 0x30])
+    is_eating: bool = ob.property_bool(0x50, "is_eating")
         
-    # xµÄ±ä»¯ÂÊ, ºáÏòËÙ¶È
-    @property
-    def dx(self) -> float:
-        return self.ctler.read_f32([self.base_ptr + 0x34])    
-    @property.setter
-    def dx(self, val: float):
-        self.ctler.write_f32(val, [self.base_ptr + 0x34])
+    # é—ªå…‰å€’è®¡æ—¶
+    flash_cowntdown: int = ob.property_i32(0x54, "flash_countdown")
         
-    @property
-    def is_eating(self) -> bool:
-        return self.ctler.read_i8([self.base_ptr + 0x50]) == 1    
-    @property.setter
-    def is_eating(self, val: bool):
-        self.ctler.write_i8(1 if val else 0, [self.base_ptr + 0x50])
+    # å‡ºç”Ÿæ—¶é—´
+    time_since_spawn: int = ob.property_i32(0x60, "time_countdown")
         
-    # ÉÁ¹âµ¹¼ÆÊ±
-    @property
-    def flash_cowntdown(self) -> int:
-        return self.ctler.read_i32([self.base_ptr + 0x54])    
-    @property.setter
-    def flash_cowntdown(self, val: int):
-        self.ctler.write_i32(val, [self.base_ptr + 0x54])
-        
-    @property
-    def time_since_spawn(self) -> int:
-        return self.ctler.read_i32([self.base_ptr + 0x60])   
-    @property.setter
-    def time_since_spawn(self, val: int):
-        self.ctler.write_i32(val, [self.base_ptr + 0x60])
-        
-    @property
-    def action(self) -> ZombieAction:
-        return ZombieAction(self.ctler.read_i32([self.base_ptr + 0x64]))   
-    @property.setter
-    def action(self, val: ZombieAction):
-        self.ctler.write_i32(val, [self.base_ptr + 0x64])
+    action: ZombieAction = ob.property_i32(0x64, "zombie_action")
