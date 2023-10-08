@@ -1,9 +1,8 @@
-from structs.obj_base import ObjNode
+from structs.obj_base import ObjBase
 import structs.obj_base as ob
 from rp_extend import Controller
 import basic.asm as asm
 from enum import IntEnum
-
 
 class PlantType(IntEnum):
     none = -1,
@@ -57,7 +56,6 @@ class PlantType(IntEnum):
     cob_cannon = 0x2F,
     imitater = 0x30
 
-
 class PlantStatus(IntEnum):
     idle = 0x0,
     wait = 0x1,
@@ -101,8 +99,7 @@ class PlantStatus(IntEnum):
     flower_pot_placed = 0x2F,
     lily_pad_placed = 0x30
 
-
-class AttackFlags(IntEnum):
+class AttactFlags(IntEnum):
     ground = 0x1,
     flying_balloon = 0x2,
     lurking_snorkel = 0x4,
@@ -111,71 +108,49 @@ class AttackFlags(IntEnum):
     digging_digger = 0x40,
     hypno_zombies = 0x80,
 
+class Plant(ObjBase):
+    def __init__(self, base_ptr: int, ctler: Controller) -> None:
+        super().__init__(base_ptr, ctler)
 
-class Plant(ObjNode):
-
-    @classmethod
+    @classmethod  
+    @property
     def SIZE(cls) -> int:
-        return 0x14c
+        return 0x148
 
     x: int = ob.property_i32(0x8, "x")
 
     y: int = ob.property_i32(0xc, "y")
 
-    attack_box_width: int = ob.property_i32(0x10, "attack_box_width")
+    width: int = ob.property_i32(0x10, "width")
 
-    attack_box_height: int = ob.property_i32(0x14, "attack_box_height")
+    height: int = ob.property_i32(0x14, "height")
 
     visible: bool = ob.property_bool(0x18, "visible")
 
     row: int = ob.property_i32(0x1c, "row")
 
-    type_: PlantType = ob.property_int_enum(0x24, PlantType, "plant_type")
+    plant_type: PlantType = ob.property_i32(0x24, "plant_type")
 
     col: int = ob.property_i32(0x28, "col")
 
-    status: PlantStatus = ob.property_int_enum(0x3c, PlantStatus, "status")
-    # 属性倒计时, 如磁铁, 大嘴
-    status_countdown: int = ob.property_i32(0x54, "status_countdown")
-    # 子弹生成 / 物品生产倒计时
-    generate_countdown: int = ob.property_i32(0x58, "generate_countdown")
-    # 发射子弹间隔 **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
-    launch_countdown: int = ob.property_i32(0x5c, "launch_countdown")
+    status: PlantStatus = ob.property_i32(0x3c, "status")
 
     can_attack: bool = ob.property_bool(0x48, "can_attack")
 
-    is_dead: bool = ob.property_bool(0x141, "is_dead")
 
-    def __str__(self) -> str:
-        return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
-
-
-def plain_new_plant(row: int, col: int, _type: PlantType, ctler: Controller) -> Plant:
+def normal_place_plant(x: int, y: int, _type: int, ctler: Controller) -> Plant:
     p_board = ctler.read_i32([0x6a9ec0, 0x768])
     code = f'''
         push edx;
         push -1;
-        push {int(_type)};
-        push {row};
-        push {col};
-        mov eax, {p_board};
-        mov edx, 0x40CE20;  // Board::NewPlant
+        push {_type};
+        mov eax, {y};
+        push {x};
+        push {p_board};
+        mov edx, 0x40d120; // English is ok
         call edx;
         mov [{ctler.result_address}], eax;
         pop edx;
         ret;'''
     asm.run(code, ctler)
     return Plant(ctler.result_i32, ctler)
-
-
-class PlantList(ob.obj_list(Plant)):
-    pass
-
-
-def get_plant_list(ctler: Controller) -> PlantList | None:
-    if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
-        return None
-    elif (t := t + 0xac) == 0:
-        return None
-    else:
-        return PlantList(t, ctler)
