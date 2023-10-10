@@ -1,4 +1,4 @@
-from structs.obj_base import ObjBase
+from structs.obj_base import ObjNode
 import structs.obj_base as ob
 from rp_extend import Controller
 import basic.asm as asm
@@ -108,46 +108,58 @@ class AttactFlags(IntEnum):
     digging_digger = 0x40,
     hypno_zombies = 0x80,
 
-class Plant(ObjBase):
+class Plant(ObjNode):
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
 
-    @classmethod  
-    @property
+    @classmethod
     def SIZE(cls) -> int:
-        return 0x148
+        return 0x14c
 
     x: int = ob.property_i32(0x8, "x")
 
     y: int = ob.property_i32(0xc, "y")
 
-    width: int = ob.property_i32(0x10, "width")
+    attact_box_width: int = ob.property_i32(0x10, "attact_box_width")
 
-    height: int = ob.property_i32(0x14, "height")
+    attaxt_box_height: int = ob.property_i32(0x14, "attact_box_height")
 
     visible: bool = ob.property_bool(0x18, "visible")
 
     row: int = ob.property_i32(0x1c, "row")
 
-    plant_type: PlantType = ob.property_i32(0x24, "plant_type")
+    _type: PlantType = ob.property_int_enum(0x24, PlantType, "plant_type")
 
     col: int = ob.property_i32(0x28, "col")
 
-    status: PlantStatus = ob.property_i32(0x3c, "status")
+    status: PlantStatus = ob.property_int_enum(0x3c, PlantStatus, "status")
+    # 属性倒计时, 如磁铁, 大嘴
+    status_countdown: int = ob.property_i32(0x54, "status_countdown")
+    # 子弹生成 / 物品生产倒计时
+    generate_countdown: int = ob.property_i32(0x58, "generate_countdown")
+    # 发射子弹间隔 **这里有坑, 平常常见的大喷49等数据是做减法减出来的而不是存在这里的直接数据**
+    launch_countdown: int = ob.property_i32(0x5c, "launch_countdown")
 
     can_attack: bool = ob.property_bool(0x48, "can_attack")
 
+    is_dead: bool = ob.property_bool(0x141, "is_dead")
 
-def normal_place_plant(x: int, y: int, _type: int, ctler: Controller) -> Plant:
+
+
+    def __str__(self) -> str:
+        return f"#{self.id.index} {self._type.name} at {self.row + 1}-{self.col + 1}"
+
+
+def plain_new_plant(row: int, col: int, _type: PlantType, ctler: Controller) -> Plant:
     p_board = ctler.read_i32([0x6a9ec0, 0x768])
     code = f'''
         push edx;
         push -1;
-        push {_type};
-        mov eax, {y};
-        push {x};
-        push {p_board};
-        mov edx, 0x40d120; // English is ok
+        push {int(_type)};
+        push {row};
+        push {col};
+        mov eax, {p_board};
+        mov edx, 0x40CE20;  // Board::NewPlant
         call edx;
         mov [{ctler.result_address}], eax;
         pop edx;

@@ -4,6 +4,9 @@ __all__ = ['Controller']
 class Controller:
     def __init__(self, pid: int) -> None:
         ...
+    @property
+    def pid(self) -> int:
+        ...
     def before(self) -> None:
         ...
     def next_frame(self) -> None:
