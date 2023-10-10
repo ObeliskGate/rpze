@@ -15,6 +15,7 @@
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
     <InterpreterId>Global|PythonCore|3.11</InterpreterId>
+    <SuppressConfigureTestFrameworkPrompt>true</SuppressConfigureTestFrameworkPrompt>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,6 +32,7 @@
     <Compile Include="structs\obj_base.py" />
     <Compile Include="structs\plant.py" />
     <Compile Include="structs\zombie.py" />
+    <Compile Include="tests.py" />
     <Compile Include="__init__.py" />
   </ItemGroup>
   <ItemGroup>

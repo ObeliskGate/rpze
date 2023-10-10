@@ -10,6 +10,8 @@ class Controller
 public:
 	explicit Controller(DWORD pid) : mem(pid) {}
 
+	inline DWORD pid() { return mem.getPid(); }
+
 	inline int32_t get_time() { return mem.getGameTime(); }
 
 	inline void next_frame() { mem.next(); }
