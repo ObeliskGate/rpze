@@ -36,6 +36,7 @@ Memory::Memory(DWORD pid)
 	pCurrentPhaseCode = &getPhaseCode();
 	pCurrentRunState = &getRunState();
 	getGlobalState() = GlobalState::CONNECTED;
+	this->pid = pid;
 }
 
 std::optional<volatile void*> Memory::_readMemory(BYTE size,const std::vector<int32_t>& offsets)

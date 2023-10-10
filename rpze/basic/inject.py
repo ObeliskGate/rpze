@@ -13,7 +13,7 @@ def find_window(window_name) -> int:
 
 def open_game(game_path: str, num=1) -> list[int]:
     """
-    通过路径, 将pvz作为python子进程打开游戏, 返回pids
+    通过路径, 将pvz作为python子进程打开游戏, 返回num个的列表pids
     """
     route, exe_name = os.path.split(game_path)
     current_directory = os.getcwd()
@@ -34,5 +34,5 @@ def inject(pids: list[int]):
     for i in pids:
         s += str(i)
         s += ' '
-     
+    
     os.system(s)

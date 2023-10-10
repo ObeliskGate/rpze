@@ -13,7 +13,7 @@ class Memory
 	volatile PhaseCode* pCurrentPhaseCode;
 	volatile RunState* pCurrentRunState;
 
-	// 在pvz中共享内存基址
+	// 在pvz中共享内存的基址
 	uint32_t remoteMemoryAddress = 0;
 
 	template<typename T = BYTE>
@@ -23,10 +23,14 @@ class Memory
 	inline T& getRef(const int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
 
 	void getRemoteMemoryAddress();
+
+	DWORD pid = 0;
 public:
 	explicit Memory(DWORD pid);
 
 	~Memory() { endControl(); CloseHandle(hMemory);  }
+
+	inline DWORD getPid() const { return pid; }
 
 	// 怎么运行游戏
 	inline volatile PhaseCode& getPhaseCode() const { return getRef<PhaseCode>(0); }
