@@ -1,6 +1,10 @@
-from rp_extend import Controller
 from enum import IntEnum
+
 import structs.obj_base as ob
+from basic import asm
+from rp_extend import Controller
+
+
 # 数据结构和pvz_emulator命名保持一致
 
 class ZombieType(IntEnum):
@@ -30,6 +34,7 @@ class ZombieType(IntEnum):
     gargantuar = 0x17,
     imp = 0x18,
     giga_gargantuar = 0x20
+
 
 class ZombieStatus(IntEnum):
     walking = 0x0,
@@ -97,7 +102,8 @@ class ZombieStatus(IntEnum):
     ladder_walking = 0x4c,
     ladder_placing = 0x4d,
     yeti_escape = 0x5b
-    
+
+
 class ZombieAction(IntEnum):
     none = 0x0,
     entering_pool = 0x1,
@@ -106,31 +112,32 @@ class ZombieAction(IntEnum):
     climbing_ladder = 0x6,
     falling = 0x7,
     fall_from_sky = 0x9
-    
+
+
 class ZombieAccessoriesType1(IntEnum):
     none = 0x0,
     roadcone = 0x1,
     bucket = 0x2,
     football_cap = 0x3,
     miner_hat = 0x4
-    
+
+
 class ZombieAccessoriesType2(IntEnum):
     none = 0x0,
     screen_door = 0x1,
     newspaper = 0x2,
     ladder = 0x3
 
+
 class Zombie(ob.ObjNode):
-    def __init__(self, base_ptr: int, ctler: Controller):
-        super().__init__(base_ptr, ctler)
         
     @classmethod
     def SIZE(cls) -> int:
         return 0x15c
 
-    #整数x坐标
+    # 整数x坐标
     int_x: int = ob.property_i32(0x8, "int_x")
-    #整数y坐标
+    # 整数y坐标
     int_y: int = ob.property_i32(0xc, "int_y")
 
     width: int = ob.property_i32(0x10, "width")
@@ -182,7 +189,21 @@ class Zombie(ob.ObjNode):
 
 
 class ZombieList(ob.obj_list(Zombie)):
-    pass
+    def izombie_place_zombie(self, x: int, y: int, type_: ZombieType):
+        ret_idx = self.next_index
+        p_challenge = self.controller.read_i32([0x6a9ec0, 0x768, 0x160])
+        code = f'''
+            push edx;
+            mov eax, {y};
+            push {x};
+            push {int(type_)};
+            mov ecx, {p_challenge};
+            mov edx, 0x42a0f0;
+            call edx;
+            pop edx;
+            ret;'''
+        asm.run(code, self.controller)
+        return self.at(ret_idx)
 
 
 def get_zombie_list(ctler: Controller) -> ZombieList | None:
