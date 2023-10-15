@@ -19,7 +19,7 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     HMODULE hKernel32 = GetModuleHandleW(L"KERNEL32.DLL");
     if (!hKernel32)
     {
-        std::cerr << "find kernal32.dll failed" << std::endl;
+        std::cerr << "find kernel32.dll failed" << std::endl;
         CloseHandle(hProc);
         return false;
     }
@@ -27,17 +27,17 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     FARPROC pLoadLibraryA = GetProcAddress(hKernel32, "LoadLibraryA");
     if (!pLoadLibraryA)
     {
-        std::cerr << "get LoadLibraryA addr failed" << std::endl;
+        std::cerr << "get LoadLibraryA address failed" << std::endl;
         CloseHandle(hProc);
         return false;
     }
 
     const auto size = (lstrlenA(dllPath) + 1) * sizeof(char);
 
-    LPVOID pMemory = VirtualAllocEx(hProc, NULL, size, MEM_COMMIT, PAGE_READWRITE);
+    LPVOID pMemory = VirtualAllocEx(hProc, nullptr, size, MEM_COMMIT, PAGE_READWRITE);
     if (!pMemory)
     {
-        std::cerr << "create vmemory failed" << std::endl;
+        std::cerr << "create v-memory failed" << std::endl;
         CloseHandle(hProc);
         return false;
     }
