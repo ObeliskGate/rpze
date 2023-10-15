@@ -175,9 +175,6 @@ class ObjId(ObjBase):
     """
     ObjNode对象末尾的(index, rank)对象, 游戏内用于ObjNode的识别
     """
-    # def __init__(self, base_ptr: int, ctler: Controller) -> None:
-    #     super().__init__(base_ptr, ctler)
-
     @classmethod
     def SIZE(cls) -> int:
         return 4
