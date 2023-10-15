@@ -8,8 +8,8 @@ SharedMemory::SharedMemory()
 	auto hProc = GetCurrentProcess();
 	sharedMemoryName = std::wstring(SHARED_MEMORY_NAME_AFFIX).append(std::to_wstring((GetProcessId(hProc))));
 	hMapFile = CreateFileMappingW(
-		INVALID_HANDLE_VALUE,    
-		NULL,                
+		INVALID_HANDLE_VALUE,
+		nullptr,                
 		PAGE_READWRITE,    
 		0,                      
 		1024,                
@@ -34,12 +34,12 @@ SharedMemory::SharedMemory()
 
 std::optional<void*> SharedMemory::getReadWritePtr() const
 {
-	DWORD ptr = getOffsets()[0];
+	int32_t ptr = getOffsets()[0];
 	for (size_t i = 1; i < LENGTH; i++)
 	{
 		if (getOffsets()[i] == OFFSET_END) break;
 		if (!ptr) return {};
-		ptr = *reinterpret_cast<DWORD*>(ptr);
+		ptr = *reinterpret_cast<int32_t*>(ptr);
 		if (!ptr) return {};
 		ptr += getOffsets()[i];
 	}
