@@ -1,5 +1,4 @@
 from __future__ import annotations
-import typing
 __all__ = ['Controller']
 class Controller:
     def __init__(self, pid: int) -> None:
@@ -61,13 +60,13 @@ class Controller:
         ...
     def write_i64(self, value: int, offsets: list[int]) -> bool:
         ...
-    def write_u8(self, value: int, offsests: list[int]) -> bool:
+    def write_u8(self, value: int, offsets: list[int]) -> bool:
         ...
-    def write_u16(self, value: int, offsests: list[int]) -> bool:
+    def write_u16(self, value: int, offsets: list[int]) -> bool:
         ...
-    def write_u32(self, value: int, offsests: list[int]) -> bool:
+    def write_u32(self, value: int, offsets: list[int]) -> bool:
         ...
-    def write_u64(self, value: int, offsests: list[int]) -> bool:
+    def write_u64(self, value: int, offsets: list[int]) -> bool:
         ...
     @property
     def result_address(self) -> int:

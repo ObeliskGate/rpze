@@ -39,7 +39,7 @@ Memory::Memory(DWORD pid)
 	this->pid = pid;
 }
 
-std::optional<volatile void*> Memory::_readMemory(BYTE size,const std::vector<int32_t>& offsets)
+std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<int32_t>& offsets)
 {
 	getMemoryNum() = size;
 	int idx = 0;
