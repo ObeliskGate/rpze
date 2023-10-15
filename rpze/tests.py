@@ -3,6 +3,8 @@ import time
 from rp_extend import Controller
 import basic.asm as asm
 import structs.plant as plt
+import structs.zombie as zmb
+
 
 def izombie_place_zombie(x: int, y: int, _type: int, ctler: Controller):
     p_challenge = ctler.read_i32([0x6a9ec0, 0x768, 0x160])
@@ -15,10 +17,11 @@ def izombie_place_zombie(x: int, y: int, _type: int, ctler: Controller):
         mov edx, 0x42a0f0;
         call edx;
         pop edx;
-        ret;''' 
+        ret;'''
     print(code)
     asm.run(code, ctler)
     return ctler.result_i32
+
 
 def basic_test(controller: Controller):
     start_time = 0
@@ -40,19 +43,39 @@ def basic_test(controller: Controller):
                 print("sun", controller.read_i32([0x6a9ec0, 0x768, 0x5560]))
             elif c == b'c':
                 print('c')
-                plant = plt.plain_new_plant(1, 3, plt.PlantType.cabbagepult, controller)
-                print(plant._type.name)
-                print(plant)
+                asm_and_plant_test(controller)
             elif c == b'q':
                 print('q')
                 controller.end()
                 break
             elif c == b't':
                 print(c)
-        
+                zombie_list_test(controller)
+
         if (not b) and (controller.get_time() >= start_time + 1e6):
             controller.end_jump_frame()
             print("end", int(time.time()) - start_clock)
             b = True
 
         controller.next_frame()
+
+
+def asm_and_plant_test(ctler):
+    plant = plt.plain_new_plant(1, 3, plt.PlantType.cabbagepult, ctler)
+    print(plant.type_.name)
+    print(plant)
+    print(plant.__repr__())
+    plist: plt.PlantList = plt.get_plant_list(ctler)
+
+    for p in [p for p in plist if not p.is_dead]:
+        print(p)
+
+
+def zombie_list_test(ctler):
+    zlist: zmb.ZombieList = zmb.get_zombie_list(ctler)
+    p = zlist.__getitem__(2)
+
+    print(zlist)
+
+    for z in list(zlist):
+        print(z)
