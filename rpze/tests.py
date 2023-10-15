@@ -1,4 +1,5 @@
 ﻿import msvcrt as vc
+import os
 import time
 from rp_extend import Controller
 import structs.plant as plt
@@ -29,6 +30,8 @@ def basic_test(controller: Controller):
             elif c == b'q':
                 print('q')
                 controller.end()
+                print("sun", controller.read_i32([0x6a9ec0, 0x768, 0x5560]))
+                os.system("pause")
                 break
             elif c == b't':
                 print(c)

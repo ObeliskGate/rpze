@@ -24,6 +24,7 @@ class Memory
 
 	void getRemoteMemoryAddress();
 
+	// pvz进程id
 	DWORD pid = 0;
 public:
 	explicit Memory(DWORD pid);
@@ -63,7 +64,7 @@ public:
 	inline volatile void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
 	
 	// 获得全局状态
-	inline volatile GlobalState& getGlobalState() const { return getRef<GlobalState>(80); }
+	inline GlobalState& getGlobalState() const { return getRef<GlobalState>(80); }
 
 	// 读写结果
 	inline volatile ExecuteResult& getExecuteResult() const { return getRef<ExecuteResult>(84); }
@@ -82,6 +83,11 @@ public:
 	// 写入内存, 但是没有杂七杂八的检查
 	bool _writeMemory(const void* pVal, BYTE size, const std::vector<int32_t>& offsets);
 
+	template<typename T>
+	std::optional<T> _readRemoteMemory(const std::vector<int32_t>& offsets);
+
+	template<typename T>
+	bool _writeRemoteMemory(T&& val, const std::vector<int32_t>& offsets);
 
 	// 主要接口
 
@@ -112,11 +118,59 @@ public:
 	uint32_t getWrittenAddress();
 };
 
+template <typename T>
+std::optional<T> Memory::_readRemoteMemory(const std::vector<int32_t>& offsets)
+{
+	HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+	int32_t basePtr = offsets[0];
+	do
+	{
+		for (size_t i = 1; i < offsets.size(); i++)
+		{
+			if (!basePtr) break;
+			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(int32_t), nullptr);
+			if (!basePtr) break;
+			basePtr += offsets[i];
+		}
+		if (!basePtr) break;
+		T ret;
+		ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &ret, sizeof(T), nullptr);
+		CloseHandle(hPvz);
+		return ret;
+	} while (false);
+	CloseHandle(hPvz);
+	return {};
+}
+
+template <typename T>
+bool Memory::_writeRemoteMemory(T&& val, const std::vector<int32_t>& offsets)
+{
+	HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+	int32_t basePtr = offsets[0];
+	do
+	{
+		for (size_t i = 1; i < offsets.size(); i++)
+		{
+			if (!basePtr) break;
+			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(int32_t), nullptr);
+			if (!basePtr) break;
+			basePtr += offsets[i];
+		}
+		if (!basePtr) break;
+		WriteProcessMemory(hPvz, reinterpret_cast<LPVOID>(basePtr), &val, sizeof(T), nullptr);
+		CloseHandle(hPvz);
+		return true;
+	} while (false);
+	CloseHandle(hPvz);
+	return false;
+}
+
 template<typename T>
 inline std::optional<T> Memory::readMemory(const std::vector<int32_t>& offsets)
 {
 	static_assert(sizeof(T) <= 8, "Please assert sizeof(T) <= 8. ");
 	if (offsets.size() > 10) return {};
+	if (getGlobalState() == GlobalState::NOT_CONNECTED) return _readRemoteMemory<T>(offsets);
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p.has_value()) return {};
 	return *static_cast<volatile T*>(p.value());
@@ -127,5 +181,6 @@ inline bool Memory::writeMemory(T&& val, const std::vector<int32_t>& offsets)
 {
 	static_assert(sizeof(T) <= 8, "Please assert sizeof(T) <= 8.");
 	if (offsets.size() > 10) return false;
+	if (getGlobalState() == GlobalState::NOT_CONNECTED) return _writeRemoteMemory(std::forward<T>(val), offsets);
 	return _writeMemory(&val, sizeof(T), offsets);
 }
