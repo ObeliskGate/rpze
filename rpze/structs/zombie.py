@@ -179,3 +179,16 @@ class Zombie(ob.ObjNode):
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self._type.name} at row {self.row + 1}"
+
+
+class ZombieList(ob.obj_list(Zombie)):
+    pass
+
+
+def get_zombie_list(ctler: Controller) -> ZombieList | None:
+    if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
+        return None
+    elif (t := t + 0x90) == 0:
+        return None
+    else:
+        return ZombieList(t, ctler)
