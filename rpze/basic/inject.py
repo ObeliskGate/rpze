@@ -32,7 +32,7 @@ def inject(pids: list[int]):
     """
     注入dll, pids为pid列表
     """
-    dll_path = os.path.abspath(f".\\bin\\rp_dll.dll")
+    dll_path = os.path.abspath(".\\bin\\rp_dll.dll")
     s = f'.\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '
     for i in pids:
         s += str(i)

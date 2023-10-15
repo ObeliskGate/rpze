@@ -38,6 +38,7 @@ class ObjBase(abc.ABC):
         return f"{self.__class__.__name__}(base_ptr=0x{self.base_ptr:7x}, ctler=Controller({self.controller.pid}))"
 
 
+# property factories 用于生成ObjBase对象在pvz内的属性
 def property_bool(offset: int, doc: str | None = None):
     def __fget(self: ObjBase) -> bool:
         return self.controller.read_bool([self.base_ptr + offset])
@@ -172,10 +173,10 @@ def property_obj(offset: int, cls: typing.Type[ObjBase], doc: str | None = None)
 
 class ObjId(ObjBase):
     """
-    (index, rank)对象, 用于ObjNode的识别
+    ObjNode对象末尾的(index, rank)对象, 游戏内用于ObjNode的识别
     """
-    def __init__(self, base_ptr: int, ctler: Controller) -> None:
-        super().__init__(base_ptr, ctler)
+    # def __init__(self, base_ptr: int, ctler: Controller) -> None:
+    #     super().__init__(base_ptr, ctler)
 
     @classmethod
     def SIZE(cls) -> int:
@@ -185,22 +186,20 @@ class ObjId(ObjBase):
 
     rank: int = property_u16(2, "rank")
 
-    def __eq__(self, __value) -> bool:
+    def __eq__(self, __value: typing.Self | typing.Sequence[int]) -> bool:
         """
         ObjId比较相等 与其他ObjId比较或与[index, rank]比较, "表示相同对象"返回True
         """
         if isinstance(__value, ObjId):
             return self.controller is __value.controller and \
                 (self.controller.read_i32([self.base_ptr]) ==
-                __value.controller.read_i32([__value.base_ptr]))
+                 __value.controller.read_i32([__value.base_ptr]))
         try:
             return self.controller.read_i32([self.base_ptr]) \
                 == ((__value[1] << 16) | __value[0])
-        except Exception as e:
-            print("ObjId can only compare with another ObjId"
-                  f"or an index-able object like [index, rank], detail: {e}")
+        except AttributeError as e:
             raise AttributeError("ObjId can only compare with another ObjId"
-                                 "or an index-able object like [index, rank]")
+                                 "or an index-able object like [index, rank]") from e
 
     def __str__(self) -> str:
         return f"(index={self.index}, rank={self.rank})"
@@ -219,7 +218,9 @@ T = typing.TypeVar("T", bound=ObjNode)
 
 
 class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
-
+    """
+    游戏中管理各类对象内存的数组类
+    """
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
         self.array_base_ptr = ctler.read_i32([base_ptr])
@@ -243,27 +244,34 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
         pass
 
-    def get_id(self, id_: ObjId | tuple[int, int]) -> T | None:
+    def get_id(self, id_: ObjId | c_abc.Sequence[int]) -> T | None:
         """
         通过ObjId查找对象, 若不存在相等对象则返回None
         """
         pass
 
+    @typing.overload
+    def __getitem__(self, index: int) -> T:
+        pass
+
+    @typing.overload
+    def __getitem__(self, index: slice) -> list[T]:
+        pass
+
+    def __getitem__(self, index):
+        pass
+
 
 def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
-
+    """
+    根据ObjNode构造对应的_ObjList作为各个List的父类
+    """
     class __ObjList(_ObjList[T], abc.ABC):
 
-        def __init__(self, base_ptr: int, ctler: Controller) -> None:
-            super().__init__(base_ptr, ctler)
-
         def at(self, index: int) -> T:
-            """
-            返回index对应下标的元素, 不做范围检查
-            """
             return node_cls(self.array_base_ptr + node_cls.SIZE() * index, self.controller)
 
-        def get_id(self, id_: ObjId | tuple[int, int]) -> T | None:
+        def get_id(self, id_: ObjId | c_abc.Sequence[int]) -> T | None:
             for it in self:
                 if it.id == id_:
                     return it
@@ -276,7 +284,7 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
                 return self.at(index)
             if isinstance(index, slice):
                 start, stop, step = index.indices(len(self))
-                return [self[i] for i in range(start, stop, step)]
+                return [self.at(i) for i in range(start, stop, step)]
 
             raise TypeError("TypeError: list indices must be integers or slices"
                             f", not {self.__class__.__name__}")

@@ -113,8 +113,6 @@ class AttackFlags(IntEnum):
 
 
 class Plant(ObjNode):
-    def __init__(self, base_ptr: int, ctler: Controller) -> None:
-        super().__init__(base_ptr, ctler)
 
     @classmethod
     def SIZE(cls) -> int:
