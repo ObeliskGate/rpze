@@ -58,7 +58,7 @@ public:
 	inline int32_t* getOffsets() const { return reinterpret_cast<int32_t*>(getPtr() + 24); }
 
 	// 占位8个字节, 读写内存时 指向共享内存中写入的内存的内容的指针
-	inline void* getWrittenVal() const { return static_cast<void*>(getPtr() + 64); }
+	inline void* getWrittenVal() const { return getPtr() + 64; }
 
 	// 占位8个字节, 读写内存时 指向读取内存结果的指针
 	inline volatile void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
@@ -68,6 +68,9 @@ public:
 
 	// 读写结果
 	inline volatile ExecuteResult& getExecuteResult() const { return getRef<ExecuteResult>(84); }
+
+	// 8字节 返回结果
+	inline volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + 88);  }
 
 	// 用来存放asm的指针, 从600开始
 	inline void* getAsmPtr() const { return getPtr() + 600; }
@@ -100,7 +103,7 @@ public:
 	// 结束跳帧, 若不在跳帧返回false
 	bool endJumpFrame();
 
-	inline volatile bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING; }
+	inline bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING; }
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>

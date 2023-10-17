@@ -130,9 +130,12 @@ class ZombieAccessoriesType2(IntEnum):
 
 
 class Zombie(ob.ObjNode):
-        
     @classmethod
-    def SIZE(cls) -> int:
+    def iterator_function_address(cls) -> int:
+        return 0x41C8F0
+
+    @classmethod
+    def obj_size(cls) -> int:
         return 0x15c
 
     # 整数x坐标
@@ -146,7 +149,7 @@ class Zombie(ob.ObjNode):
         
     row: int = ob.property_i32(0x1c, "row")
         
-    _type: ZombieType = ob.property_int_enum(0x24, ZombieType, "zombie_type")
+    type_: ZombieType = ob.property_int_enum(0x24, ZombieType, "zombie_type")
 
     status: ZombieStatus = ob.property_int_enum(0x28, ZombieStatus, "zombie_status")
 
@@ -158,7 +161,7 @@ class Zombie(ob.ObjNode):
         
     is_eating: bool = ob.property_bool(0x51, "is_eating")
     # 闪光倒计时
-    flash_cowntdown: int = ob.property_i32(0x54, "flash_countdown")
+    flash_countdown: int = ob.property_i32(0x54, "flash_countdown")
     # 出生时间
     time_since_spawn: int = ob.property_i32(0x60, "time_countdown")
         
@@ -170,13 +173,13 @@ class Zombie(ob.ObjNode):
 
     accessories_type_1: ZombieAccessoriesType1 = ob.property_int_enum(0xc4, ZombieAccessoriesType1, "accessories_type_1")
 
-    accessroies_hp_1: int = ob.property_i32(0xd0, "accessories_hp_1")
+    accessories_hp_1: int = ob.property_i32(0xd0, "accessories_hp_1")
 
     accessories_max_hp_1: int = ob.property_i32(0xd4, "accessories_max_hp_1")
 
-    accessroies_type_2: ZombieAccessoriesType2 = ob.property_int_enum(0xd8, ZombieAccessoriesType2, "accessories_type_2")
+    accessories_type_2: ZombieAccessoriesType2 = ob.property_int_enum(0xd8, ZombieAccessoriesType2, "accessories_type_2")
 
-    accessroies_hp_2: int = ob.property_i32(0xdc, "accessories_hp_2")
+    accessories_hp_2: int = ob.property_i32(0xdc, "accessories_hp_2")
 
     accessories_max_hp_2: int = ob.property_i32(0xe0, "accessories_max_hp_2")
     # 是否"彻底"死亡, 即濒死时此条为false
@@ -185,17 +188,18 @@ class Zombie(ob.ObjNode):
     is_not_dying: bool = ob.property_bool(0xba, "is_not_dying")
 
     def __str__(self) -> str:
-        return f"#{self.id.index} {self._type.name} at row {self.row + 1}"
+        return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"
 
 
 class ZombieList(ob.obj_list(Zombie)):
-    def izombie_place_zombie(self, x: int, y: int, type_: ZombieType):
+    
+    def izombie_place_zombie(self, row: int, col: int, type_: ZombieType):
         ret_idx = self.next_index
         p_challenge = self.controller.read_i32([0x6a9ec0, 0x768, 0x160])
         code = f'''
             push edx;
-            mov eax, {y};
-            push {x};
+            mov eax, {row};
+            push {col};
             push {int(type_)};
             mov ecx, {p_challenge};
             mov edx, 0x42a0f0;
@@ -209,7 +213,5 @@ class ZombieList(ob.obj_list(Zombie)):
 def get_zombie_list(ctler: Controller) -> ZombieList | None:
     if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
         return None
-    elif (t := t + 0x90) == 0:
-        return None
     else:
-        return ZombieList(t, ctler)
+        return ZombieList(t + 0x90, ctler)

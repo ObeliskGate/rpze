@@ -118,7 +118,7 @@ void Memory::endControl()
 uint32_t Memory::getWrittenAddress()
 {
 	if (!remoteMemoryAddress) getRemoteMemoryAddress();
-	return remoteMemoryAddress + 72;
+	return remoteMemoryAddress + 88;
 }
 
 #undef __until

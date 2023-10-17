@@ -56,13 +56,16 @@ public:
 	inline volatile const void* getWrittenVal() const { return static_cast<void*>(getPtr() + 64); }
 
 	// 占位8个字节, 读写内存时 指向读取内存结果的指针
-	inline void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
+	inline volatile void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
 
 	// 全局状态
 	inline volatile GlobalState& getGlobalState() const { return getRef<GlobalState>(80); }
 
 	// 执行结果
 	inline ExecuteResult& getExecuteResult() const { return getRef<ExecuteResult>(84); }
+
+	// 8字节 返回结果
+	inline volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + 88); }
 
 	// 用来存放asm的指针, 从600开始
 	inline void* getAsmPtr() const { return getPtr() + 600; }

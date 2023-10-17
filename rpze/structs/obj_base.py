@@ -1,8 +1,9 @@
 import abc
+import collections.abc as c_abc
 import typing
 from enum import IntEnum
-import collections.abc as c_abc
 
+from basic import asm
 from rp_extend import Controller
 
 
@@ -19,7 +20,7 @@ class ObjBase(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def SIZE(cls) -> int:
+    def obj_size(cls) -> int:
         """
         对应pvz类 在pvz中的大小
         """
@@ -175,8 +176,9 @@ class ObjId(ObjBase):
     """
     ObjNode对象末尾的(index, rank)对象, 游戏内用于ObjNode的识别
     """
+
     @classmethod
-    def SIZE(cls) -> int:
+    def obj_size(cls) -> int:
         return 4
 
     index: int = property_u16(0, "index")
@@ -185,7 +187,7 @@ class ObjId(ObjBase):
 
     def __eq__(self, __value: typing.Self | typing.Sequence[int]) -> bool:
         """
-        ObjId比较相等 与其他ObjId比较或与[index, rank]比较, "表示相同对象"返回True
+        ObjId比较相等 与其他ObjId比较或与(index, rank)比较, "表示相同对象"返回True
         """
         if isinstance(__value, ObjId):
             return self.controller is __value.controller and \
@@ -196,7 +198,7 @@ class ObjId(ObjBase):
                 == ((__value[1] << 16) | __value[0])
         except AttributeError as e:
             raise AttributeError("ObjId can only compare with another ObjId"
-                                 "or an index-able object like [index, rank]") from e
+                                 "or an index-able object like (index, rank)") from e
 
     def __str__(self) -> str:
         return f"(index={self.index}, rank={self.rank})"
@@ -204,11 +206,17 @@ class ObjId(ObjBase):
 
 class ObjNode(ObjBase, abc.ABC):
     """
-    Plant Zombie等等, 在pvz中由数组进行内存管理的对象的父类
+    Plant Zombie等等, 在pvz中由ObjList数组进行内存管理的对象的父类
     """
+
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
-        self.id = ObjId(base_ptr + self.SIZE() - 4, ctler)
+        self.id = ObjId(base_ptr + self.obj_size() - 4, ctler)
+
+    @classmethod
+    @abc.abstractmethod
+    def iterator_function_address(cls) -> int:
+        return NotImplemented
 
 
 T = typing.TypeVar("T", bound=ObjNode)
@@ -218,34 +226,35 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     """
     游戏中管理各类对象内存的数组类
     """
+
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
-        self.array_base_ptr = ctler.read_i32([base_ptr])
+        self._array_base_ptr = ctler.read_i32([base_ptr])
 
     @classmethod
-    def SIZE(cls) -> int:
+    def obj_size(cls) -> int:
         return 28
 
-    max_obj_num: int = property_i32(4, "max_obj_num")
+    obj_num: int = property_i32(16, "obj_num")
 
     next_index: int = property_i32(12, "next_index")
 
     next_rank: int = property_i32(20, "next_rank")
 
     def __len__(self):
-        return self.controller.read_i32([self.base_ptr + 16])
+        return self.controller.read_i32([self.base_ptr + 4])
 
     def at(self, index: int) -> T:
         """
         返回index对应下标的元素, 不做范围检查
         """
-        pass
+        return NotImplemented
 
     def get_id(self, id_: ObjId | c_abc.Sequence[int]) -> T | None:
         """
         通过ObjId查找对象, 若不存在相等对象则返回None
         """
-        pass
+        return NotImplemented
 
     @typing.overload
     def __getitem__(self, index: int) -> T:
@@ -256,17 +265,55 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         pass
 
     def __getitem__(self, index):
-        pass
+        return NotImplemented
+
+    @property
+    def alive_iterator(self) -> c_abc.Iterator[T]:
+        """
+        返回迭代所有活着对象的迭代器
+        """
+        return NotImplemented
 
 
 def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
     """
     根据ObjNode构造对应的_ObjList作为各个List的父类
     """
+
+    class _ObjIterator(c_abc.Iterator[T]):
+        def __init__(self, ctler: Controller):
+            self._current_ptr = 0
+            self._controller = ctler
+
+        def __next__(self) -> T:
+            p_board = self._controller.read_i32([0x6a9ec0, 0x768])
+            code = f"""
+                        push esi
+                        push edx
+                        push ebx
+                        mov esi, {self._controller.result_address};
+                        mov edx, {p_board};
+                        mov ebx, {node_cls.iterator_function_address()};
+                        call ebx;
+                        mov [{self._controller.result_address + 4}], al;
+                        pop ebx
+                        pop edx
+                        pop esi
+                        ret;"""
+            self._controller.result_u64 = self._current_ptr
+            asm.run(code, self._controller)
+            if (self._controller.result_u64 >> 32) == 0:
+                raise StopIteration
+            self._current_ptr = self._controller.result_u32
+            return node_cls(self._current_ptr, self._controller)
+
+        def __iter__(self):
+            return self
+
     class __ObjList(_ObjList[T], abc.ABC):
 
         def at(self, index: int) -> T:
-            return node_cls(self.array_base_ptr + node_cls.SIZE() * index, self.controller)
+            return node_cls(self._array_base_ptr + node_cls.obj_size() * index, self.controller)
 
         def get_id(self, id_: ObjId | c_abc.Sequence[int]) -> T | None:
             for it in self:
@@ -276,14 +323,20 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
 
         def __getitem__(self, index: int | slice):
             if isinstance(index, int):
-                if index >= len(self):
-                    raise IndexError
-                return self.at(index)
+                i = index if index > 0 else index + len(self)
+                if i >= len(self) or i < 0:
+                    raise IndexError("sequence index out of range")
+                else:
+                    return self.at(i)
             if isinstance(index, slice):
                 start, stop, step = index.indices(len(self))
                 return [self.at(i) for i in range(start, stop, step)]
 
-            raise TypeError("TypeError: list indices must be integers or slices"
+            raise TypeError("list indices must be integers or slices"
                             f", not {self.__class__.__name__}")
+
+        @property
+        def alive_iterator(self):
+            return _ObjIterator(self.controller)
 
     return __ObjList[node_cls]

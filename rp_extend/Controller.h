@@ -39,5 +39,12 @@ public:
 	inline uint32_t result_address() { return mem.getWrittenAddress(); }
 
 	template<typename T>
-	T get_result() { return *static_cast<volatile T*>(mem.getReadResult()); }
+	T get_result() { static_assert(sizeof(T) <= 8);  return *static_cast<volatile T*>(mem.getReturnResult()); }
+
+	template<typename T>
+	void set_result(T val)
+	{
+		static_assert(sizeof(T) <= 8);
+		*static_cast<volatile T*>(mem.getReturnResult()) = val;
+	}
 };

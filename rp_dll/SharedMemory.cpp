@@ -38,7 +38,6 @@ std::optional<void*> SharedMemory::getReadWritePtr() const
 	for (size_t i = 1; i < LENGTH; i++)
 	{
 		if (getOffsets()[i] == OFFSET_END) break;
-		if (!ptr) return {};
 		ptr = *reinterpret_cast<int32_t*>(ptr);
 		if (!ptr) return {};
 		ptr += getOffsets()[i];
@@ -63,6 +62,7 @@ bool SharedMemory::deleteInstance()
 
 bool SharedMemory::readMemory()
 {
+	*static_cast<volatile uint64_t*>(getReadResult()) = 0;
 	bool b = false;
 	do
 	{
@@ -72,7 +72,7 @@ bool SharedMemory::readMemory()
 			b = false;
 			break;
 		}
-		memcpy(getReadResult(), p.value(), getMemoryNum());
+		memcpy(const_cast<void*>(getReadResult()), *p, getMemoryNum());
 		b = true;
 	} while (false);
 	getExecuteResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;

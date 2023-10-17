@@ -25,7 +25,6 @@ std::optional<T> readMemory(DWORD basePtr, const std::initializer_list<DWORD>& o
 {
 	for (auto it : offsets)
 	{
-		if (!basePtr) return {};
 		basePtr = *reinterpret_cast<DWORD*>(basePtr);
 		if (!basePtr) return {};
 		basePtr += it;
@@ -40,7 +39,6 @@ bool writeMemory(T&& data, DWORD basePtr, const std::initializer_list<DWORD>& of
 {
 	for (auto it : offsets)
 	{
-		if (!basePtr) return false;
 		basePtr = *reinterpret_cast<DWORD*>(basePtr);
 		if (!basePtr) return false;
 		basePtr += it;
