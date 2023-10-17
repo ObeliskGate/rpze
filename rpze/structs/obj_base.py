@@ -216,6 +216,9 @@ class ObjNode(ObjBase, abc.ABC):
     @classmethod
     @abc.abstractmethod
     def iterator_function_address(cls) -> int:
+        """
+        返回pvz中迭代所有对象的函数地址
+        """
         return NotImplemented
 
 
@@ -323,11 +326,10 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
 
         def __getitem__(self, index: int | slice):
             if isinstance(index, int):
-                i = index if index > 0 else index + len(self)
+                i = index if index >= 0 else index + len(self)
                 if i >= len(self) or i < 0:
                     raise IndexError("sequence index out of range")
-                else:
-                    return self.at(i)
+                return self.at(i)
             if isinstance(index, slice):
                 start, stop, step = index.indices(len(self))
                 return [self.at(i) for i in range(start, stop, step)]
