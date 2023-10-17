@@ -30,7 +30,7 @@ class ObjBase(abc.ABC):
         """
         判断二者是否指向同一位置
         """
-        return (self.controller is not other.controller) and self.base_ptr == other.base_ptr
+        return self.base_ptr == other.base_ptr and (self.controller is not other.controller)
 
     def __str__(self) -> str:
         return f"<{self.__class__.__name__} object at [0x{self.base_ptr:7x}] of pid {self.controller.pid}>"
@@ -38,8 +38,8 @@ class ObjBase(abc.ABC):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(base_ptr=0x{self.base_ptr:7x}, ctler=Controller({self.controller.pid}))"
 
-
 # property factories 用于生成ObjBase对象在pvz内的属性
+
 def property_bool(offset: int, doc: str | None = None):
     def __fget(self: ObjBase) -> bool:
         return self.controller.read_bool([self.base_ptr + offset])
@@ -166,7 +166,7 @@ def property_obj(offset: int, cls: typing.Type[ObjBase], doc: str | None = None)
 
     def __fset(self: ObjBase, value: cls):
         if self.controller is not value.controller:
-            raise ValueError("Cannot assign an object from another controller")
+            raise ValueError("cannot assign an object from another controller")
         self.controller.write_i32(value.base_ptr, [self.base_ptr + offset])
 
     return property(__fget, __fset, None, doc)
@@ -190,15 +190,15 @@ class ObjId(ObjBase):
         ObjId比较相等 与其他ObjId比较或与(index, rank)比较, "表示相同对象"返回True
         """
         if isinstance(__value, ObjId):
-            return self.controller is __value.controller and \
-                (self.controller.read_i32([self.base_ptr]) ==
-                 __value.controller.read_i32([__value.base_ptr]))
+            return (self.controller.read_i32([self.base_ptr]) ==
+                __value.controller.read_i32([__value.base_ptr])) \
+                and self.controller is __value.controller
         try:
             return self.controller.read_i32([self.base_ptr]) \
                 == ((__value[1] << 16) | __value[0])
         except AttributeError as e:
             raise AttributeError("ObjId can only compare with another ObjId"
-                                 "or an index-able object like (index, rank)") from e
+                                 "or an Sequence object like (index, rank)") from e
 
     def __str__(self) -> str:
         return f"(index={self.index}, rank={self.rank})"
@@ -280,7 +280,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
 def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
     """
-    根据ObjNode构造对应的_ObjList作为各个List的父类
+    根据node_cls构造对应的_ObjList作为各个NodeClsList的父类
     """
 
     class _ObjIterator(c_abc.Iterator[T]):
@@ -334,7 +334,7 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
                 start, stop, step = index.indices(len(self))
                 return [self.at(i) for i in range(start, stop, step)]
 
-            raise TypeError("list indices must be integers or slices"
+            raise TypeError("ObjList indices must be integers or slices"
                             f", not {self.__class__.__name__}")
 
         @property
