@@ -51,15 +51,16 @@ def asm_and_plant_test(ctler):
     print(plant)
     print(plant.__repr__())
     plist: plt.PlantList = plt.get_plant_list(ctler)
+    for p in (p for p in plist if not p.is_dead):
+        print(p)
 
-    for p in plist:
+    for p in plist.alive_iterator:
         print(p)
 
 
 def zombie_list_test(ctler):
     zlist: zmb.ZombieList = zmb.get_zombie_list(ctler)
+    z0 = zlist.izombie_place_zombie(0, 2, zmb.ZombieType.flag)
 
-    print(zlist)
-
-    for z in list(zlist):
-        print(z)
+    for z in zlist.alive_iterator:
+        print(z, z.int_x)

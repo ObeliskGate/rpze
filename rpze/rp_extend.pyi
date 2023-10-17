@@ -1,6 +1,17 @@
 from __future__ import annotations
 __all__ = ['Controller']
 class Controller:
+    result_bool: bool
+    result_f32: float
+    result_f64: float
+    result_i16: int
+    result_i32: int
+    result_i64: int
+    result_i8: int
+    result_u16: int
+    result_u32: int
+    result_u64: int
+    result_u8: int
     def __init__(self, pid: int) -> None:
         ...
     @property
@@ -70,37 +81,4 @@ class Controller:
         ...
     @property
     def result_address(self) -> int:
-        ...
-    @property
-    def result_bool(self) -> bool:
-        ...
-    @property
-    def result_f32(self) -> float:
-        ...
-    @property
-    def result_f64(self) -> float:
-        ...
-    @property
-    def result_i8(self) -> int:
-        ...
-    @property
-    def result_i16(self) -> int:
-        ...
-    @property
-    def result_i32(self) -> int:
-        ...
-    @property
-    def result_i64(self) -> int:
-        ...
-    @property
-    def result_u8(self) -> int:
-        ...
-    @property
-    def result_u16(self) -> int:
-        ...
-    @property
-    def result_u32(self) -> int:
-        ...
-    @property
-    def result_u64(self) -> int:
         ...

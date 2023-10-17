@@ -1,8 +1,9 @@
-from structs.obj_base import ObjNode
+from enum import IntEnum
+
+import basic.asm as asm
 import structs.obj_base as ob
 from rp_extend import Controller
-import basic.asm as asm
-from enum import IntEnum
+from structs.obj_base import ObjNode
 
 
 class PlantType(IntEnum):
@@ -113,9 +114,12 @@ class AttackFlags(IntEnum):
 
 
 class Plant(ObjNode):
+    @classmethod
+    def iterator_function_address(cls) -> int:
+        return 0x41c950
 
     @classmethod
-    def SIZE(cls) -> int:
+    def obj_size(cls) -> int:
         return 0x14c
 
     x: int = ob.property_i32(0x8, "x")
@@ -150,12 +154,12 @@ class Plant(ObjNode):
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
 
 
-def plain_new_plant(row: int, col: int, _type: PlantType, ctler: Controller) -> Plant:
+def plain_new_plant(row: int, col: int, type_: PlantType, ctler: Controller) -> Plant:
     p_board = ctler.read_i32([0x6a9ec0, 0x768])
     code = f'''
         push edx;
         push -1;
-        push {int(_type)};
+        push {int(type_)};
         push {row};
         push {col};
         mov eax, {p_board};
@@ -165,7 +169,7 @@ def plain_new_plant(row: int, col: int, _type: PlantType, ctler: Controller) -> 
         pop edx;
         ret;'''
     asm.run(code, ctler)
-    return Plant(ctler.result_i32, ctler)
+    return Plant(ctler.result_u32, ctler)
 
 
 class PlantList(ob.obj_list(Plant)):
@@ -175,7 +179,5 @@ class PlantList(ob.obj_list(Plant)):
 def get_plant_list(ctler: Controller) -> PlantList | None:
     if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
         return None
-    elif (t := t + 0xac) == 0:
-        return None
     else:
-        return PlantList(t, ctler)
+        return PlantList(t + 0xac, ctler)

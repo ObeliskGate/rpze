@@ -17,7 +17,8 @@ def open_game(game_path: str, num=1) -> list[int]:
     """
     通过路径, 将pvz作为python子进程打开游戏, 返回num个的列表pids
     """
-    route, exe_name = os.path.split(game_path)
+    abs_path = os.path.abspath(game_path)
+    route, exe_name = os.path.split(abs_path)
     current_directory = os.getcwd()
     os.chdir(route)
     ret = [0] * num

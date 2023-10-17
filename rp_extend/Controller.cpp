@@ -43,15 +43,16 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("write_f64", &Controller::write_memory<double>)
 
 		.def_property_readonly("result_address", &Controller::result_address)
-		.def_property_readonly("result_bool", &Controller::get_result<bool>)
-		.def_property_readonly("result_i8", &Controller::get_result<int8_t>)
-		.def_property_readonly("result_i16", &Controller::get_result<int16_t>)
-		.def_property_readonly("result_i32", &Controller::get_result<int32_t>)
-		.def_property_readonly("result_i64", &Controller::get_result<int64_t>)
-		.def_property_readonly("result_u8", &Controller::get_result<uint8_t>)
-		.def_property_readonly("result_u16", &Controller::get_result<uint16_t>)
-		.def_property_readonly("result_u32", &Controller::get_result<uint32_t>)
-		.def_property_readonly("result_u64", &Controller::get_result<uint64_t>)
-		.def_property_readonly("result_f32", &Controller::get_result<float>)
-		.def_property_readonly("result_f64", &Controller::get_result<double>);
+		.def_property("result_bool", &Controller::get_result<bool>, &Controller::set_result<bool>)
+		.def_property("result_i8", &Controller::get_result<int8_t>, &Controller::set_result<int8_t>)
+		.def_property("result_i16", &Controller::get_result<int16_t>, &Controller::set_result<int16_t>)
+		.def_property("result_i32", &Controller::get_result<int32_t>, &Controller::set_result<int32_t>)
+		.def_property("result_i64", &Controller::get_result<int64_t>, &Controller::set_result<int64_t>)
+		.def_property("result_u8", &Controller::get_result<uint8_t>, &Controller::set_result<uint8_t>)
+		.def_property("result_u16", &Controller::get_result<uint16_t>, &Controller::set_result<uint16_t>)
+		.def_property("result_u32", &Controller::get_result<uint32_t>, &Controller::set_result<uint32_t>)
+		.def_property("result_u64", &Controller::get_result<uint64_t>, &Controller::set_result<uint64_t>)
+		.def_property("result_f32", &Controller::get_result<float>, &Controller::set_result<float>)
+		.def_property("result_f64", &Controller::get_result<double>, &Controller::set_result<double>);
+
 }
