@@ -287,8 +287,7 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
         def __init__(self, ctler: Controller):
             self._current_ptr = 0
             self._controller = ctler
-
-        def __next__(self) -> T:
+            
             p_board = self._controller.read_i32([0x6a9ec0, 0x768])
             code = f"""
                         push esi
@@ -303,8 +302,12 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
                         pop edx
                         pop esi
                         ret;"""
+
+            self._iterate_func_asm = asm.decode(code)
+
+        def __next__(self) -> T:
             self._controller.result_u64 = self._current_ptr
-            asm.run(code, self._controller)
+            self._controller.run_code(self._iterate_func_asm, len(self._iterate_func_asm))
             if (self._controller.result_u64 >> 32) == 0:
                 raise StopIteration
             self._current_ptr = self._controller.result_u32
