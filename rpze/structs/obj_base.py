@@ -308,7 +308,6 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
             return self
 
     class _ObjListImplement(_ObjList[T], abc.ABC):
-        
         def __init__(self, base_ptr: int, ctler: Controller) -> None:
             super().__init__(base_ptr, ctler)
             p_board = ctler.read_u32([0x6a9ec0, 0x768])
@@ -358,6 +357,7 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
             if isinstance(index, slice):
                 start, stop, step = index.indices(len(self))
                 return [self.at(i) for i in range(start, stop, step)]
+            raise TypeError("index must be int or slice")
 
         @property
         def alive_iterator(self):

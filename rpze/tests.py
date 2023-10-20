@@ -61,7 +61,7 @@ def asm_and_plant_test(ctler):
 
 def zombie_list_test(ctler):
     zlist: zmb.ZombieList = zmb.get_zombie_list(ctler)
-    zlist.izombie_place_zombie(0, 2, zmb.ZombieType.flag)
+    zlist.izombie_place_zombie(0, 2, zmb.ZombieType.conehead)
 
     for z in zlist.alive_iterator:
         print(z, z.int_x)
