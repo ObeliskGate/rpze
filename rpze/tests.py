@@ -46,7 +46,8 @@ def basic_test(controller: Controller):
 
 
 def asm_and_plant_test(ctler):
-    plant = plt.plain_new_plant(1, 3, plt.PlantType.cabbagepult, ctler)
+    plist: plt.PlantList = plt.get_plant_list(ctler)
+    plant = plist.plain_new_plant(1, 3, plt.PlantType.cabbagepult)
     print(plant.type_.name)
     print(plant)
     print(plant.__repr__())
@@ -60,7 +61,7 @@ def asm_and_plant_test(ctler):
 
 def zombie_list_test(ctler):
     zlist: zmb.ZombieList = zmb.get_zombie_list(ctler)
-    z0 = zlist.izombie_place_zombie(0, 2, zmb.ZombieType.flag)
+    zlist.izombie_place_zombie(0, 2, zmb.ZombieType.flag)
 
     for z in zlist.alive_iterator:
         print(z, z.int_x)

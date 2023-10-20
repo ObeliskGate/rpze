@@ -154,30 +154,27 @@ class Plant(ObjNode):
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
 
 
-def plain_new_plant(row: int, col: int, type_: PlantType, ctler: Controller) -> Plant:
-    p_board = ctler.read_i32([0x6a9ec0, 0x768])
-    code = f'''
-        push edx;
-        push -1;
-        push {int(type_)};
-        push {row};
-        push {col};
-        mov eax, {p_board};
-        mov edx, 0x40CE20;  // Board::NewPlant
-        call edx;
-        mov [{ctler.result_address}], eax;
-        pop edx;
-        ret;'''
-    asm.run(code, ctler)
-    return Plant(ctler.result_u32, ctler)
-
-
 class PlantList(ob.obj_list(Plant)):
-    pass
+    def plain_new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
+        p_board = self.controller.read_i32([0x6a9ec0, 0x768])
+        code = f'''
+            push edx;
+            push -1;
+            push {int(type_)};
+            push {row};
+            push {col};
+            mov eax, {p_board};
+            mov edx, 0x40CE20;  // Board::NewPlant
+            call edx;
+            mov [{self.controller.result_address}], eax;
+            pop edx;
+            ret;'''
+        asm.run(code, self.controller)
+        return Plant(self.controller.result_u32, self.controller)
 
 
 def get_plant_list(ctler: Controller) -> PlantList | None:
     if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
-        return None
+        raise RuntimeError("game base ptr not found")
     else:
         return PlantList(t + 0xac, ctler)
