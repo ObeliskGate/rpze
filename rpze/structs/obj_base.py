@@ -17,20 +17,20 @@ class ObjBase(abc.ABC):
         super().__init__()
         if base_ptr == 0:
             raise ValueError(f"base_ptr of an {self.__class__.__name__} object cannot be 0")
+        
         self.base_ptr = base_ptr
         self.controller = ctler
 
-    @classmethod
-    @abc.abstractmethod
-    def obj_size(cls) -> int:
-        """
-        对应pvz类 在pvz中的大小
-        """
-        return NotImplemented
+    obj_size: int = NotImplemented
+    """对应pvz类在pvz中的大小, 必须在所有非抽象子类中赋值"""
 
-    def __eq__(self, other):
+    def __eq__(self, other: typing.Self) -> bool:
         """
-        判断二者是否指向同一位置
+        判断二个ObjBase对象是否是同一游戏指向同一位置的指针
+        功能更接近于Python中的is
+
+        Args:
+            other (ObjBase): 另一个ObjBase对象
         """
         return self.base_ptr == other.base_ptr and (self.controller is not other.controller)
 
@@ -177,12 +177,11 @@ def property_obj(offset: int, cls: typing.Type[ObjBase], doc: str | None = None)
 
 class ObjId(ObjBase):
     """
-    ObjNode对象末尾的(index, rank)对象, 游戏内用于ObjNode的识别
+    ObjNode对象末尾的(index, rank)对象
+    游戏内用于ObjNode的识别和储存
     """
 
-    @classmethod
-    def obj_size(cls) -> int:
-        return 4
+    obj_size = 4
 
     index: int = property_u16(0, "index")
 
@@ -190,7 +189,11 @@ class ObjId(ObjBase):
 
     def __eq__(self, val: typing.Self | tuple[int]) -> bool:
         """
-        ObjId比较相等 与其他ObjId比较或与(index, rank)比较, "表示相同对象"返回True
+        ObjId比较相等 与其他ObjId比较或与(index, rank)比较
+        "表示相同对象"返回True
+
+        Args:
+            val (ObjId | tuple[int]): 另一个ObjId对象或(index, rank)元组
         """
         if isinstance(val, ObjId):
             return (self.controller.read_i32([self.base_ptr]) ==
@@ -218,15 +221,10 @@ class ObjNode(ObjBase, abc.ABC):
 
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
-        self.id = ObjId(base_ptr + self.obj_size() - 4, ctler)
-
-    @classmethod
-    @abc.abstractmethod
-    def iterator_function_address(cls) -> int:
-        """
-        返回pvz中迭代所有对象的函数地址
-        """
-        return NotImplemented
+        self.id = ObjId(base_ptr + self.obj_size - 4, ctler)
+    
+    iterator_function_address: int = NotImplemented
+    """返回pvz中迭代对象的函数地址, , 必须在所有非抽象子类中赋值"""
 
 
 T = typing.TypeVar("T", bound=ObjNode)
@@ -241,9 +239,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         super().__init__(base_ptr, ctler)
         self._array_base_ptr = ctler.read_i32([base_ptr])
 
-    @classmethod
-    def obj_size(cls) -> int:
-        return 28
+    obj_size = 28
 
     obj_num: int = property_i32(16, "obj_num")
 
@@ -256,12 +252,27 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     def at(self, index: int) -> T:
         """
-        返回index对应下标的元素, 不做任何检查
+        返回index对应下标的元素
+
+        Args:
+            index (int): 非负索引, 不做任何检查
+
+        Returns
+            T: 对应下标的元素, 不确保存活
         """
         return NotImplemented
 
     @typing.overload
     def __getitem__(self, index: int) -> T:
+        """
+        返回index对应下标的元素
+
+        Args:
+            index (int): 整数索引
+
+        Returns:
+            T: 对应下标的元素, 不确保存活
+        """
         ...
 
     @typing.overload
@@ -275,12 +286,16 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     def alive_iterator(self) -> c_abc.Iterator[T]:
         """
         返回迭代所有活着对象的迭代器
+
+        Returns:
+            c_abc.Iterator[T]: 迭代所有存活对象的"动态"迭代器, 即, 在迭代过程中动态寻找下一个对象
         """
         return NotImplemented
 
     def find(self, index: ObjId | tuple[int] | int) -> T | None:
         """
-        通过index查找对象, 存在活着的对应对象返回, 否则返回None
+        通过index查找对象, 存在活着的对应对象返回, 否则返回None.
+        不支持负数索引
         """
         return NotImplemented
 
@@ -317,7 +332,7 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
                         push ebx
                         mov esi, {self.controller.result_address};
                         mov edx, {p_board};
-                        mov ebx, {node_cls.iterator_function_address()};
+                        mov ebx, {node_cls.iterator_function_address};
                         call ebx;
                         mov [{self.controller.result_address + 4}], al;
                         pop ebx
@@ -328,15 +343,23 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
             self._iterate_func_asm = asm.decode(code)
 
         def at(self, index: int) -> T:
-            return node_cls(self._array_base_ptr + node_cls.obj_size() * index, self.controller)
+            return node_cls(self._array_base_ptr + node_cls.obj_size * index, self.controller)
 
         def find(self, index: ObjId | tuple[int] | int) -> T | None:
+            """
+            通过index查找对象, 存在活着的对应对象返回, 否则返回None.
+
+            Args:
+                index (ObjId | tuple[int] | int): 非负索引, ObjId对象或(index, rank)元组
+            Returns:
+                T | None: 有存活对象返回对象, 否则返回None
+            """
             if isinstance(index, int):
                 target = self.at(index)
                 return target if target.id.rank != 0 else None
             if isinstance(index, ObjId):
                 target = self.at(index.index)
-                return target if target.id.rank == index.rank else None
+                return target if target.id == index else None
             try: 
                 idx, rank = index
             except TypeError as te:
