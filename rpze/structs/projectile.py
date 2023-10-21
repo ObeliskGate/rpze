@@ -1,3 +1,4 @@
+# -*- coding: utf_8 -*- 
 from enum import IntEnum
 
 import basic.asm as asm
@@ -35,23 +36,23 @@ class ProjecTile(ObjNode):
     
     obj_size = 0x94
     
-    int_x: int = ob.property_i32(0x8, "图像整数x坐标")
+    int_x: int = ob.property_i32(0x8, "鍥惧儚鏁存暟x鍧愭爣")
     
-    int_y: int = ob.property_i32(0xc, "图像整数y坐标")
+    int_y: int = ob.property_i32(0xc, "鍥惧儚鏁存暟y鍧愭爣")
     
-    x: float = ob.property_f32(0x30, "浮点x坐标")
+    x: float = ob.property_f32(0x30, "娴偣x鍧愭爣")
     
-    y: float = ob.property_f32(0x34, "浮点y坐标")
+    y: float = ob.property_f32(0x34, "娴偣y鍧愭爣")
     
-    dx: float = ob.property_f32(0x3c, "x速度")
+    dx: float = ob.property_f32(0x3c, "x閫熷害")
     
-    dy: float = ob.property_f32(0x40, "y速度")
+    dy: float = ob.property_f32(0x40, "y閫熷害")
     
-    type_: ProjectileType = ob.property_int_enum(0x5c, ProjectileType, "子弹类型")
+    type_: ProjectileType = ob.property_int_enum(0x5c, ProjectileType, "瀛愬脊绫诲瀷")
     
-    motion_type: ProjectileMotionType = ob.property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")
+    motion_type: ProjectileMotionType = ob.property_int_enum(0x58, ProjectileMotionType, "瀛愬脊杩愬姩绫诲瀷")
     
-    target_zombie_id: ObjId = ob.property_obj(0x88, ObjId, "香蒲子弹目标僵尸")
+    target_zombie_id: ObjId = ob.property_obj(0x88, ObjId, "棣欒挷瀛愬脊鐩爣鍍靛案")
     
 
 class ProjectileList(ob.obj_list(ProjecTile)):

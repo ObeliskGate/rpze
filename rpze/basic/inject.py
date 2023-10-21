@@ -1,4 +1,5 @@
-﻿import win32gui as wing
+# -*- coding: utf_8 -*- 
+import win32gui as wing
 import win32process as winp
 import os
 import subprocess

@@ -1,4 +1,5 @@
-﻿import msvcrt as vc
+# -*- coding: utf_8 -*- 
+import msvcrt as vc
 import os
 import time
 from rp_extend import Controller

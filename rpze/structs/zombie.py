@@ -1,3 +1,4 @@
+# -*- coding: utf_8 -*- 
 from enum import IntEnum
 
 import structs.obj_base as ob

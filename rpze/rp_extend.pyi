@@ -1,3 +1,4 @@
+# -*- coding: utf_8 -*- 
 from __future__ import annotations
 __all__ = ['Controller']
 class Controller:
