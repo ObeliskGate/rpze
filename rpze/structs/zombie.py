@@ -134,53 +134,54 @@ class Zombie(ob.ObjNode):
 
     obj_size = 0x15c
 
-    int_x: int = ob.property_i32(0x8, "int_x")
-    # 整数y坐标
-    int_y: int = ob.property_i32(0xc, "int_y")
+    int_x: int = ob.property_i32(0x8, "整数x坐标")
 
-    width: int = ob.property_i32(0x10, "width")
+    int_y: int = ob.property_i32(0xc, "整数y坐标")
         
-    height: int = ob.property_i32(0x14, "height")
+    row: int = ob.property_i32(0x1c, "所在行数")
         
-    row: int = ob.property_i32(0x1c, "row")
-        
-    type_: ZombieType = ob.property_int_enum(0x24, ZombieType, "zombie_type")
+    type_: ZombieType = ob.property_int_enum(0x24, ZombieType, "僵尸种类")
 
-    status: ZombieStatus = ob.property_int_enum(0x28, ZombieStatus, "zombie_status")
+    status: ZombieStatus = ob.property_int_enum(0x28, ZombieStatus, "僵尸状态")
 
-    x: float = ob.property_f32(0x2c, "float_x")
+    x: float = ob.property_f32(0x2c, "浮点x坐标")
         
-    y: float = ob.property_f32(0x30, "float_y")
+    y: float = ob.property_f32(0x30, "浮点y坐标")
     # x的变化率, 横向速度
-    dx: float = ob.property_f32(0x34, "dx")
+    dx: float = ob.property_f32(0x34, "x方向速度")
         
-    is_eating: bool = ob.property_bool(0x51, "is_eating")
+    is_eating: bool = ob.property_bool(0x51, "在啃食时为True")
     # 闪光倒计时
-    flash_countdown: int = ob.property_i32(0x54, "flash_countdown")
-    # 出生时间
-    time_since_spawn: int = ob.property_i32(0x60, "time_countdown")
+    flash_countdown: int = ob.property_i32(0x54, 
+    """
+    发亮倒计时:
+        - 刚生成僵尸时为0, 受击变为25
+        - 在flash_countdown < -500时, 僵尸开始速度重置 + 啃食加速
+    """)
+
+    time_since_spawn: int = ob.property_i32(0x60, "出生时间")
         
-    action: ZombieAction = ob.property_int_enum(0x64, ZombieAction, "zombie_action")
-    # 本体血量
-    hp: int = ob.property_i32(0xc8, "hp")
-    # 本体血量上限
-    max_hp: int = ob.property_u32(0xcc, "max_hp")
+    action: ZombieAction = ob.property_int_enum(0x64, ZombieAction, "僵尸行为")
 
-    accessories_type_1: ZombieAccessoriesType1 = ob.property_int_enum(0xc4, ZombieAccessoriesType1, "accessories_type_1")
+    hp: int = ob.property_i32(0xc8, "本体血量")
 
-    accessories_hp_1: int = ob.property_i32(0xd0, "accessories_hp_1")
+    max_hp: int = ob.property_u32(0xcc, "本体血量上限")
 
-    accessories_max_hp_1: int = ob.property_i32(0xd4, "accessories_max_hp_1")
+    accessories_type_1: ZombieAccessoriesType1 = ob.property_int_enum(0xc4, ZombieAccessoriesType1, "一类饰品类型")
 
-    accessories_type_2: ZombieAccessoriesType2 = ob.property_int_enum(0xd8, ZombieAccessoriesType2, "accessories_type_2")
+    accessories_hp_1: int = ob.property_i32(0xd0, "一类饰品血量")
 
-    accessories_hp_2: int = ob.property_i32(0xdc, "accessories_hp_2")
+    accessories_max_hp_1: int = ob.property_i32(0xd4, "一类饰品血量上限")
 
-    accessories_max_hp_2: int = ob.property_i32(0xe0, "accessories_max_hp_2")
-    # 是否"彻底"死亡, 即濒死时此条为false
-    is_dead: bool = ob.property_bool(0xec, "is_dead")
-    # 不在濒死状态时为true
-    is_not_dying: bool = ob.property_bool(0xba, "is_not_dying")
+    accessories_type_2: ZombieAccessoriesType2 = ob.property_int_enum(0xd8, ZombieAccessoriesType2, "二类饰品")
+
+    accessories_hp_2: int = ob.property_i32(0xdc, "二类饰品血量")
+
+    accessories_max_hp_2: int = ob.property_i32(0xe0, "二类饰品血量上限")
+
+    is_dead: bool = ob.property_bool(0xec, '是否"彻底"死亡, 即濒死时此条为False')
+
+    is_not_dying: bool = ob.property_bool(0xba, "不在濒死状态时为True")
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"

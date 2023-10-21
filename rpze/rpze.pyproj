@@ -34,6 +34,7 @@
     <Compile Include="rpze.py" />
     <Compile Include="structs\obj_base.py" />
     <Compile Include="structs\plant.py" />
+    <Compile Include="structs\projectile.py" />
     <Compile Include="structs\zombie.py" />
     <Compile Include="tests.py" />
     <Compile Include="__init__.py" />

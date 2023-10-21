@@ -122,29 +122,45 @@ class Plant(ObjNode):
 
     y: int = ob.property_i32(0xc, "y")
 
-    attack_box_width: int = ob.property_i32(0x10, "attack_box_width")
+    visible: bool = ob.property_bool(0x18, "可见时为True")
 
-    attack_box_height: int = ob.property_i32(0x14, "attack_box_height")
+    row: int = ob.property_i32(0x1c, "所在行数, 起点为0")
 
-    visible: bool = ob.property_bool(0x18, "visible")
+    type_: PlantType = ob.property_int_enum(0x24, PlantType, "植物类型")
 
-    row: int = ob.property_i32(0x1c, "row")
+    col: int = ob.property_i32(0x28, "所在列数, 起点为0")
 
-    type_: PlantType = ob.property_int_enum(0x24, PlantType, "plant_type")
+    status: PlantStatus = ob.property_int_enum(0x3c, PlantStatus, "植物状态")
 
-    col: int = ob.property_i32(0x28, "col")
+    status_countdown: int = ob.property_i32(0x54, 
+        "属性倒计时, 如磁铁, 大嘴cd")
 
-    status: PlantStatus = ob.property_int_enum(0x3c, PlantStatus, "status")
-    # 属性倒计时, 如磁铁, 大嘴
-    status_countdown: int = ob.property_i32(0x54, "status_countdown")
-    # 子弹生成 / 物品生产倒计时
-    generate_countdown: int = ob.property_i32(0x58, "generate_countdown")
-    # 发射子弹间隔 **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
-    launch_countdown: int = ob.property_i32(0x5c, "launch_countdown")
+    generate_countdown: int = ob.property_i32(0x58, 
+       "子弹生成 / 物品生产倒计时")
+    
+    launch_countdown: int = ob.property_i32(0x5c, 
+        """
+        从准备发射到发射子弹的倒计时
+        **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
+        对于ize常见单发植物, 均在launch_countdown == 1时候发射子弹
+        (似乎除了胆小? 但胆小这块儿逻辑我没看懂, 反正这玩意在ize没存在感, 绝对不是我懒)
+        植物与初始数值的关系如下:
+            - 豌豆/冰豆/裂荚右: 35
+            - 双发/裂荚左 :26
+            - 小喷: 29
+            - 大喷: 50
+            - 杨桃: 39
+            - 玉米: 30
+            - 胆小: 25
+             
+        对于ize常见双发植物(双发/裂荚左):
+            在generate_countdown == 25的时候改动一次launch_countdown = 26, 即25后打出子弹
+            在generate_countdown == 0时再改改动一次launch_countdown = 26
+        """)
 
-    can_attack: bool = ob.property_bool(0x48, "can_attack")
+    can_attack: bool = ob.property_bool(0x48, "能攻击时为True")
 
-    is_dead: bool = ob.property_bool(0x141, "is_dead")
+    is_dead: bool = ob.property_bool(0x141, "死亡时为True")
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"

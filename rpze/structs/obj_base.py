@@ -268,7 +268,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         返回index对应下标的元素
 
         Args:
-            index (int): 整数索引
+            index (int): 整数索引, 支持
 
         Returns:
             T: 对应下标的元素, 不确保存活
@@ -277,6 +277,15 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     @typing.overload
     def __getitem__(self, index: slice) -> list[T]:
+        """
+        返回slice切片对应的列表
+        若在遍历返回值的时候有新对象生成或死亡, 该方法没法动态调整
+
+        Args:
+            index (slice): 整数索引, 支持负数索引, 若超出范围则IndexError
+        Returns:
+            list[T]: 对应切片的列表, 不保证其中任何成员存活
+        """
         ...
 
     def __getitem__(self, index):
@@ -292,10 +301,15 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
         return NotImplemented
 
-    def find(self, index: ObjId | tuple[int] | int) -> T | None:
+    def find(self, index: int | ObjId | tuple[int]) -> T | None:
         """
-        通过index查找对象, 存在活着的对应对象返回, 否则返回None.
-        不支持负数索引
+        通过index查找对象, 不支持负数索引
+        用int查找时, 活对象返回T
+        用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T
+        Args:
+            index (ObjId | tuple[int] | int): 索引, ObjId对象或(index, rank)元组
+        Returns:
+            T | None: , 存在活着的对应对象返回, 否则返回None.
         """
         return NotImplemented
 
@@ -345,15 +359,7 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
         def at(self, index: int) -> T:
             return node_cls(self._array_base_ptr + node_cls.obj_size * index, self.controller)
 
-        def find(self, index: ObjId | tuple[int] | int) -> T | None:
-            """
-            通过index查找对象, 存在活着的对应对象返回, 否则返回None.
-
-            Args:
-                index (ObjId | tuple[int] | int): 非负索引, ObjId对象或(index, rank)元组
-            Returns:
-                T | None: 有存活对象返回对象, 否则返回None
-            """
+        def find(self, index) -> T | None:
             if isinstance(index, int):
                 target = self.at(index)
                 return target if target.id.rank != 0 else None
