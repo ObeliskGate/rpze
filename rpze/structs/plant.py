@@ -114,13 +114,9 @@ class AttackFlags(IntEnum):
 
 
 class Plant(ObjNode):
-    @classmethod
-    def iterator_function_address(cls) -> int:
-        return 0x41c950
+    iterator_function_address = 0x41c950
 
-    @classmethod
-    def obj_size(cls) -> int:
-        return 0x14c
+    obj_size = 0x14c
 
     x: int = ob.property_i32(0x8, "x")
 

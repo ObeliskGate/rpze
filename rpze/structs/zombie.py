@@ -130,15 +130,10 @@ class ZombieAccessoriesType2(IntEnum):
 
 
 class Zombie(ob.ObjNode):
-    @classmethod
-    def iterator_function_address(cls) -> int:
-        return 0x41C8F0
+    iterator_function_address = 0x41C8F0
 
-    @classmethod
-    def obj_size(cls) -> int:
-        return 0x15c
+    obj_size = 0x15c
 
-    # 整数x坐标
     int_x: int = ob.property_i32(0x8, "int_x")
     # 整数y坐标
     int_y: int = ob.property_i32(0xc, "int_y")
@@ -192,7 +187,6 @@ class Zombie(ob.ObjNode):
 
 
 class ZombieList(ob.obj_list(Zombie)):
-    
     def izombie_place_zombie(self, row: int, col: int, type_: ZombieType):
         ret_idx = self.next_index
         p_challenge = self.controller.read_i32([0x6a9ec0, 0x768, 0x160])
