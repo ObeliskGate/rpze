@@ -32,9 +32,9 @@ class ProjectileMotionType(IntEnum):
     cattail = 9
     
 class ProjecTile(ObjNode):
-    iterator_function_address = 0x41C9B0
+    ITERATOR_FUNC_ADDRESS = 0x41C9B0
     
-    obj_size = 0x94
+    OBJ_SIZE = 0x94
     
     int_x: int = ob.property_i32(0x8, "图像整数x坐标")
     

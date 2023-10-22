@@ -131,9 +131,9 @@ class ZombieAccessoriesType2(IntEnum):
 
 
 class Zombie(ob.ObjNode):
-    iterator_function_address = 0x41C8F0
+    ITERATOR_FUNC_ADDRESS = 0x41C8F0
 
-    obj_size = 0x15c
+    OBJ_SIZE = 0x15c
 
     int_x: int = ob.property_i32(0x8, "整数x坐标")
 
@@ -153,11 +153,11 @@ class Zombie(ob.ObjNode):
         
     is_eating: bool = ob.property_bool(0x51, "在啃食时为True")
     # 闪光倒计时
-    flash_countdown: int = ob.property_i32(0x54, 
+    flash_cd: int = ob.property_i32(0x54, 
     """
     发亮倒计时:
         - 刚生成僵尸时为0, 受击变为25
-        - 在flash_countdown < -500时, 僵尸开始速度重置 + 啃食加速
+        - 在flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
     """)
 
     time_since_spawn: int = ob.property_i32(0x60, "出生时间")

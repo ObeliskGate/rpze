@@ -15,6 +15,14 @@ class ObjBase(abc.ABC):
     """
 
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
+        """
+        一个ObjBase对象由一个指向pvz中的对象的指针, 和对应游戏的Controller构造
+        Args:
+            base_ptr: 游戏中对象的基指
+            ctler: 游戏对应的Controller对象
+        Raises:
+            ValueError: base_ptr为空时抛出
+        """
         super().__init__()
         if base_ptr == 0:
             raise ValueError(f"base_ptr of an {self.__class__.__name__} object cannot be 0")
@@ -22,7 +30,7 @@ class ObjBase(abc.ABC):
         self.base_ptr = base_ptr
         self.controller = ctler
 
-    obj_size: int = NotImplemented
+    OBJ_SIZE: int = NotImplemented
     """对应pvz类在pvz中的大小, 必须在所有非抽象子类中赋值"""
 
     def __eq__(self, other: typing.Self) -> bool:
@@ -33,7 +41,7 @@ class ObjBase(abc.ABC):
         Args:
             other (ObjBase): 另一个ObjBase对象
         """
-        return self.base_ptr == other.base_ptr and (self.controller is not other.controller)
+        return self.base_ptr == other.base_ptr and (self.controller is other.controller)
 
     def __str__(self) -> str:
         return f"<{self.__class__.__name__} object at [0x{self.base_ptr:7x}] of pid {self.controller.pid}>"
@@ -182,7 +190,7 @@ class ObjId(ObjBase):
     游戏内用于ObjNode的识别和储存
     """
 
-    obj_size = 4
+    OBJ_SIZE = 4
 
     index: int = property_u16(0, "index")
 
@@ -194,7 +202,11 @@ class ObjId(ObjBase):
         "表示相同对象"返回True
 
         Args:
-            val (ObjId | tuple[int]): 另一个ObjId对象或(index, rank)元组
+            val (ObjId | tuple[int]): 另一个ObjId对象或(index, rank)一样的unpackable object
+        Raises:
+            TypeError: val不是ObjId对象或unpackable object
+            ValueError: unpackable object不是两个元素
+
         """
         if isinstance(val, ObjId):
             return (self.controller.read_i32([self.base_ptr]) ==
@@ -207,7 +219,7 @@ class ObjId(ObjBase):
                             "or an unpackable object like (index, rank), "
                             f"not {self.__class__.__name__} instance") from te
         except ValueError as ve:
-            raise ValueError("unpackable val should have two elements (index, rank)") from ve
+            raise ValueError("unpackable val should have 2 elements (index, rank)") from ve
         return self.controller.read_i32([self.base_ptr]) \
             == ((rank << 16) | index)
 
@@ -222,10 +234,10 @@ class ObjNode(ObjBase, abc.ABC):
 
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
-        self.id = ObjId(base_ptr + self.obj_size - 4, ctler)
+        self.id = ObjId(base_ptr + self.OBJ_SIZE - 4, ctler)
     
-    iterator_function_address: int = NotImplemented
-    """返回pvz中迭代对象的函数地址, , 必须在所有非抽象子类中赋值"""
+    ITERATOR_FUNC_ADDRESS: int = NotImplemented
+    """返回pvz中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
 
 T = typing.TypeVar("T", bound=ObjNode)
@@ -240,7 +252,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         super().__init__(base_ptr, ctler)
         self._array_base_ptr = ctler.read_i32([base_ptr])
 
-    obj_size = 28
+    OBJ_SIZE = 28
 
     obj_num: int = property_i32(16, "obj_num")
 
@@ -269,10 +281,11 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         返回index对应下标的元素
 
         Args:
-            index (int): 整数索引, 支持
-
+            index (int): 整数索引, 即支持负数索引
         Returns:
             T: 对应下标的元素, 不确保存活
+        Raises:
+            IndexError: 若index超出范围抛出
         """
         ...
 
@@ -295,7 +308,8 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     @property
     def alive_iterator(self) -> c_abc.Iterator[T]:
         """
-        返回迭代所有活着对象的迭代器
+        返回迭代所有存活对象的迭代器
+        调用原版函数
 
         Returns:
             c_abc.Iterator[T]: 迭代所有存活对象的"动态"迭代器, 即, 在迭代过程中动态寻找下一个对象
@@ -304,13 +318,17 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     def find(self, index: int | ObjId | tuple[int]) -> T | None:
         """
-        通过index查找对象, 不支持负数索引
-        用int查找时, 活对象返回T
-        用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T
+        通过index查找对象, 不支持负数索引.
+        用int查找时, 活对象返回T.
+        用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T.
+
         Args:
             index (ObjId | tuple[int] | int): 索引, ObjId对象或(index, rank)元组
         Returns:
-            T | None: , 存在活着的对应对象返回, 否则返回None.
+            T | None: 存在活着的对应对象返回, 否则返回None.
+        Raises:
+            TypeError: index不是int, ObjId或unpackable对象
+            ValueError: unpackable对象不是两个元素
         """
         return NotImplemented
 
@@ -347,7 +365,7 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
                         push ebx
                         mov esi, {self.controller.result_address};
                         mov edx, {p_board};
-                        mov ebx, {node_cls.iterator_function_address};
+                        mov ebx, {node_cls.ITERATOR_FUNC_ADDRESS};
                         call ebx;
                         mov [{self.controller.result_address + 4}], al;
                         pop ebx
@@ -358,7 +376,7 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
             self._iterate_func_asm = asm.decode(code)
 
         def at(self, index: int) -> T:
-            return node_cls(self._array_base_ptr + node_cls.obj_size * index, self.controller)
+            return node_cls(self._array_base_ptr + node_cls.OBJ_SIZE * index, self.controller)
 
         def find(self, index) -> T | None:
             if isinstance(index, int):

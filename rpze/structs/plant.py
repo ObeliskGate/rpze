@@ -115,9 +115,9 @@ class AttackFlags(IntEnum):
 
 
 class Plant(ObjNode):
-    iterator_function_address = 0x41c950
+    ITERATOR_FUNC_ADDRESS = 0x41c950
 
-    obj_size = 0x14c
+    OBJ_SIZE = 0x14c
 
     x: int = ob.property_i32(0x8, "x")
 
@@ -133,30 +133,40 @@ class Plant(ObjNode):
 
     status: PlantStatus = ob.property_int_enum(0x3c, PlantStatus, "植物状态")
 
-    status_countdown: int = ob.property_i32(0x54, 
+    status_cd: int = ob.property_i32(0x54, 
         "属性倒计时, 如磁铁, 大嘴cd")
 
-    generate_countdown: int = ob.property_i32(0x58, 
-       "子弹生成 / 物品生产倒计时")
+    generate_cd: int = ob.property_i32(0x58, 
+        "子弹生成 / 物品生产倒计时")
     
-    launch_countdown: int = ob.property_i32(0x5c, 
+    launch_cd: int = ob.property_i32(0x90, 
         """
         从准备发射到发射子弹的倒计时
         **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
-        对于ize常见单发植物, 均在launch_countdown == 1时候发射子弹
-        (似乎除了胆小? 但胆小这块儿逻辑我没看懂, 反正这玩意在ize没存在感, 绝对不是我懒)
-        植物与初始数值的关系如下:
+        对于ize常见单发植物, 均在generate_cd == 0时修改launch_cd，launch_cd == 1时候打出子弹.
+        其他时候恒为0值.
+        植物与launch_cd初始数值的关系如下:
             - 豌豆/冰豆/裂荚右: 35
             - 双发/裂荚左 :26
             - 小喷: 29
             - 大喷: 50
-            - 杨桃: 39
+            - 杨桃: 40
             - 玉米: 30
             - 胆小: 25
-             
+            
+        胆小的规律较为复杂:
+            - 胆小在launch_cd == 0的时候检测身边僵尸以决定自己是不是缩头
+            - 胆小攻击基本规律同上 ,同样在==1时打出子弹
+            - 在不是正常站立时, 胆小个人每帧更新generate_cd = 150
+        因而, 胆小在常态情况时每帧判断一次周围僵尸决定缩头, 但在攻击前兆时不判断.
+        之前零度误认为胆小索敌成功到发射为25也可能源于此, 实际上还是取24更为合适.
+        
         对于ize常见双发植物(双发/裂荚左):
-            在generate_countdown == 25的时候改动一次launch_countdown = 26, 即25后打出子弹
-            在generate_countdown == 0时再改改动一次launch_countdown = 26
+            在generate_cd == 25的时候改动一次launch_cd = 26, 即25后打出子弹
+            在generate_cd == 0时再改改动一次launch_cd = 26
+            
+        ize中地刺是特例:
+            地刺的判断和generate_cd无关. 在范围内有僵尸时使launch_cd = 100, == 75时打出攻击
         """)
 
     can_attack: bool = ob.property_bool(0x48, "能攻击时为True")
