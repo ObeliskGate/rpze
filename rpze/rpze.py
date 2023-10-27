@@ -1,4 +1,4 @@
-﻿# -*- coding: utf_8 -*-   
+# -*- coding: utf_8 -*-   
 import basic.inject as inject
 from tests import basic_test
 from rp_extend import Controller

@@ -1,4 +1,5 @@
-﻿import msvcrt as vc
+# -*- coding: utf_8 -*- 
+import msvcrt as vc
 import os
 import time
 from rp_extend import Controller
@@ -46,12 +47,11 @@ def basic_test(controller: Controller):
 
 
 def asm_and_plant_test(ctler):
-    plist: plt.PlantList = plt.get_plant_list(ctler)
+    plist = plt.get_plant_list(ctler)
     plant = plist.plain_new_plant(1, 3, plt.PlantType.cabbagepult)
     print(plant.type_.name)
     print(plant)
     print(plant.__repr__())
-    plist: plt.PlantList = plt.get_plant_list(ctler)
     for p in (p for p in plist if not p.is_dead):
         print(p)
 
@@ -60,8 +60,12 @@ def asm_and_plant_test(ctler):
 
 
 def zombie_list_test(ctler):
-    zlist: zmb.ZombieList = zmb.get_zombie_list(ctler)
-    zlist.izombie_place_zombie(0, 2, zmb.ZombieType.conehead)
+    zlist = zmb.get_zombie_list(ctler)
 
+    print(zlist.izombie_place_zombie(0, 3, zmb.ZombieType.dancing))
     for z in zlist.alive_iterator:
-        print(z, z.int_x)
+        if z.type_ == zmb.ZombieType.dancing:
+            for _id in z.partner_ids:
+                if backup := zlist.find(_id):
+                    print(backup)
+                    print(zlist.find(backup.master_id) == z)

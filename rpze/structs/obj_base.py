@@ -1,3 +1,7 @@
+# -*- coding: utf_8 -*-
+"""
+描述pvz中数据结构的基类和基本函数.
+"""
 import abc
 import collections.abc as c_abc
 import typing
@@ -9,11 +13,22 @@ from rp_extend import Controller
 
 class ObjBase(abc.ABC):
     """
-    每一个ObjBase子类代表一个pvz中的类, 
-    每一个ObjBase对象代表pvz中的一个对象
+    pvz中的一个对象
+
+    Attributes:
+        base_ptr: 对应pvz中对象的指针
+        controller: 对应pvz的Controller对象
     """
 
-    def __init__(self, base_ptr: int, ctler: Controller) -> None:
+    def __init__(self, base_ptr: int, ctler: Controller):
+        """
+        一个ObjBase对象由一个指向pvz中的对象的指针, 和对应游戏的Controller构造
+        Args:
+            base_ptr: 游戏中对象的基址
+            ctler: 游戏对应的Controller对象
+        Raises:
+            ValueError: base_ptr为空时抛出
+        """
         super().__init__()
         if base_ptr == 0:
             raise ValueError(f"base_ptr of an {self.__class__.__name__} object cannot be 0")
@@ -21,7 +36,7 @@ class ObjBase(abc.ABC):
         self.base_ptr = base_ptr
         self.controller = ctler
 
-    obj_size: int = NotImplemented
+    OBJ_SIZE: int = NotImplemented
     """对应pvz类在pvz中的大小, 必须在所有非抽象子类中赋值"""
 
     def __eq__(self, other: typing.Self) -> bool:
@@ -30,19 +45,20 @@ class ObjBase(abc.ABC):
         功能更接近于Python中的is
 
         Args:
-            other (ObjBase): 另一个ObjBase对象
+            other : 另一个ObjBase对象
         """
-        return self.base_ptr == other.base_ptr and (self.controller is not other.controller)
+        return self.base_ptr == other.base_ptr and (self.controller is other.controller)
 
     def __str__(self) -> str:
-        return f"<{self.__class__.__name__} object at [0x{self.base_ptr:7x}] of pid {self.controller.pid}>"
+        return (f"<{type(self).__name__} object at [0x{self.base_ptr:x}] "
+                f"of pid {self.controller.pid}>")
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(base_ptr=0x{self.base_ptr:7x}, ctler=Controller({self.controller.pid}))"
+        return (f"{type(self).__name__}(base_ptr=0x{self.base_ptr:x}, "
+                f"ctler=Controller({self.controller.pid}))")
+
 
 # property factories 用于生成ObjBase对象在pvz内的属性
-
-
 def property_bool(offset: int, doc: str | None = None):
     def __fget(self: ObjBase) -> bool:
         return self.controller.read_bool([self.base_ptr + offset])
@@ -153,7 +169,7 @@ def property_f64(offset: int, doc: str | None = None):
     return property(__fget, __fset, None, doc)
 
 
-def property_int_enum(offset: int, cls: typing.Type[IntEnum], doc: str | None = None):
+def property_int_enum(offset: int, cls: type[IntEnum], doc: str | None = None):
     def __fget(self: ObjBase) -> cls:
         return cls(self.controller.read_i32([self.base_ptr + offset]))
 
@@ -163,7 +179,7 @@ def property_int_enum(offset: int, cls: typing.Type[IntEnum], doc: str | None = 
     return property(__fget, __fset, None, doc)
 
 
-def property_obj(offset: int, cls: typing.Type[ObjBase], doc: str | None = None):
+def property_obj(offset: int, cls: type[ObjBase], doc: str | None = None):
     def __fget(self: ObjBase) -> cls:
         return cls(self.controller.read_i32([self.base_ptr + offset]), self.controller)
 
@@ -181,34 +197,37 @@ class ObjId(ObjBase):
     游戏内用于ObjNode的识别和储存
     """
 
-    obj_size = 4
+    OBJ_SIZE = 4
 
     index: int = property_u16(0, "index")
 
     rank: int = property_u16(2, "rank")
 
-    def __eq__(self, val: typing.Self | tuple[int]) -> bool:
+    def __eq__(self, val: typing.Self | tuple[int, int]) -> bool:
         """
         ObjId比较相等 与其他ObjId比较或与(index, rank)比较
         "表示相同对象"返回True
 
         Args:
-            val (ObjId | tuple[int]): 另一个ObjId对象或(index, rank)元组
+            val: 另一个ObjId对象或(index, rank)一样的可解包对象
+        Raises:
+            TypeError: val不是ObjId对象或可解包对象
+            ValueError: 可解包不是两个元素
+
         """
         if isinstance(val, ObjId):
-            return (self.controller.read_i32([self.base_ptr]) ==
-                    val.controller.read_i32([val.base_ptr])) \
-                    and self.controller is val.controller
+            return ((self.controller.read_i32([self.base_ptr]) ==
+                    val.controller.read_i32([val.base_ptr]))
+                    and self.controller is val.controller)
         try:
             index, rank = val
         except TypeError as te:
-            raise TypeError("ObjId can only compare with another ObjId"
-                            "or an unpackable object like (index, rank), "
-                            f"not {self.__class__.__name__} instance") from te
+            raise TypeError("ObjId can only compare with another ObjId "
+                            "or an unpack-able object like (index, rank), "
+                            f"not {val.__class__.__name__} instance") from te
         except ValueError as ve:
-            raise ValueError("unpackable val should have two elements (index, rank)") from ve
-        return self.controller.read_i32([self.base_ptr]) \
-            == ((rank << 16) | index)
+            raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
+        return self.controller.read_i32([self.base_ptr]) == ((rank << 16) | index)
 
     def __str__(self) -> str:
         return f"(index={self.index}, rank={self.rank})"
@@ -216,15 +235,18 @@ class ObjId(ObjBase):
 
 class ObjNode(ObjBase, abc.ABC):
     """
-    Plant Zombie等等, 在pvz中由ObjList数组进行内存管理的对象的父类
+    Plant Zombie等等, 在pvz中由ObjList数组进行内存管理的对象
+
+    Attributes:
+        id: ObjNode对象末尾的ObjId对象
     """
 
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
-        self.id = ObjId(base_ptr + self.obj_size - 4, ctler)
+        self.id = ObjId(base_ptr + self.OBJ_SIZE - 4, ctler)
     
-    iterator_function_address: int = NotImplemented
-    """返回pvz中迭代对象的函数地址, , 必须在所有非抽象子类中赋值"""
+    ITERATOR_FUNC_ADDRESS: int = NotImplemented
+    """返回pvz中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
 
 T = typing.TypeVar("T", bound=ObjNode)
@@ -232,14 +254,15 @@ T = typing.TypeVar("T", bound=ObjNode)
 
 class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     """
-    游戏中管理各类对象内存的数组类
+    游戏中管理各类对象内存的数组
+    仅帮助type hint用, 请勿直接使用, 而是使用obj_list函数构造.
     """
 
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
         self._array_base_ptr = ctler.read_i32([base_ptr])
 
-    obj_size = 28
+    OBJ_SIZE = 28
 
     obj_num: int = property_i32(16, "obj_num")
 
@@ -255,9 +278,8 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         返回index对应下标的元素
 
         Args:
-            index (int): 非负索引, 不做任何检查
-
-        Returns
+            index: 非负索引, 不做任何检查
+        Returns:
             T: 对应下标的元素, 不确保存活
         """
         return NotImplemented
@@ -268,16 +290,24 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         返回index对应下标的元素
 
         Args:
-            index (int): 整数索引
-
+            index: 整数索引, 即支持负数索引
         Returns:
             T: 对应下标的元素, 不确保存活
+        Raises:
+            IndexError: 若index超出范围抛出
         """
-        ...
 
     @typing.overload
     def __getitem__(self, index: slice) -> list[T]:
-        ...
+        """
+        返回slice切片对应的列表
+        若在遍历返回值的时候有新对象生成或死亡, 该方法没法动态调整
+
+        Args:
+            index: 整数索引, 支持负数索引, 若超出范围则IndexError
+        Returns:
+            对应切片的列表, 不保证其中任何成员存活
+        """
 
     def __getitem__(self, index):
         return NotImplemented
@@ -285,22 +315,32 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     @property
     def alive_iterator(self) -> c_abc.Iterator[T]:
         """
-        返回迭代所有活着对象的迭代器
+        返回迭代所有存活对象的迭代器
+        调用原版函数
 
         Returns:
-            c_abc.Iterator[T]: 迭代所有存活对象的"动态"迭代器, 即, 在迭代过程中动态寻找下一个对象
+            迭代所有存活对象的"动态"迭代器, 即, 在迭代过程中动态寻找下一个对象
         """
         return NotImplemented
 
-    def find(self, index: ObjId | tuple[int] | int) -> T | None:
+    def find(self, index: int | ObjId | tuple[int, int]) -> T | None:
         """
-        通过index查找对象, 存在活着的对应对象返回, 否则返回None.
-        不支持负数索引
+        通过index查找对象, 不支持负数索引.
+        用int查找时, 活对象返回T.
+        用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T.
+
+        Args:
+            index: 索引, ObjId对象或(index, rank)unpack-able对象
+        Returns:
+            存在活着的对应对象返回, 否则返回None.
+        Raises:
+            TypeError: index不是int, ObjId或unpack-able对象
+            ValueError: unpack-able对象不是两个元素
         """
         return NotImplemented
 
 
-def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
+def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
     """
     根据node_cls构造对应的_ObjList作为各个NodeClsList的父类
     """
@@ -326,34 +366,26 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
         def __init__(self, base_ptr: int, ctler: Controller) -> None:
             super().__init__(base_ptr, ctler)
             p_board = ctler.read_u32([0x6a9ec0, 0x768])
-            code = f"""
-                        push esi
-                        push edx
-                        push ebx
-                        mov esi, {self.controller.result_address};
-                        mov edx, {p_board};
-                        mov ebx, {node_cls.iterator_function_address};
-                        call ebx;
-                        mov [{self.controller.result_address + 4}], al;
-                        pop ebx
-                        pop edx
-                        pop esi
-                        ret;"""
+            self._code = f"""
+                push esi
+                push edx
+                push ebx
+                mov esi, {self.controller.result_address};
+                mov edx, {p_board};
+                mov ebx, {node_cls.ITERATOR_FUNC_ADDRESS};
+                call ebx;
+                mov [{self.controller.result_address + 4}], al;
+                pop ebx
+                pop edx
+                pop esi
+                ret;"""
             
-            self._iterate_func_asm = asm.decode(code)
+            self._iterate_func_asm = None
 
         def at(self, index: int) -> T:
-            return node_cls(self._array_base_ptr + node_cls.obj_size * index, self.controller)
+            return node_cls(self._array_base_ptr + node_cls.OBJ_SIZE * index, self.controller)
 
-        def find(self, index: ObjId | tuple[int] | int) -> T | None:
-            """
-            通过index查找对象, 存在活着的对应对象返回, 否则返回None.
-
-            Args:
-                index (ObjId | tuple[int] | int): 非负索引, ObjId对象或(index, rank)元组
-            Returns:
-                T | None: 有存活对象返回对象, 否则返回None
-            """
+        def find(self, index) -> T | None:
             if isinstance(index, int):
                 target = self.at(index)
                 return target if target.id.rank != 0 else None
@@ -363,11 +395,11 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
             try: 
                 idx, rank = index
             except TypeError as te:
-                raise TypeError("object can only be found by ObjId, index"
-                                "or an unpackable object like (index, rank), "
-                                f"not {self.__class__.__name__} instance") from te
+                raise TypeError("object can only be found by ObjId, index "
+                                "or an unpack-able object like (index, rank), "
+                                f"not {index.__class__.__name__} instance") from te
             except ValueError as ve:
-                raise ValueError("unpackable index should have two elements (index, rank)") from ve
+                raise ValueError("unpack-able index should have two elements (index, rank)") from ve
             target = self.at(idx)
             return target if target.id.rank == rank else None
 
@@ -384,6 +416,8 @@ def obj_list(node_cls: typing.Type[T]) -> type[_ObjList[T]]:
 
         @property
         def alive_iterator(self):
+            if self._iterate_func_asm is None:
+                self._iterate_func_asm = asm.decode(self._code)
             return _ObjIterator(self.controller, self._iterate_func_asm)
 
-    return _ObjListImplement[node_cls]
+    return _ObjListImplement

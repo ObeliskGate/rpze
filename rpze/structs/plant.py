@@ -1,3 +1,7 @@
+# -*- coding: utf_8 -*-
+"""
+植物相关的枚举和类
+"""
 from enum import IntEnum
 
 import basic.asm as asm
@@ -103,48 +107,73 @@ class PlantStatus(IntEnum):
     lily_pad_placed = 0x30
 
 
-class AttackFlags(IntEnum):
-    ground = 0x1,
-    flying_balloon = 0x2,
-    lurking_snorkel = 0x4,
-    animating_zombies = 0x10,
-    dying_zombies = 0x20,
-    digging_digger = 0x40,
-    hypno_zombies = 0x80,
-
-
 class Plant(ObjNode):
-    iterator_function_address = 0x41c950
+    ITERATOR_FUNC_ADDRESS = 0x41c950
 
-    obj_size = 0x14c
+    OBJ_SIZE = 0x14c
 
     x: int = ob.property_i32(0x8, "x")
 
     y: int = ob.property_i32(0xc, "y")
 
-    attack_box_width: int = ob.property_i32(0x10, "attack_box_width")
+    visible: bool = ob.property_bool(0x18, "可见时为True")
 
-    attack_box_height: int = ob.property_i32(0x14, "attack_box_height")
+    row: int = ob.property_i32(0x1c, "所在行数, 起点为0")
 
-    visible: bool = ob.property_bool(0x18, "visible")
+    type_: PlantType = ob.property_int_enum(0x24, PlantType, "植物类型")
 
-    row: int = ob.property_i32(0x1c, "row")
+    col: int = ob.property_i32(0x28, "所在列数, 起点为0")
 
-    type_: PlantType = ob.property_int_enum(0x24, PlantType, "plant_type")
+    status: PlantStatus = ob.property_int_enum(0x3c, PlantStatus, "植物状态")
 
-    col: int = ob.property_i32(0x28, "col")
+    hp: int = ob.property_i32(0x40, "当前血量")
 
-    status: PlantStatus = ob.property_int_enum(0x3c, PlantStatus, "status")
-    # 属性倒计时, 如磁铁, 大嘴
-    status_countdown: int = ob.property_i32(0x54, "status_countdown")
-    # 子弹生成 / 物品生产倒计时
-    generate_countdown: int = ob.property_i32(0x58, "generate_countdown")
-    # 发射子弹间隔 **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
-    launch_countdown: int = ob.property_i32(0x5c, "launch_countdown")
+    status_cd: int = ob.property_i32(0x54, """
+        属性倒计时, 如磁铁cd
+        地刺攻击倒计时也在这儿:
+            地刺的判断和generate_cd无关. 在范围内有僵尸时使status_cd = 100, == 75时打出攻击
+        """)
 
-    can_attack: bool = ob.property_bool(0x48, "can_attack")
+    generate_cd: int = ob.property_i32(0x58, """
+        子弹生成 / 物品生产倒计时
+        初值为max_boot_delay - 14到max_boot_delay
+        """)
 
-    is_dead: bool = ob.property_bool(0x141, "is_dead")
+    max_boot_delay: int = ob.property_i32(0x5c, """
+        generate_cd的最大值
+        对大多数植物为150，对投手为300，曾为200
+        """)
+
+    launch_cd: int = ob.property_i32(0x90, """
+        从准备发射到发射子弹的倒计时
+        **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
+        对于ize常见单发植物, 均在generate_cd == 0时修改launch_cd，launch_cd == 1时候打出子弹.
+        其他时候恒为0值.
+        ize植物与launch_cd初始数值的关系如下:
+            - 豌豆/冰豆/裂荚右: 35
+            - 双发/裂荚左 :26
+            - 小喷: 29
+            - 大喷: 50
+            - 杨桃: 40
+            - 玉米: 30
+            - 胆小: 25
+        简单认为攻击所需时间为(上述数值 - 1)即可.
+        
+        胆小的规律较为复杂:
+            - 胆小在launch_cd == 0的时候检测身边僵尸以决定自己是不是缩头
+            - 胆小攻击基本规律同上,   同样在== 1时打出子弹
+            - 在不是正常站立时, 胆小个人每帧更新generate_cd = 150
+        因而, 胆小在常态情况时每帧判断一次周围僵尸决定缩头, 但在攻击前兆时不判断.
+        之前零度误认为胆小索敌成功到发射为25也可能源于此, 实际上还是取24更为合适.
+        
+        对于ize常见双发植物(双发/裂荚左):
+            在generate_cd == 25的时候改动一次launch_cd = 26, 即25后打出子弹
+            在generate_cd == 0时再改改动一次launch_cd = 26
+        """)
+
+    can_attack: bool = ob.property_bool(0x48, "能攻击时为True")
+
+    is_dead: bool = ob.property_bool(0x141, "死亡时为True")
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
@@ -169,7 +198,7 @@ class PlantList(ob.obj_list(Plant)):
         return Plant(self.controller.result_u32, self.controller)
 
 
-def get_plant_list(ctler: Controller) -> PlantList | None:
+def get_plant_list(ctler: Controller) -> PlantList:
     if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
         raise RuntimeError("game base ptr not found")
     else:
