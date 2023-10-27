@@ -130,24 +130,28 @@ class Plant(ObjNode):
 
     status_cd: int = ob.property_i32(0x54, """
         属性倒计时, 如磁铁cd
+                                     
         地刺攻击倒计时也在这儿:
             地刺的判断和generate_cd无关. 在范围内有僵尸时使status_cd = 100, == 75时打出攻击
         """)
 
     generate_cd: int = ob.property_i32(0x58, """
         子弹生成 / 物品生产倒计时
+                                       
         初值为max_boot_delay - 14到max_boot_delay
         """)
 
     max_boot_delay: int = ob.property_i32(0x5c, """
         generate_cd的最大值
+                                          
         对大多数植物为150，对投手为300，曾为200
         """)
 
     launch_cd: int = ob.property_i32(0x90, """
         从准备发射到发射子弹的倒计时
+                                     
         **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
-        对于ize常见单发植物, 均在generate_cd == 0时修改launch_cd，launch_cd == 1时候打出子弹.
+        对于ize常见单发植物, 均在generate_cd == 0时修改launch_cd, launch_cd == 1时候打出子弹.
         其他时候恒为0值.
         ize植物与launch_cd初始数值的关系如下:
             - 豌豆/冰豆/裂荚右: 35

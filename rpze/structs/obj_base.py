@@ -23,6 +23,7 @@ class ObjBase(abc.ABC):
     def __init__(self, base_ptr: int, ctler: Controller):
         """
         一个ObjBase对象由一个指向pvz中的对象的指针, 和对应游戏的Controller构造
+        
         Args:
             base_ptr: 游戏中对象的基址
             ctler: 游戏对应的Controller对象
@@ -41,7 +42,7 @@ class ObjBase(abc.ABC):
 
     def __eq__(self, other: typing.Self) -> bool:
         """
-        判断二个ObjBase对象是否是同一游戏指向同一位置的指针
+        判断二个ObjBase对象是否指向同一游戏的同一位置
         功能更接近于Python中的is
 
         Args:

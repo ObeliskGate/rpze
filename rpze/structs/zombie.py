@@ -157,9 +157,10 @@ class Zombie(ob.ObjNode):
     is_eating: bool = ob.property_bool(0x51, "在啃食时为True")
 
     flash_cd: int = ob.property_i32(0x54, """
-    发亮倒计时:
-        - 刚生成僵尸时为0, 受击变为25
-        - 在flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
+    发亮倒计时
+                                    
+    - 刚生成僵尸时为0, 受击变为25
+    - 在flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
     """)
 
     time_since_spawn: int = ob.property_i32(0x60, "出生时间")
