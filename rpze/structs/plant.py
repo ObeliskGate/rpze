@@ -98,7 +98,7 @@ class PlantStatus(IntEnum):
     cob_cannon_unaramed_idle = 0x23,
     cob_cannon_charge = 0x24,
     cob_cannon_launch = 0x25,
-    cob_cannon_aramed_idle = 0x26,
+    cob_cannon_armed_idle = 0x26,
     kernelpult_launch_butter = 0x27,
     umbrella_leaf_block = 0x28,
     umbrella_leaf_shrink = 0x29,
