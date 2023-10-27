@@ -174,6 +174,11 @@ class Plant(ObjNode):
     can_attack: bool = ob.property_bool(0x48, "能攻击时为True")
 
     is_dead: bool = ob.property_bool(0x141, "死亡时为True")
+    
+    @property
+    def target_zombie_id(self) -> ob.ObjId:
+        """倭瓜, 水草目标僵尸编号"""
+        return ob.ObjId(self.base_ptr + 0x12c, self.controller)
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"

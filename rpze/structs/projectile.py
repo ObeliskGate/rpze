@@ -54,7 +54,10 @@ class ProjecTile(ObjNode):
     
     motion_type: ProjectileMotionType = ob.property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")
     
-    target_zombie_id: ObjId = ob.property_obj(0x88, ObjId, "香蒲子弹目标僵尸")
+    @property
+    def target_zombie_id(self) -> ObjId:
+        """香蒲子弹目标僵尸"""
+        return ob.ObjId(self.base_ptr + 0x88, self.controller)
     
 
 class ProjectileList(ob.obj_list(ProjecTile)):
