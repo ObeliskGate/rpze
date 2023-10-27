@@ -63,7 +63,7 @@ class Projectile(ObjNode):
         return ob.ObjId(self.base_ptr + 0x88, self.controller)
     
 
-class ProjectileList(ob.obj_list(ProjecTile)):
+class ProjectileList(ob.obj_list(Projectile)):
     pass
 
 
@@ -72,3 +72,4 @@ def get_projectile_list(ctler: Controller) -> ProjectileList | None:
         raise RuntimeError("game base ptr not found")
     else:
         return ProjectileList(t + 0xc8, ctler)
+    
