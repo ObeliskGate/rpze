@@ -1,7 +1,9 @@
-# -*- coding: utf_8 -*- 
+# -*- coding: utf_8 -*-
+"""
+子弹相关的枚举和类
+"""
 from enum import IntEnum
 
-import basic.asm as asm
 import structs.obj_base as ob
 from rp_extend import Controller
 from structs.obj_base import ObjNode, ObjId
