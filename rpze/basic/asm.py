@@ -5,13 +5,13 @@ import keystone as ks
 
 def run(code: str, controller: Controller) -> bool:
     """
-    Ö´ĞĞcode»ã±àÂë
+    æ‰§è¡Œcodeæ±‡ç¼–ç 
     
     Args:
-        code: x86 intel¸ñÊ½»ã±à×Ö·û´®, Ó¦¸ÃÒÔÒ»¸ö(void) -> voidº¯Êı, ¼´ÒÔ"ret"½áÎ²²¢ÇÒ×öÕ»Æ½ºâ
-        controller: Controller¶ÔÏó, ÓÃÓÚÖ´ĞĞ»ã±àÂë
+        code: x86 intelæ ¼å¼æ±‡ç¼–å­—ç¬¦ä¸², åº”è¯¥ä»¥ä¸€ä¸ª(void) -> voidå‡½æ•°, å³ä»¥"ret"ç»“å°¾å¹¶ä¸”åšæ ˆå¹³è¡¡
+        controller: Controllerå¯¹è±¡, ç”¨äºæ‰§è¡Œæ±‡ç¼–ç 
     Returns:
-        Ö´ĞĞ³É¹¦·µ»ØTrue
+        æ‰§è¡ŒæˆåŠŸè¿”å›True
     """
     r = decode(code)
     controller.run_code(r, len(r))
@@ -19,13 +19,13 @@ def run(code: str, controller: Controller) -> bool:
 
 def decode(code: str) -> bytes:
     """
-    ½âÂëcode»ã±àÂë
+    è§£ç codeæ±‡ç¼–ç 
     Args:
-        code: code: x86 intel¸ñÊ½»ã±à×Ö·û´®
+        code: code: x86 intelæ ¼å¼æ±‡ç¼–å­—ç¬¦ä¸²
     Returns:
-        ½âÂëºóµÄ×Ö½ÚÂë
+        è§£ç åçš„å­—èŠ‚ç 
     Raises:
-        RuntimeError: »ã±àÂë´íÎó
+        RuntimeError: æ±‡ç¼–ç é”™è¯¯
     """
     try:
         k = ks.Ks(ks.KS_ARCH_X86, ks.KS_MODE_32)
