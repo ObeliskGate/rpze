@@ -23,6 +23,7 @@ class ObjBase(abc.ABC):
     def __init__(self, base_ptr: int, ctler: Controller):
         """
         一个ObjBase对象由一个指向pvz中的对象的指针, 和对应游戏的Controller构造
+        
         Args:
             base_ptr: 游戏中对象的基址
             ctler: 游戏对应的Controller对象
@@ -31,7 +32,7 @@ class ObjBase(abc.ABC):
         """
         super().__init__()
         if base_ptr == 0:
-            raise ValueError(f"base_ptr of an {self.__class__.__name__} object cannot be 0")
+            raise ValueError(f"base_ptr of an {type(self).__name__} object cannot be 0")
         
         self.base_ptr = base_ptr
         self.controller = ctler
@@ -41,7 +42,7 @@ class ObjBase(abc.ABC):
 
     def __eq__(self, other: typing.Self) -> bool:
         """
-        判断二个ObjBase对象是否是同一游戏指向同一位置的指针
+        判断二个ObjBase对象是否指向同一游戏的同一位置
         功能更接近于Python中的is
 
         Args:
@@ -199,9 +200,9 @@ class ObjId(ObjBase):
 
     OBJ_SIZE = 4
 
-    index: int = property_u16(0, "index")
+    index: int = property_u16(0, "对象索引")
 
-    rank: int = property_u16(2, "rank")
+    rank: int = property_u16(2, "对象序列号")
 
     def __eq__(self, val: typing.Self | tuple[int, int]) -> bool:
         """
@@ -224,7 +225,7 @@ class ObjId(ObjBase):
         except TypeError as te:
             raise TypeError("ObjId can only compare with another ObjId "
                             "or an unpack-able object like (index, rank), "
-                            f"not {val.__class__.__name__} instance") from te
+                            f"not {type(val).__name__} instance") from te
         except ValueError as ve:
             raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
         return self.controller.read_i32([self.base_ptr]) == ((rank << 16) | index)
@@ -254,21 +255,17 @@ T = typing.TypeVar("T", bound=ObjNode)
 
 class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     """
-    游戏中管理各类对象内存的数组
+    游戏中管理各类对象内存的数组, 即函数表中DataArray类
     仅帮助type hint用, 请勿直接使用, 而是使用obj_list函数构造.
     """
 
-    def __init__(self, base_ptr: int, ctler: Controller) -> None:
-        super().__init__(base_ptr, ctler)
-        self._array_base_ptr = ctler.read_i32([base_ptr])
-
     OBJ_SIZE = 28
 
-    obj_num: int = property_i32(16, "obj_num")
+    obj_num: int = property_i32(16, "当前对象数量")
 
-    next_index: int = property_i32(12, "next_index")
+    next_index: int = property_i32(12, "下一个对象的索引")
 
-    next_rank: int = property_i32(20, "next_rank")
+    next_rank: int = property_i32(20, "下一个对象的序列号")
 
     def __len__(self):
         return self.controller.read_i32([self.base_ptr + 4])
@@ -315,11 +312,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     @property
     def alive_iterator(self) -> c_abc.Iterator[T]:
         """
-        返回迭代所有存活对象的迭代器
-        调用原版函数
-
-        Returns:
-            迭代所有存活对象的"动态"迭代器, 即, 在迭代过程中动态寻找下一个对象
+        迭代所有存活对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
         """
         return NotImplemented
 
@@ -330,19 +323,24 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T.
 
         Args:
-            index: 索引, ObjId对象或(index, rank)unpack-able对象
+            index: 整数索引, ObjId对象或(index, rank)可解包对象
         Returns:
             存在活着的对应对象返回, 否则返回None.
         Raises:
-            TypeError: index不是int, ObjId或unpack-able对象
-            ValueError: unpack-able对象不是两个元素
+            TypeError: index不是int, ObjId或可解包对象
+            ValueError: 可解包对象不是两个元素
         """
         return NotImplemented
 
 
 def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
     """
-    根据node_cls构造对应的_ObjList作为各个NodeClsList的父类
+    根据node_cls构造对应的NodeClsObject的父类
+    
+    Args:
+        node_cls: ObjNode的子类
+    Returns:
+        管理node_cls对象的数组的父类
     """
 
     class _ObjIterator(c_abc.Iterator[T]):
@@ -363,8 +361,9 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
             return self
 
     class _ObjListImplement(_ObjList[T], abc.ABC):
-        def __init__(self, base_ptr: int, ctler: Controller) -> None:
+        def __init__(self, base_ptr: int, ctler: Controller):
             super().__init__(base_ptr, ctler)
+            self._array_base_ptr = ctler.read_i32([base_ptr])
             p_board = ctler.read_u32([0x6a9ec0, 0x768])
             self._code = f"""
                 push esi
@@ -387,7 +386,7 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
 
         def find(self, index) -> T | None:
             if isinstance(index, int):
-                target = self.at(index)
+                target = self[index]
                 return target if target.id.rank != 0 else None
             if isinstance(index, ObjId):
                 target = self.at(index.index)
@@ -395,9 +394,9 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
             try: 
                 idx, rank = index
             except TypeError as te:
-                raise TypeError("object can only be found by ObjId, index "
+                raise TypeError("object can only be found by int, ObjId instance "
                                 "or an unpack-able object like (index, rank), "
-                                f"not {index.__class__.__name__} instance") from te
+                                f"not {type(index).__name__} instance") from te
             except ValueError as ve:
                 raise ValueError("unpack-able index should have two elements (index, rank)") from ve
             target = self.at(idx)

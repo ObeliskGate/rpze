@@ -8,6 +8,7 @@ import structs.obj_base as ob
 from rp_extend import Controller
 from structs.obj_base import ObjNode, ObjId
 
+
 class ProjectileType(IntEnum):
     none = -1,
     pea = 0x0,
@@ -23,7 +24,8 @@ class ProjectileType(IntEnum):
     kernel = 0xA,
     cob_cannon = 0xB,
     butter = 0xC
-    
+
+
 class ProjectileMotionType(IntEnum):
     straight = 0,
     parabola = 1,
@@ -32,8 +34,9 @@ class ProjectileMotionType(IntEnum):
     left_straight = 6,
     starfruit = 7,
     cattail = 9
-    
-class ProjecTile(ObjNode):
+
+
+class Projectile(ObjNode):
     ITERATOR_FUNC_ADDRESS = 0x41C9B0
     
     OBJ_SIZE = 0x94
@@ -60,7 +63,7 @@ class ProjecTile(ObjNode):
         return ob.ObjId(self.base_ptr + 0x88, self.controller)
     
 
-class ProjectileList(ob.obj_list(ProjecTile)):
+class ProjectileList(ob.obj_list(Projectile)):
     pass
 
 

@@ -5,6 +5,7 @@ import time
 from rp_extend import Controller
 import structs.plant as plt
 import structs.zombie as zmb
+import structs.griditem as gi
 
 
 def basic_test(controller: Controller):
@@ -25,6 +26,7 @@ def basic_test(controller: Controller):
                 print(controller.get_time())
             elif c == b'r':
                 print("sun", controller.read_i32([0x6a9ec0, 0x768, 0x5560]))
+                controller.write_i32(8000, [0x6a9ec0, 0x768, 0x5560])
             elif c == b'c':
                 print('c')
                 asm_and_plant_test(controller)
@@ -37,6 +39,9 @@ def basic_test(controller: Controller):
             elif c == b't':
                 print(c)
                 zombie_list_test(controller)
+            elif c == b'g':
+                print(c)
+                griditem_test(controller)
 
         if (not b) and (controller.get_time() >= start_time + 1e6):
             controller.end_jump_frame()
@@ -52,6 +57,7 @@ def asm_and_plant_test(ctler):
     print(plant.type_.name)
     print(plant)
     print(plant.__repr__())
+    print(help(plt.Plant.launch_cd))
     for p in (p for p in plist if not p.is_dead):
         print(p)
 
@@ -69,3 +75,9 @@ def zombie_list_test(ctler):
                 if backup := zlist.find(_id):
                     print(backup)
                     print(zlist.find(backup.master_id) == z)
+
+
+def griditem_test(ctler):
+    glist = gi.get_griditem_list(ctler)
+    for g in glist.alive_iterator:
+        print(f"{g}, hp is {g.brain_hp}")

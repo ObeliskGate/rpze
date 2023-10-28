@@ -51,8 +51,8 @@ class ZombieStatus(IntEnum):
     bungee_grab = 0x7,
     bungee_raise = 0x8,
     bungee_idle = 0xa,
-    pole_valuting_running = 0xb,
-    pole_valuting_jumpping = 0xc,
+    pole_vaulting_running = 0xb,
+    pole_vaulting_jumping = 0xc,
     pole_vaulting_walking = 0xd,
     rising_from_ground = 0xe,
     jackbox_walking = 0xf,
@@ -61,7 +61,7 @@ class ZombieStatus(IntEnum):
     pogo_idle_before_target = 0x15,
     pogo_jump_across = 0x1b,
     newspaper_walking = 0x1d,
-    newspaper_destoryed = 0x1e,
+    newspaper_destroyed = 0x1e,
     newspaper_running = 0x1f,
     digger_dig = 0x20,
     digger_drill = 0x21,
@@ -82,12 +82,12 @@ class ZombieStatus(IntEnum):
     dancing_armrise4 = 0x30,
     dancing_armrise5 = 0x31,
     backup_spawning = 0x32,
-    dophin_walk_with_dophin = 0x33,
+    dolphin_walk_with_dolphin = 0x33,
     dophin_jump_in_pool = 0x34,
-    dophin_ride = 0x35,
-    dophin_jump = 0x36,
-    dophin_walk_in_pool = 0x37,
-    dophin_walk_without_dophin = 0x38,
+    dolphin_ride = 0x35,
+    dolphin_jump = 0x36,
+    dolphin_walk_in_pool = 0x37,
+    dolphin_walk_without_dolphin = 0x38,
     snorkel_walking = 0x39,
     snorkel_jump_in_the_pool = 0x3a,
     snorkel_swim = 0x3b,
@@ -157,9 +157,10 @@ class Zombie(ob.ObjNode):
     is_eating: bool = ob.property_bool(0x51, "在啃食时为True")
 
     flash_cd: int = ob.property_i32(0x54, """
-    发亮倒计时:
-        - 刚生成僵尸时为0, 受击变为25
-        - 在flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
+    发亮倒计时
+                                    
+    - 刚生成僵尸时为0, 受击变为25
+    - 在flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
     """)
 
     time_since_spawn: int = ob.property_i32(0x60, "出生时间")
