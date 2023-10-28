@@ -72,4 +72,3 @@ def get_projectile_list(ctler: Controller) -> ProjectileList | None:
         raise RuntimeError("game base ptr not found")
     else:
         return ProjectileList(t + 0xc8, ctler)
-    
