@@ -52,7 +52,7 @@ def asm_and_plant_test(ctler):
     print(plant.type_.name)
     print(plant)
     print(plant.__repr__())
-    print(help(plant.launch_cd))
+    print(help(plt.Plant.launch_cd))
     for p in (p for p in plist if not p.is_dead):
         print(p)
 
