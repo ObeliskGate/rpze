@@ -32,7 +32,7 @@ class ObjBase(abc.ABC):
         """
         super().__init__()
         if base_ptr == 0:
-            raise ValueError(f"base_ptr of an {self.__class__.__name__} object cannot be 0")
+            raise ValueError(f"base_ptr of an {type(self).__name__} object cannot be 0")
         
         self.base_ptr = base_ptr
         self.controller = ctler
@@ -225,7 +225,7 @@ class ObjId(ObjBase):
         except TypeError as te:
             raise TypeError("ObjId can only compare with another ObjId "
                             "or an unpack-able object like (index, rank), "
-                            f"not {val.__class__.__name__} instance") from te
+                            f"not {type(val).__name__} instance") from te
         except ValueError as ve:
             raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
         return self.controller.read_i32([self.base_ptr]) == ((rank << 16) | index)
@@ -255,13 +255,9 @@ T = typing.TypeVar("T", bound=ObjNode)
 
 class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     """
-    游戏中管理各类对象内存的数组
+    游戏中管理各类对象内存的数组, 即函数表中DataArray类
     仅帮助type hint用, 请勿直接使用, 而是使用obj_list函数构造.
     """
-
-    def __init__(self, base_ptr: int, ctler: Controller) -> None:
-        super().__init__(base_ptr, ctler)
-        self._array_base_ptr = ctler.read_i32([base_ptr])
 
     OBJ_SIZE = 28
 
@@ -343,7 +339,12 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
 def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
     """
-    根据node_cls构造对应的_ObjList作为各个NodeClsList的父类
+    根据node_cls构造对应的NodeClsObject的父类
+    
+    Args:
+        node_cls: ObjNode的子类
+    Returns:
+        管理node_cls对象的数组的父类
     """
 
     class _ObjIterator(c_abc.Iterator[T]):
@@ -366,6 +367,7 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
     class _ObjListImplement(_ObjList[T], abc.ABC):
         def __init__(self, base_ptr: int, ctler: Controller) -> None:
             super().__init__(base_ptr, ctler)
+            self._array_base_ptr = ctler.read_i32([base_ptr])
             p_board = ctler.read_u32([0x6a9ec0, 0x768])
             self._code = f"""
                 push esi
@@ -398,7 +400,7 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
             except TypeError as te:
                 raise TypeError("object can only be found by ObjId, index "
                                 "or an unpack-able object like (index, rank), "
-                                f"not {index.__class__.__name__} instance") from te
+                                f"not {type(index).__name__} instance") from te
             except ValueError as ve:
                 raise ValueError("unpack-able index should have two elements (index, rank)") from ve
             target = self.at(idx)
