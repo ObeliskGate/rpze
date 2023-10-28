@@ -19,7 +19,7 @@ def find_window(window_name: str) -> int:
     return pid
 
 
-def open_game(game_path: str, num: int=1) -> list[int]:
+def open_game(game_path: str, num: int = 1) -> list[int]:
     """
     通过路径, 将pvz作为python子进程打开游戏
     

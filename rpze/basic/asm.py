@@ -14,7 +14,7 @@ def run(code: str, controller: Controller) -> bool:
         执行成功返回True
     """
     r = decode(code)
-    controller.run_code(r, len(r))
+    return controller.run_code(r, len(r))
     
 
 def decode(code: str) -> bytes:
