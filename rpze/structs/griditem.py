@@ -12,9 +12,10 @@ class GriditemType(IntEnum):
     grave = 0x1,
     crater = 0x2,
     ladder = 0x3,
-    brain = 0x6,
+    brain_aq = 0x6,
     vase = 0x7,
-    rake = 0xB
+    rake = 0xB,
+    brain = 0xc
 
 
 class Griditem(ob.ObjNode):
@@ -31,7 +32,14 @@ class Griditem(ob.ObjNode):
 
     col: int = ob.property_i32(0x10, "所在列")
 
-    brain_hp: int = ob.property_i32(0x18, "脑子血量")
+    brain_hp: int = ob.property_i32(0x18, """
+        脑子血量, 墓碑冒出的量, 弹坑消失倒计时, 钉钯消失倒计时
+        
+        对于ize中脑子, 初始为70, 每次被啃时-= 1(区别于植物血量 -= 4)
+        """)
+
+    def __str__(self):
+        return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
 
 
 class GriditemList(ob.obj_list(Griditem)):
