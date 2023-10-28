@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*- 
-import win32gui as wing
-import win32process as winp
+import win32gui as win_g
+import win32process as win_p
 import os
 import subprocess
 
@@ -14,8 +14,8 @@ def find_window(window_name: str) -> int:
     Returns:
         window_name主进程的process id
     """
-    handle = wing.FindWindow(None, window_name)
-    _, pid = winp.GetWindowThreadProcessId(handle)
+    handle = win_g.FindWindow(None, window_name)
+    _, pid = win_p.GetWindowThreadProcessId(handle)
     return pid
 
 
