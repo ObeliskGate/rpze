@@ -200,9 +200,9 @@ class ObjId(ObjBase):
 
     OBJ_SIZE = 4
 
-    index: int = property_u16(0, "index")
+    index: int = property_u16(0, "对象索引")
 
-    rank: int = property_u16(2, "rank")
+    rank: int = property_u16(2, "对象序列号")
 
     def __eq__(self, val: typing.Self | tuple[int, int]) -> bool:
         """
@@ -261,11 +261,11 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     OBJ_SIZE = 28
 
-    obj_num: int = property_i32(16, "obj_num")
+    obj_num: int = property_i32(16, "当前对象数量")
 
-    next_index: int = property_i32(12, "next_index")
+    next_index: int = property_i32(12, "下一个对象的索引")
 
-    next_rank: int = property_i32(20, "next_rank")
+    next_rank: int = property_i32(20, "下一个对象的序列号")
 
     def __len__(self):
         return self.controller.read_i32([self.base_ptr + 4])
@@ -312,11 +312,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     @property
     def alive_iterator(self) -> c_abc.Iterator[T]:
         """
-        返回迭代所有存活对象的迭代器
-        调用原版函数
-
-        Returns:
-            迭代所有存活对象的"动态"迭代器, 即, 在迭代过程中动态寻找下一个对象
+        迭代所有存活对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
         """
         return NotImplemented
 
@@ -327,12 +323,12 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T.
 
         Args:
-            index: 索引, ObjId对象或(index, rank)unpack-able对象
+            index: 整数索引, ObjId对象或(index, rank)可解包对象
         Returns:
             存在活着的对应对象返回, 否则返回None.
         Raises:
-            TypeError: index不是int, ObjId或unpack-able对象
-            ValueError: unpack-able对象不是两个元素
+            TypeError: index不是int, ObjId或可解包对象
+            ValueError: 可解包对象不是两个元素
         """
         return NotImplemented
 
@@ -365,7 +361,7 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
             return self
 
     class _ObjListImplement(_ObjList[T], abc.ABC):
-        def __init__(self, base_ptr: int, ctler: Controller) -> None:
+        def __init__(self, base_ptr: int, ctler: Controller):
             super().__init__(base_ptr, ctler)
             self._array_base_ptr = ctler.read_i32([base_ptr])
             p_board = ctler.read_u32([0x6a9ec0, 0x768])
@@ -390,7 +386,7 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
 
         def find(self, index) -> T | None:
             if isinstance(index, int):
-                target = self.at(index)
+                target = self[index]
                 return target if target.id.rank != 0 else None
             if isinstance(index, ObjId):
                 target = self.at(index.index)
@@ -398,7 +394,7 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
             try: 
                 idx, rank = index
             except TypeError as te:
-                raise TypeError("object can only be found by ObjId, index "
+                raise TypeError("object can only be found by int, ObjId instance "
                                 "or an unpack-able object like (index, rank), "
                                 f"not {type(index).__name__} instance") from te
             except ValueError as ve:
