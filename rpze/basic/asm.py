@@ -8,20 +8,21 @@ def run(code: str, controller: Controller) -> bool:
     执行code汇编码
     
     Args:
-        code: x86 intel格式汇编字符串, 应该以一个(void) -> void函数, 即以"ret"结尾并且做栈平衡
+        code: x86 intel格式汇编字符串, 应该是一个(void) -> void函数, 即以"ret"结尾并且保持栈平衡
         controller: Controller对象, 用于执行汇编码
     Returns:
         执行成功返回True
     """
     r = decode(code)
-    controller.run_code(r, len(r))
+    return controller.run_code(r, len(r))
     
 
 def decode(code: str) -> bytes:
     """
     解码code汇编码
+    
     Args:
-        code: code: x86 intel格式汇编字符串
+        code: x86 intel格式汇编字符串
     Returns:
         解码后的字节码
     Raises:

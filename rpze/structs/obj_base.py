@@ -61,135 +61,135 @@ class ObjBase(abc.ABC):
 
 # property factories 用于生成ObjBase对象在pvz内的属性
 def property_bool(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> bool:
+    def _get(self: ObjBase) -> bool:
         return self.controller.read_bool([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: bool):
+    def _set(self: ObjBase, value: bool):
         self.controller.write_bool(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_i8(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> int:
+    def _get(self: ObjBase) -> int:
         return self.controller.read_i8([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: int):
+    def _set(self: ObjBase, value: int):
         self.controller.write_i8(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_i16(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> int:
+    def _get(self: ObjBase) -> int:
         return self.controller.read_i16([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: int):
+    def _set(self: ObjBase, value: int):
         self.controller.write_i16(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_i32(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> int:
+    def _get(self: ObjBase) -> int:
         return self.controller.read_i32([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: int):
+    def _set(self: ObjBase, value: int):
         self.controller.write_i32(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_i64(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> int:
+    def _get(self: ObjBase) -> int:
         return self.controller.read_i64([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: int):
+    def _set(self: ObjBase, value: int):
         self.controller.write_i64(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_u8(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> int:
+    def _get(self: ObjBase) -> int:
         return self.controller.read_u8([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: int):
+    def _set(self: ObjBase, value: int):
         self.controller.write_u8(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_u16(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> int:
+    def _get(self: ObjBase) -> int:
         return self.controller.read_u16([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: int):
+    def _set(self: ObjBase, value: int):
         self.controller.write_u16(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_u32(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> int:
+    def _get(self: ObjBase) -> int:
         return self.controller.read_u32([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: int):
+    def _set(self: ObjBase, value: int):
         self.controller.write_u32(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_u64(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> int:
+    def _get(self: ObjBase) -> int:
         return self.controller.read_u64([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: int):
+    def _set(self: ObjBase, value: int):
         self.controller.write_u64(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_f32(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> float:
+    def _get(self: ObjBase) -> float:
         return self.controller.read_f32([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: float):
+    def _set(self: ObjBase, value: float):
         self.controller.write_f32(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_f64(offset: int, doc: str | None = None):
-    def __fget(self: ObjBase) -> float:
+    def _get(self: ObjBase) -> float:
         return self.controller.read_f64([self.base_ptr + offset])
 
-    def __fset(self: ObjBase, value: float):
+    def _set(self: ObjBase, value: float):
         self.controller.write_f64(value, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_int_enum(offset: int, cls: type[IntEnum], doc: str | None = None):
-    def __fget(self: ObjBase) -> cls:
+    def _get(self: ObjBase) -> cls:
         return cls(self.controller.read_i32([self.base_ptr + offset]))
 
-    def __fset(self: ObjBase, value: cls):
+    def _set(self: ObjBase, value: cls):
         self.controller.write_i32(int(value), [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 def property_obj(offset: int, cls: type[ObjBase], doc: str | None = None):
-    def __fget(self: ObjBase) -> cls:
+    def _get(self: ObjBase) -> cls:
         return cls(self.controller.read_i32([self.base_ptr + offset]), self.controller)
 
-    def __fset(self: ObjBase, value: cls):
+    def _set(self: ObjBase, value: cls):
         if self.controller is not value.controller:
             raise ValueError("cannot assign an object from another controller")
         self.controller.write_i32(value.base_ptr, [self.base_ptr + offset])
 
-    return property(__fget, __fset, None, doc)
+    return property(_get, _set, None, doc)
 
 
 class ObjId(ObjBase):
