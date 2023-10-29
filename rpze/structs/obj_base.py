@@ -255,7 +255,7 @@ T = typing.TypeVar("T", bound=ObjNode)
 
 class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     """
-    游戏中管理各类对象内存的数组, 即函数表中DataArray类
+    游戏中管理各类对象内存的数组, 即函数表中DataArray对象
     仅帮助type hint用, 请勿直接使用, 而是使用obj_list函数构造.
     """
 
@@ -301,7 +301,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         若在遍历返回值的时候有新对象生成或死亡, 该方法没法动态调整
 
         Args:
-            index: 整数索引, 支持负数索引, 若超出范围则IndexError
+            index: 切片索引
         Returns:
             对应切片的列表, 不保证其中任何成员存活
         """
