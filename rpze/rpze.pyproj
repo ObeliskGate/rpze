@@ -32,6 +32,7 @@
     <Compile Include="basic\asm.py" />
     <Compile Include="basic\inject.py" />
     <Compile Include="rpze.py" />
+    <Compile Include="structs\game_board.py" />
     <Compile Include="structs\griditem.py" />
     <Compile Include="structs\obj_base.py" />
     <Compile Include="structs\plant.py" />

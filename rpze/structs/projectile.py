@@ -5,7 +5,6 @@
 from enum import IntEnum
 
 import structs.obj_base as ob
-from rp_extend import Controller
 from structs.obj_base import ObjNode, ObjId
 
 
@@ -65,10 +64,3 @@ class Projectile(ObjNode):
 
 class ProjectileList(ob.obj_list(Projectile)):
     pass
-
-
-def get_projectile_list(ctler: Controller) -> ProjectileList | None:
-    if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
-        raise RuntimeError("game base ptr not found")
-    else:
-        return ProjectileList(t + 0xc8, ctler)

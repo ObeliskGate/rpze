@@ -43,7 +43,8 @@ class ObjBase(abc.ABC):
     def __eq__(self, other: typing.Self) -> bool:
         """
         判断二个ObjBase对象是否指向同一游戏的同一位置
-        功能更接近于Python中的is
+
+        功能更接近于Python中的is.
 
         Args:
             other : 另一个ObjBase对象
@@ -195,7 +196,8 @@ def property_obj(offset: int, cls: type[ObjBase], doc: str | None = None):
 class ObjId(ObjBase):
     """
     ObjNode对象末尾的(index, rank)对象
-    游戏内用于ObjNode的识别和储存
+
+    游戏内用于ObjNode的识别和储存.
     """
 
     OBJ_SIZE = 4
@@ -207,10 +209,11 @@ class ObjId(ObjBase):
     def __eq__(self, val: typing.Self | tuple[int, int]) -> bool:
         """
         ObjId比较相等 与其他ObjId比较或与(index, rank)比较
-        "表示相同对象"返回True
 
         Args:
             val: 另一个ObjId对象或(index, rank)一样的可解包对象
+        Returns:
+            "表示相同对象"返回True
         Raises:
             TypeError: val不是ObjId对象或可解包对象
             ValueError: 可解包不是两个元素
@@ -255,7 +258,8 @@ T = typing.TypeVar("T", bound=ObjNode)
 
 class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     """
-    游戏中管理各类对象内存的数组, 即函数表中DataArray类
+    游戏中管理各类对象内存的数组, 即函数表中DataArray对象
+
     仅帮助type hint用, 请勿直接使用, 而是使用obj_list函数构造.
     """
 
@@ -298,10 +302,11 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     def __getitem__(self, index: slice) -> list[T]:
         """
         返回slice切片对应的列表
-        若在遍历返回值的时候有新对象生成或死亡, 该方法没法动态调整
+
+        若在遍历返回值的时候有新对象生成或死亡, 该方法没法动态调整.
 
         Args:
-            index: 整数索引, 支持负数索引, 若超出范围则IndexError
+            index: 切片索引
         Returns:
             对应切片的列表, 不保证其中任何成员存活
         """
@@ -318,7 +323,8 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     def find(self, index: int | ObjId | tuple[int, int]) -> T | None:
         """
-        通过index查找对象, 不支持负数索引.
+        通过index查找对象
+
         用int查找时, 活对象返回T.
         用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T.
 
@@ -368,13 +374,11 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
             self._code = f"""
                 push esi
                 push edx
-                push ebx
                 mov esi, {self.controller.result_address};
                 mov edx, {p_board};
-                mov ebx, {node_cls.ITERATOR_FUNC_ADDRESS};
-                call ebx;
+                mov ecx, {node_cls.ITERATOR_FUNC_ADDRESS};
+                call ecx;
                 mov [{self.controller.result_address + 4}], al;
-                pop ebx
                 pop edx
                 pop esi
                 ret;"""
@@ -386,7 +390,10 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
 
         def find(self, index) -> T | None:
             if isinstance(index, int):
-                target = self[index]
+                try:
+                    target = self[index]
+                except IndexError:
+                    return None
                 return target if target.id.rank != 0 else None
             if isinstance(index, ObjId):
                 target = self.at(index.index)

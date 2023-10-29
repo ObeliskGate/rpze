@@ -5,7 +5,6 @@
 from enum import IntEnum
 
 import structs.obj_base as ob
-from rp_extend import Controller
 
 
 class GriditemType(IntEnum):
@@ -20,7 +19,7 @@ class GriditemType(IntEnum):
 
 class Griditem(ob.ObjNode):
     """
-    场地物品, 包括脑子, 弹坑, 梯子等
+    场地物品, 包括脑子, 梯子等
     """
     OBJ_SIZE = 0xEC
 
@@ -44,10 +43,3 @@ class Griditem(ob.ObjNode):
 
 class GriditemList(ob.obj_list(Griditem)):
     pass
-
-
-def get_griditem_list(ctler: Controller) -> GriditemList:
-    if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
-        raise RuntimeError("game base ptr not found")
-    else:
-        return GriditemList(t + 0x11c, ctler)

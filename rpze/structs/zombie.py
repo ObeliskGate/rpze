@@ -6,7 +6,6 @@ from enum import IntEnum
 
 import structs.obj_base as ob
 from basic import asm
-from rp_extend import Controller
 
 
 # 数据结构和pvz_emulator命名保持一致
@@ -229,21 +228,12 @@ class ZombieList(ob.obj_list(Zombie)):
         ret_idx = self.next_index
         p_challenge = self.controller.read_i32([0x6a9ec0, 0x768, 0x160])
         code = f'''
-            push edx;
             mov eax, {row};
             push {col};
             push {int(type_)};
             mov ecx, {p_challenge};
             mov edx, 0x42a0f0;
             call edx;
-            pop edx;
             ret;'''
         asm.run(code, self.controller)
         return self.at(ret_idx)
-
-
-def get_zombie_list(ctler: Controller) -> ZombieList:
-    if (t := ctler.read_i32([0x6a9ec0, 0x768])) is None:
-        raise RuntimeError("game base ptr not found")
-    else:
-        return ZombieList(t + 0x90, ctler)

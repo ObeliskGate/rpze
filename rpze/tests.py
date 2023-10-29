@@ -2,10 +2,11 @@
 import msvcrt as vc
 import os
 import time
-from rp_extend import Controller
+
+import structs.game_board as gb
 import structs.plant as plt
 import structs.zombie as zmb
-import structs.griditem as gi
+from rp_extend import Controller
 
 
 def basic_test(controller: Controller):
@@ -52,13 +53,14 @@ def basic_test(controller: Controller):
 
 
 def asm_and_plant_test(ctler):
-    plist = plt.get_plant_list(ctler)
-    plant = plist.plain_new_plant(1, 3, plt.PlantType.cabbagepult)
-    print(plant.type_.name)
-    print(plant)
-    print(plant.__repr__())
-    print(help(plt.Plant.launch_cd))
-    for p in (p for p in plist if not p.is_dead):
+    plist = gb.get(ctler).plant_list
+    plant = plist.izombie_new_plant(1, 3, plt.PlantType.cabbagepult)
+    if plant is not None:
+        print(plant.type_.name)
+        print(plant)
+        print(plant.__repr__())
+        print(help(plt.Plant.launch_cd))
+    for p in (p for p in plist if not p.is_dead):  # 我不知道为什么pycharm认为plist不是可迭代对象
         print(p)
 
     for p in plist.alive_iterator:
@@ -66,7 +68,7 @@ def asm_and_plant_test(ctler):
 
 
 def zombie_list_test(ctler):
-    zlist = zmb.get_zombie_list(ctler)
+    zlist = gb.get(ctler).zombie_list
 
     print(zlist.izombie_place_zombie(0, 3, zmb.ZombieType.dancing))
     for z in zlist.alive_iterator:
@@ -78,6 +80,6 @@ def zombie_list_test(ctler):
 
 
 def griditem_test(ctler):
-    glist = gi.get_griditem_list(ctler)
+    glist = gb.get(ctler).griditem_list
     for g in glist.alive_iterator:
         print(f"{g}, hp is {g.brain_hp}")
