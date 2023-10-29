@@ -54,7 +54,8 @@ class Projectile(ObjNode):
     
     type_: ProjectileType = ob.property_int_enum(0x5c, ProjectileType, "子弹类型")
     
-    motion_type: ProjectileMotionType = ob.property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")
+    motion_type: ProjectileMotionType = ob.property_int_enum(
+        0x58, ProjectileMotionType, "子弹运动类型")
     
     @property
     def target_zombie_id(self) -> ObjId:

@@ -7,10 +7,11 @@
 void setConsole()
 {
 	AllocConsole();
-	freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
-	freopen_s((FILE**)stdin, "CONIN$", "r", stdin);
+	FILE* _;
+	freopen_s(&_, "CONOUT$", "w", stdout);
+	freopen_s(&_, "CONIN$", "r", stdin);
 	std::ios::sync_with_stdio();
-	std::cout << "console setted" << std::endl;
+	std::cout << "console set" << std::endl;
 }
 
 void doAsPhaseCode(volatile PhaseCode& phaseCode)

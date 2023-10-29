@@ -3,7 +3,7 @@
 #include <Windows.h>
 
 #ifdef _WIN64
-static_assert(false, "请用32位编译")
+#error 请用32位编译
 #endif
 
 bool injectDll(DWORD pid, LPCSTR dllPath)
