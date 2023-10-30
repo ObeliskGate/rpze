@@ -5,14 +5,14 @@ class Controller:
     result_bool: bool
     result_f32: float
     result_f64: float
+    result_i8: int
     result_i16: int
     result_i32: int
     result_i64: int
-    result_i8: int
+    result_u8: int
     result_u16: int
     result_u32: int
     result_u64: int
-    result_u8: int
 
     def __init__(self, pid: int) -> None: ...
     def __hash__(self) -> int: ...

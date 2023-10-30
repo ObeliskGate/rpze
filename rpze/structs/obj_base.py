@@ -53,9 +53,6 @@ class ObjBase(abc.ABC):
     
     def __ne__(self, other: typing.Self) -> bool:
         return not (self.base_ptr == other.base_ptr and (self.controller == other.controller))
-    
-    def __hash__(self) -> int:
-        return (self.controller.pid << 32) | self.base_ptr
 
     def __str__(self) -> str:
         return (f"<{type(self).__name__} object at [0x{self.base_ptr:x}] "
