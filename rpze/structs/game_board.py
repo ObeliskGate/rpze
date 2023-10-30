@@ -2,6 +2,7 @@
 """
 游戏主界面相关的函数和类
 """
+import functools
 
 import structs.obj_base as ob
 from structs.griditem import GriditemList
@@ -69,6 +70,7 @@ class GameBoard(ob.ObjBase):
         asm.run(code, self.controller)
 
 
+@functools.lru_cache(maxsize=None)
 def get(controller: Controller) -> GameBoard:
     """
     获取当前游戏主界面对象

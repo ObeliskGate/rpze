@@ -49,7 +49,13 @@ class ObjBase(abc.ABC):
         Args:
             other : 另一个ObjBase对象
         """
-        return self.base_ptr == other.base_ptr and (self.controller is other.controller)
+        return self.base_ptr == other.base_ptr and (self.controller == other.controller)
+    
+    def __ne__(self, other: typing.Self) -> bool:
+        return not (self.base_ptr == other.base_ptr and (self.controller == other.controller))
+    
+    def __hash__(self) -> int:
+        return (self.controller.pid << 32) | self.base_ptr
 
     def __str__(self) -> str:
         return (f"<{type(self).__name__} object at [0x{self.base_ptr:x}] "
@@ -186,7 +192,7 @@ def property_obj(offset: int, cls: type[ObjBase], doc: str | None = None):
         return cls(self.controller.read_i32([self.base_ptr + offset]), self.controller)
 
     def _set(self: ObjBase, value: cls):
-        if self.controller is not value.controller:
+        if self.controller != value.controller:
             raise ValueError("cannot assign an object from another controller")
         self.controller.write_i32(value.base_ptr, [self.base_ptr + offset])
 
@@ -222,7 +228,7 @@ class ObjId(ObjBase):
         if isinstance(val, ObjId):
             return ((self.controller.read_i32([self.base_ptr]) ==
                     val.controller.read_i32([val.base_ptr]))
-                    and self.controller is val.controller)
+                    and self.controller == val.controller)
         try:
             index, rank = val
         except TypeError as te:
@@ -232,6 +238,9 @@ class ObjId(ObjBase):
         except ValueError as ve:
             raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
         return self.controller.read_i32([self.base_ptr]) == ((rank << 16) | index)
+    
+    def __ne__(self, val: typing.Self | tuple[int, int]) -> bool:
+        return not (self.__eq__(val))
 
     def __str__(self) -> str:
         return f"(index={self.index}, rank={self.rank})"

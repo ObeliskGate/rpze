@@ -41,6 +41,12 @@ public:
 	template<typename T>
 	T get_result() { static_assert(sizeof(T) <= 8);  return *static_cast<volatile T*>(mem.getReturnResult()); }
 
+	DWORD _py_hash__() const { return mem.getPid(); }
+
+	bool operator==(const Controller& other) const { return mem.getPid() == other.mem.getPid(); }
+
+	bool operator!=(const Controller& other) const { return mem.getPid() != other.mem.getPid(); }
+
 	template<typename T>
 	void set_result(T val)
 	{
