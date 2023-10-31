@@ -319,13 +319,24 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     def __getitem__(self, index):
         return NotImplemented
-
+    
+    def __invert__(self) -> c_abc.Iterator[T]:
+        """
+        迭代所有存活对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
+        
+        Returns:
+            迭代器, 仅迭代存活对象
+        Examples:
+            for zombie in ~zombie_list: 迭代所有僵尸
+        """
+        return NotImplemented
+    
     @property
     def alive_iterator(self) -> c_abc.Iterator[T]:
         """
         迭代所有存活对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
         """
-        return NotImplemented
+        return self.__invert__()
 
     def find(self, index: int | ObjId | tuple[int, int]) -> T | None:
         """
@@ -426,8 +437,7 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
                 return [self.at(i) for i in range(start, stop, step)]
             raise TypeError("index must be int or slice")
 
-        @property
-        def alive_iterator(self):
+        def __invert__(self):
             if self._iterate_func_asm is None:
                 self._iterate_func_asm = asm.decode(self._code)
             return _ObjIterator(self.controller, self._iterate_func_asm)

@@ -11,13 +11,10 @@ from rp_extend import Controller
 
 def basic_test(controller: Controller):
     start_time = 0
-    b = False
+    b = True
     start_clock = int(time.time())
     while True:
         controller.before()
-        if not controller.get_p_board():
-            controller.next_frame()
-            continue
         if vc.kbhit():
             c = vc.getch()
             if c == b'j':
@@ -74,7 +71,7 @@ def zombie_list_test(ctler):
     zlist = gb.get(ctler).zombie_list
 
     print(zlist.izombie_place_zombie(0, 3, zmb.ZombieType.dancing))
-    for z in zlist.alive_iterator:
+    for z in ~zlist:
         if z.type_ == zmb.ZombieType.dancing:
             for _id in z.partner_ids:
                 if backup := zlist.find(_id):
@@ -84,5 +81,5 @@ def zombie_list_test(ctler):
 
 def griditem_test(ctler):
     glist = gb.get(ctler).griditem_list
-    for g in glist.alive_iterator:
+    for g in ~glist:
         print(f"{g}, hp is {g.brain_hp}")
