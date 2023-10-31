@@ -15,6 +15,9 @@ def basic_test(controller: Controller):
     start_clock = int(time.time())
     while True:
         controller.before()
+        if not controller.get_p_board():
+            controller.next_frame()
+            continue
         if vc.kbhit():
             c = vc.getch()
             if c == b'j':

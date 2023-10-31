@@ -40,7 +40,7 @@ public:
 	inline volatile RunState& getRunState() const { return getRef<RunState>(4); }
 
 	// 游戏当前时间
-	inline volatile uint32_t& getGameTime() const { return getRef<uint32_t>(8); }
+	inline volatile int32_t& getGameTime() const { return getRef<int32_t>(8); }
 
 	//  跳帧时怎么运行游戏
 	inline volatile PhaseCode& getJumpingPhaseCode() const { return getRef<PhaseCode>(12); }
@@ -71,6 +71,9 @@ public:
 
 	// 8字节 返回结果
 	inline volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + 88);  }
+
+	// p_board指针
+	inline uint32_t& getBoardPtr() const { return getRef<uint32_t>(96); }
 
 	// 用来存放asm的指针, 从600开始
 	inline void* getAsmPtr() const { return getPtr() + 600; }
@@ -125,12 +128,11 @@ template <typename T>
 std::optional<T> Memory::_readRemoteMemory(const std::vector<int32_t>& offsets)
 {
 	HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	int32_t basePtr = offsets[0];
+	uint64_t basePtr = offsets[0];
 	do
 	{
 		for (size_t i = 1; i < offsets.size(); i++)
 		{
-			if (!basePtr) break;
 			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(int32_t), nullptr);
 			if (!basePtr) break;
 			basePtr += offsets[i];
@@ -149,12 +151,11 @@ template <typename T>
 bool Memory::_writeRemoteMemory(T&& val, const std::vector<int32_t>& offsets)
 {
 	HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	int32_t basePtr = offsets[0];
+	uint64_t basePtr = offsets[0];
 	do
 	{
 		for (size_t i = 1; i < offsets.size(); i++)
 		{
-			if (!basePtr) break;
 			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(int32_t), nullptr);
 			if (!basePtr) break;
 			basePtr += offsets[i];

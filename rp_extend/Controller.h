@@ -12,7 +12,19 @@ public:
 
 	inline DWORD pid() { return mem.getPid(); }
 
-	inline int32_t get_time() { return mem.getGameTime(); }
+	inline std::optional<int32_t> get_time() const
+	{
+		auto t = mem.getGameTime();
+		if (t == INT32_MIN) return {};
+		return t;
+	}
+
+	inline std::optional<uint32_t> get_p_board() const
+	{
+		auto t = mem.getBoardPtr();
+		if (t == UINT32_MAX) return {};
+		return t;
+	}
 
 	inline void next_frame() { mem.next(); }
 
@@ -40,8 +52,6 @@ public:
 
 	template<typename T>
 	T get_result() { static_assert(sizeof(T) <= 8);  return *static_cast<volatile T*>(mem.getReturnResult()); }
-
-	DWORD _py_hash__() const { return mem.getPid(); }
 
 	bool operator==(const Controller& other) const { return mem.getPid() == other.mem.getPid(); }
 

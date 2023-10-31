@@ -9,7 +9,6 @@ from basic import asm
 
 
 # 数据结构和pvz_emulator命名保持一致
-
 class ZombieType(IntEnum):
     none = -1,
     zombie = 0x0,
@@ -210,7 +209,7 @@ class Zombie(ob.ObjNode):
     is_not_dying: bool = ob.property_bool(0xba, "不在濒死状态时为True")
 
     @property
-    def master_id(self) -> ob.ObjId:
+    def master_id(self) -> ob.ObjId: # 似乎所有ObjNode subclass都用Property而不是Attribute更好看
         """舞王id"""
         return ob.ObjId(self.base_ptr + 0xf0, self.controller)
 

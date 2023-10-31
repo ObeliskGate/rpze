@@ -2,7 +2,6 @@
 """
 游戏主界面相关的函数和类
 """
-import functools
 
 import structs.obj_base as ob
 from structs.griditem import GriditemList
@@ -70,7 +69,9 @@ class GameBoard(ob.ObjBase):
         asm.run(code, self.controller)
 
 
-@functools.lru_cache(maxsize=None)
+__game_board_cache: dict[int, GameBoard] = {}  # 重复构造对象会导致多次decode字节码, 故缓存.
+
+
 def get(controller: Controller) -> GameBoard:
     """
     获取当前游戏主界面对象
@@ -79,5 +80,15 @@ def get(controller: Controller) -> GameBoard:
         controller: pvz控制器对象
     Returns:
         当前游戏主界面对象
+    Raises:
+        RuntimeError: Board对象不存在时抛出
     """
-    return GameBoard(controller.read_u32([0x6a9ec0, 0x768]), controller)
+    if (p_board := controller.get_p_board()) is not None and p_board != 0:
+        key = (controller.pid << 32) | p_board 
+        if key in __game_board_cache:
+            return __game_board_cache[key]
+        else:
+            ret = GameBoard(p_board, controller)
+            __game_board_cache[key] = ret
+            return ret
+    raise RuntimeError("cannot find GameBoard! Maybe you are not in game?")

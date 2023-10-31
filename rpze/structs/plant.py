@@ -191,7 +191,6 @@ class PlantList(ob.obj_list(Plant)):
     def plain_new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
         p_board = self.controller.read_i32([0x6a9ec0, 0x768])
         code = f'''
-            push edx;
             push -1;
             push {int(type_)};
             push {row};
@@ -200,7 +199,6 @@ class PlantList(ob.obj_list(Plant)):
             mov edx, 0x40CE20;  // Board::NewPlant
             call edx;
             mov [{self.controller.result_address}], eax;
-            pop edx;
             ret;'''
         asm.run(code, self.controller)
         return Plant(self.controller.result_u32, self.controller)

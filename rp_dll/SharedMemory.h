@@ -35,7 +35,7 @@ public:
 	inline RunState& getRunState() const { return getRef<RunState>(4); }
 
 	// 游戏当前时间
-	inline uint32_t& getGameTime() const { return getRef<uint32_t>(8); }
+	inline int32_t& getGameTime() const { return getRef<int32_t>(8); }
 
 	//  跳帧时怎么运行游戏
 	inline volatile PhaseCode& getJumpingPhaseCode() const { return getRef<PhaseCode>(12); }
@@ -66,6 +66,9 @@ public:
 
 	// 8字节 返回结果
 	inline volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + 88); }
+
+	// pBoard指针
+	inline uint32_t& getBoardPtr() const { return getRef<uint32_t>(96); }
 
 	// 用来存放asm的指针, 从600开始
 	inline void* getAsmPtr() const { return getPtr() + 600; }
