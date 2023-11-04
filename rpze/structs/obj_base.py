@@ -220,7 +220,6 @@ class ObjId(ObjBase):
         Raises:
             TypeError: val不是ObjId对象或可解包对象
             ValueError: 可解包不是两个元素
-
         """
         if isinstance(val, ObjId):
             return ((self.controller.read_i32([self.base_ptr]) ==
@@ -322,36 +321,40 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     
     def __invert__(self) -> c_abc.Iterator[T]:
         """
-        迭代所有存活对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
+        迭代所有未回收对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
         
         Returns:
             迭代器, 仅迭代存活对象
         Examples:
-            for zombie in ~zombie_list: 迭代所有僵尸
+            >>> for zombie in ~zombie_list
+            迭代所有未回收的僵尸
         """
         return NotImplemented
     
     @property
     def alive_iterator(self) -> c_abc.Iterator[T]:
-        """
-        迭代所有存活对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
-        """
+        """与__invert__()相同"""
         return self.__invert__()
 
     def find(self, index: int | ObjId | tuple[int, int]) -> T | None:
         """
         通过index查找对象
 
-        用int查找时, 活对象返回T.
+        用int查找时, 未回收对象返回T.
         用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T.
 
         Args:
             index: 整数索引, ObjId对象或(index, rank)可解包对象
         Returns:
-            存在活着的对应对象返回, 否则返回None.
+            存在未回收的对应对象返回, 否则返回None.
         Raises:
             TypeError: index不是int, ObjId或可解包对象
             ValueError: 可解包对象不是两个元素
+        Example:
+            >>> zombie_list.find(-1)
+            当前最后一个僵尸对象(len(zombie_list) - 1)未回收时返回, 否则返回None
+            >>> zombie_list.find([1, 1])
+            若idx == 1的对象的rank==1, 返回该对象, 否则返回None
         """
         return NotImplemented
 

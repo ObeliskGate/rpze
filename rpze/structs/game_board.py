@@ -5,10 +5,10 @@
 
 import structs.obj_base as ob
 from structs.griditem import GriditemList
-from structs.plant import PlantList, Plant
+from structs.plant import PlantList, Plant, PlantType
 from structs.projectile import ProjectileList
 from rp_extend import Controller
-from structs.zombie import ZombieList
+from structs.zombie import ZombieList, ZombieType
 import basic.asm as asm
 
 
@@ -53,20 +53,105 @@ class GameBoard(ob.ObjBase):
     def mj_clock(self, value: int):
         self.controller.write_i32(value, [0x6a9ec0, 0x838])
 
-    def set_izombie(self, plant: Plant):
+    def izombie_setup_plant(self, plant: Plant):
         """
         对植物进行IZ模式调整, 如纸板化, 土豆出土
 
         Args:
             plant: 要调整的植物
+        
+        Raises:
+            RuntimeError: Challenge对象不存在时抛出
         """
+        if not (p_c := self._p_challenge):
+            raise RuntimeError("Challenge对象不存在!")
         code = f"""
-            mov eax, {self._p_challenge};
+            mov eax, {p_c};
             push {plant.base_ptr};
             mov ecx, 0x42A530; // Challenge::IZombieSetupPlant
             call ecx;
             ret;"""
         asm.run(code, self.controller)
+
+    def plain_new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
+        """
+        关卡内种植植物
+        
+        此函数不会创建种植的音、特效且不会触发限制种植类关卡种植特定植物的特殊效果
+        
+        Args:
+            row: 行, 从0开始
+            col: 列, 从0开始
+            type_: 植物类型
+        Returns:
+            种植成功的植物对象
+        """
+        code = f'''
+            push -1;
+            push {int(type_)};
+            push {row};
+            push {col};
+            mov eax, {self.base_ptr};
+            mov edx, 0x40CE20;  // Board::NewPlant
+            call edx;
+            mov [{self.controller.result_address}], eax;
+            ret;'''
+        asm.run(code, self.controller)
+        return Plant(self.controller.result_u32, self.controller)
+    
+    def izombie_new_plant(self, row: int, col: int, type_: PlantType) -> Plant | None:
+        """
+        判断植物能否种植在指定格子内, 若能则种植植物并对植物进行我是僵尸关卡的特殊调整.
+
+        Args:
+            row: 行数, 0为起点
+            col: 列数, 0为起点
+            type_: 植物类型
+        Returns:
+            成功则返回植物对象, 否则返回None
+        """
+        next_idx = self.plant_list.next_index
+        if not (p_c := self._p_challenge):
+            raise RuntimeError("Challenge对象不存在!")
+        code = f"""
+            push ebx;
+            push edi;
+            mov ebx, {row};
+            push {col};
+            push {int(type_)};
+            mov edi, {p_c};
+            mov ecx, 0x42a660; // Challenge::IZombiePlacePlantInSquare
+            call ecx;  
+            pop edi;
+            pop ebx;
+            ret;"""
+        asm.run(code, self.controller)
+        return self.plant_list.find(next_idx)
+    
+    def izombie_place_zombie(self, row: int, col: int, type_: ZombieType):
+        """
+        向指定位置放置僵尸.
+
+        Args:
+            row: 行数, 0为起点
+            col: 列数, 0为起点
+            type_: 僵尸
+        Returns:
+            放置的僵尸对象
+        """
+        if not (p_c := self._p_challenge):
+            raise RuntimeError("Challenge对象不存在!")
+        ret_idx = self.zombie_list.next_index
+        code = f'''
+            mov eax, {row};
+            push {col};
+            push {int(type_)};
+            mov ecx, {p_c};
+            mov edx, 0x42a0f0;
+            call edx;
+            ret;'''
+        asm.run(code, self.controller)
+        return self.zombie_list.at(ret_idx)
 
 
 __game_board_cache: dict[int, GameBoard] = {}  # 重复构造对象会导致多次decode字节码, 故缓存.
@@ -83,8 +168,9 @@ def get(controller: Controller) -> GameBoard:
     Raises:
         RuntimeError: Board对象不存在时抛出
     """
+    global __game_board_cache
     if (p_board := controller.get_p_board()) is not None and p_board != 0:
-        key = (controller.pid << 32) | p_board 
+        key = (controller.pid << 32) | p_board  # 似乎多次重开获得的Board对象地址可能会相同, 但我不觉得有更好的办法
         if key in __game_board_cache:
             return __game_board_cache[key]
         else:

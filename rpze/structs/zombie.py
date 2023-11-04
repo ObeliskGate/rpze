@@ -223,16 +223,4 @@ class Zombie(ob.ObjNode):
 
 
 class ZombieList(ob.obj_list(Zombie)):
-    def izombie_place_zombie(self, row: int, col: int, type_: ZombieType):
-        ret_idx = self.next_index
-        p_challenge = self.controller.read_i32([0x6a9ec0, 0x768, 0x160])
-        code = f'''
-            mov eax, {row};
-            push {col};
-            push {int(type_)};
-            mov ecx, {p_challenge};
-            mov edx, 0x42a0f0;
-            call edx;
-            ret;'''
-        asm.run(code, self.controller)
-        return self.at(ret_idx)
+    pass

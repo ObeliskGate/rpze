@@ -188,45 +188,4 @@ class Plant(ObjNode):
 
 
 class PlantList(ob.obj_list(Plant)):
-    def plain_new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
-        p_board = self.controller.read_i32([0x6a9ec0, 0x768])
-        code = f'''
-            push -1;
-            push {int(type_)};
-            push {row};
-            push {col};
-            mov eax, {p_board};
-            mov edx, 0x40CE20;  // Board::NewPlant
-            call edx;
-            mov [{self.controller.result_address}], eax;
-            ret;'''
-        asm.run(code, self.controller)
-        return Plant(self.controller.result_u32, self.controller)
-    
-    def izombie_new_plant(self, row: int, col: int, type_: PlantType) -> Plant | None:
-        """
-        判断植物能否种植在指定格子内, 若能则种植植物并对植物进行我是僵尸关卡的特殊调整.
-
-        Args:
-            row: 行数, 0为起点
-            col: 列数, 0为起点
-            type_: 植物类型
-        Returns:
-            成功则返回植物对象, 否则返回None
-        """
-        next_idx = self.next_index
-        p_challenge = self.controller.read_i32([0x6a9ec0, 0x768, 0x160])
-        code = f"""
-            push ebx;
-            push edi;
-            mov ebx, {row};
-            push {col};
-            push {int(type_)};
-            mov edi, {p_challenge};
-            mov ecx, 0x42a660; // Challenge::IZombiePlacePlantInSquare
-            call ecx;  
-            pop edi;
-            pop ebx;
-            ret;"""
-        asm.run(code, self.controller)
-        return self.find(next_idx)
+    pass
