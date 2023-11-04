@@ -59,12 +59,11 @@ class GameBoard(ob.ObjBase):
 
         Args:
             plant: 要调整的植物
-        
         Raises:
-            RuntimeError: Challenge对象不存在时抛出
+            ValueError: Challenge对象不存在时抛出
         """
         if not (p_c := self._p_challenge):
-            raise RuntimeError("Challenge对象不存在!")
+            raise ValueError("Challenge object doesn't exist!")
         code = f"""
             mov eax, {p_c};
             push {plant.base_ptr};
@@ -109,10 +108,12 @@ class GameBoard(ob.ObjBase):
             type_: 植物类型
         Returns:
             成功则返回植物对象, 否则返回None
+        Raises:
+            ValueError: Challenge对象不存在时抛出
         """
-        next_idx = self.plant_list.next_index
         if not (p_c := self._p_challenge):
-            raise RuntimeError("Challenge对象不存在!")
+            raise ValueError("Challenge object doesn't exist!")
+        next_idx = self.plant_list.next_index
         code = f"""
             push ebx;
             push edi;
@@ -138,9 +139,11 @@ class GameBoard(ob.ObjBase):
             type_: 僵尸
         Returns:
             放置的僵尸对象
+        Raises:
+            ValueError: Challenge对象不存在时抛出
         """
         if not (p_c := self._p_challenge):
-            raise RuntimeError("Challenge对象不存在!")
+            raise ValueError("Challenge object doesn't exist!")
         ret_idx = self.zombie_list.next_index
         code = f'''
             mov eax, {row};
