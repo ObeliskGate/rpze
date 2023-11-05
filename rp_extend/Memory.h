@@ -125,7 +125,7 @@ template <typename T>
 std::optional<T> Memory::_readRemoteMemory(const std::vector<int32_t>& offsets)
 {
 	HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	int32_t basePtr = offsets[0];
+	int64_t basePtr = offsets[0];
 	do
 	{
 		for (size_t i = 1; i < offsets.size(); i++)
@@ -149,7 +149,7 @@ template <typename T>
 bool Memory::_writeRemoteMemory(T&& val, const std::vector<int32_t>& offsets)
 {
 	HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	int32_t basePtr = offsets[0];
+	int64_t basePtr = offsets[0];
 	do
 	{
 		for (size_t i = 1; i < offsets.size(); i++)
