@@ -19,7 +19,7 @@ Memory::Memory(DWORD pid)
 	hMemory = OpenFileMappingW(FILE_MAP_ALL_ACCESS, FALSE, fileName.c_str());
 	if (hMemory == NULL)
 	{
-		std::cerr << "find shared memory failed" << GetLastError() << std::endl;
+		std::cerr << "find shared memory failed: " << GetLastError() << std::endl;
 		throw std::exception("find shared memory failed");
 	}
 	pBuf = MapViewOfFile(hMemory, FILE_MAP_ALL_ACCESS, 0, 0, 1024);

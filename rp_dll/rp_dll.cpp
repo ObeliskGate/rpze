@@ -6,6 +6,8 @@
 
 void setConsole()
 {
+	DWORD tmp;
+	VirtualProtect(reinterpret_cast<void*>(0x400000), 0x394000, PAGE_EXECUTE_READWRITE, &tmp);
 	AllocConsole();
 	FILE* _;
 	freopen_s(&_, "CONOUT$", "w", stdout);
@@ -40,6 +42,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		case PhaseCode::JUMP_FRAME:
 		{
 			auto pBoard = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
+			auto pSharedMemory = SharedMemory::getInstance();
 			while (phaseCode == PhaseCode::JUMP_FRAME)
 			{
 				__asm
@@ -48,7 +51,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 					mov edx, 0x415D40 // Board::Update
 					call edx
 				}
-				script(1, SharedMemory::getInstance());
+				script(1, pSharedMemory);
 			}
 			continue;
 		}

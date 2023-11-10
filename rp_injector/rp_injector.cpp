@@ -15,7 +15,6 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
         std::cerr << "open process failed" << std::endl;
         return false;
     }
-
     HMODULE hKernel32 = GetModuleHandleW(L"KERNEL32.DLL");
     if (!hKernel32)
     {

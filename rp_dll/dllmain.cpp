@@ -1,6 +1,7 @@
 // dllmain.cpp : 定义 DLL 应用程序的入口点。
 #include "pch.h"
 #include "rp_dll.h"
+#include "Hook.h"
 #include "SharedMemory.h"
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -13,8 +14,11 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_PROCESS_ATTACH:
     {
         setConsole();
-        auto s = SharedMemory::getInstance();
-        injectScript(s);
+        SharedMemory::getInstance();
+		Hook::addHook(0x452732, [](const Registers&)
+         {
+	         script(0, SharedMemory::getInstance());
+         });
         break;
     }
     case DLL_THREAD_ATTACH:
@@ -22,6 +26,7 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         break;
     case DLL_PROCESS_DETACH:
         SharedMemory::deleteInstance();
+        Hook::disableHooks();
         break;
     }
     return TRUE;

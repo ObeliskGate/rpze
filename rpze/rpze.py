@@ -1,6 +1,7 @@
 # -*- coding: utf_8 -*-   
 import basic.inject as inject
 from tests import basic_test
+from time import sleep
 from rp_extend import Controller
 
 if __name__ == "__main__":
