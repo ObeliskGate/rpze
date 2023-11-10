@@ -104,28 +104,4 @@ void __stdcall script(const DWORD isInGame, const SharedMemory* pSharedMemory)
 	*pRunState = RunState::RUNNING;
 }
 
-void injectScript(SharedMemory* pSharedMemory)
-{
-
-	DWORD tmp;
-	VirtualProtect(reinterpret_cast<void*>(0x400000), 0x394000, PAGE_EXECUTE_READWRITE, &tmp);
-
-	// out of Board::Update
-	tmp = 0x6b0100;
-	writeMemory<BYTE>(0x68, tmp); tmp += 1;
-	writeMemory<DWORD>(reinterpret_cast<DWORD>(pSharedMemory), tmp); tmp += 4; // push pSharedMemory
-
-	writeMemory<BYTE>(0x68, tmp); tmp += 1;
-	writeMemory<DWORD>(0, tmp);  tmp += 4; // push 0
-
-	writeMemory<BYTE>(0xe8, tmp); tmp += 1;
-	writeMemory<DWORD>(reinterpret_cast<DWORD>(&script) - tmp - 4, tmp);  tmp += 4;// call script
-
-	writeMemory<BYTE>(0xc3, tmp); // RET
-
-	// jmp out of Board::Update
-	writeMemory<BYTE>(0xe9, 0x452732);
-	writeMemory<DWORD>(0x6b0100 - 0x452732 - 5, 0x452733); // jmp 6b0100
-}
-
 #undef __until

@@ -16,9 +16,9 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         setConsole();
         SharedMemory::getInstance();
 		Hook::addHook(0x452732, [](const Registers&)
-         {
+        {
 	         script(0, SharedMemory::getInstance());
-         });
+        });
         break;
     }
     case DLL_THREAD_ATTACH:

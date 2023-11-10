@@ -49,13 +49,13 @@ class Hook
 	void* pHook;
 
 	Hook(DWORD hookPtr, HookFuncType hookFunc);
+
+	~Hook();
 public:
 	inline static std::vector<Hook*> hooks{};
 
 	static const Hook& addHook(DWORD hookPtr, HookFuncType hookFunc);
 
 	static void disableHooks();
-
-	~Hook();
 };
 

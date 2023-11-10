@@ -10,6 +10,3 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode);
 
 // 被注入到游戏中的函数, 一式两份分别在LawnApp::UpdateFrames和IZUpdate
 void __stdcall script(DWORD isInGame, const SharedMemory* pSharedMemory);
-
-// 注入函数
-void injectScript(SharedMemory* pSharedMemory);

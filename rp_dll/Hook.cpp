@@ -6,7 +6,11 @@ Hook::Hook(DWORD hookPtr, HookFuncType hookFunc)
 	pHook = reinterpret_cast<void*>(hookPtr);
 	constexpr size_t SIZE = sizeof(REGISTER_INIT_CODE) - 1 + 5 * 2;
 	this->code = static_cast<char*>(VirtualAlloc(NULL, SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
-	assert(this->code); // virtualalloc真的会NULL吗
+	if (this->code == NULL) // virtualalloc真的会NULL吗
+	{
+		std::cout << "VirtualAlloc failed when creating hook: " << GetLastError() << std::endl;
+		throw std::exception("VirtualAlloc failed when creating hook: ");
+	}
 	this->hookFunc = hookFunc;
 	auto registersPtr = reinterpret_cast<DWORD>(regs.getBase());
 	CopyMemory(this->code + sizeof(REGISTER_INIT_CODE) - 1, pHook, 5);
