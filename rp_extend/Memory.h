@@ -29,7 +29,11 @@ class Memory
 public:
 	explicit Memory(DWORD pid);
 
-	~Memory() { endControl(); CloseHandle(hMemory);  }
+	~Memory() { 
+		endControl(); 
+		UnmapViewOfFile(pBuf);
+		CloseHandle(hMemory);  
+	}
 
 	inline DWORD getPid() const { return pid; }
 

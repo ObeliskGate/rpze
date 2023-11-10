@@ -5,8 +5,8 @@ Hook::Hook(DWORD hookPtr, HookFuncType hookFunc)
 {
 	pHook = reinterpret_cast<void*>(hookPtr);
 	constexpr size_t SIZE = sizeof(REGISTER_INIT_CODE) - 1 + 5 * 2;
-	this->code = static_cast<char*>(malloc(SIZE));
-	assert(this->code); // 我真服了malloc真的会返回NULL吗
+	this->code = static_cast<char*>(VirtualAlloc(NULL, SIZE, MEM_COMMIT, PAGE_EXECUTE_READWRITE));
+	assert(this->code); // virtualalloc真的会NULL吗
 	this->hookFunc = hookFunc;
 	auto registersPtr = reinterpret_cast<DWORD>(regs.getBase());
 	CopyMemory(this->code + sizeof(REGISTER_INIT_CODE) - 1, pHook, 5);
@@ -51,5 +51,5 @@ void Hook::disableHooks()
 Hook::~Hook()
 {
 	CopyMemory(this->pHook, this->originalCode, 5);
-	free(this->code);
+	VirtualFree(code, 0, MEM_RELEASE);
 }
