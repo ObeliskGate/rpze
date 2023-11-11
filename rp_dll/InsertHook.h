@@ -37,25 +37,28 @@ public:
 	BYTE bl() { return get<12, BYTE>(); }
 
 	BYTE* getBase() { return data; }
+
+	static void 
 };
 
-using HookFuncType = void(__stdcall*)(const Registers&);
-class Hook
+using InsertHookFuncType = void(__stdcall*)(const Registers&);
+
+class InsertHook
 {
 	char* code;
 	Registers regs{};
 	char originalCode[5];
-	HookFuncType hookFunc;
+	InsertHookFuncType hookFunc;
 	void* pHook;
 
-	Hook(DWORD hookPtr, HookFuncType hookFunc);
+	InsertHook(DWORD hookPtr, InsertHookFuncType hookFunc);
 
-	~Hook();
+	~InsertHook();
 public:
-	inline static std::vector<Hook*> hooks{};
+	inline static std::vector<InsertHook*> hooks{};
 
-	static const Hook& addHook(DWORD hookPtr, HookFuncType hookFunc);
+	static const InsertHook& addInsertHook(DWORD hookPtr, InsertHookFuncType hookFunc);
 
-	static void disableHooks();
+	static void disableInsertHooks();
 };
 

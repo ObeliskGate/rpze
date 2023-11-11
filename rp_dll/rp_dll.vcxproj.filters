@@ -27,7 +27,7 @@
     <ClCompile Include="SharedMemory.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="Hook.cpp">
+    <ClCompile Include="InsertHook.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,7 +44,7 @@
     <ClInclude Include="Enums.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Hook.h">
+    <ClInclude Include="InsertHook.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

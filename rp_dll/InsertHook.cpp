@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "Hook.h"
+#include "InsertHook.h"
 
-Hook::Hook(DWORD hookPtr, HookFuncType hookFunc)
+InsertHook::InsertHook(DWORD hookPtr, InsertHookFuncType hookFunc)
 {
 	pHook = reinterpret_cast<void*>(hookPtr);
 	constexpr size_t SIZE = sizeof(REGISTER_INIT_CODE) - 1 + 5 * 2;
@@ -36,14 +36,14 @@ Hook::Hook(DWORD hookPtr, HookFuncType hookFunc)
 	writeMemory<DWORD>(reinterpret_cast<DWORD>(this->code) - hookPtr - 5, hookPtr + 1);
 }
 
-const Hook& Hook::addHook(DWORD hookPtr, HookFuncType hookFunc)
+const InsertHook& InsertHook::addInsertHook(DWORD hookPtr, InsertHookFuncType hookFunc)
 {
-	auto hook = new Hook(hookPtr, hookFunc);
+	auto hook = new InsertHook(hookPtr, hookFunc);
 	hooks.push_back(hook);
 	return *hook;
 }
 
-void Hook::disableHooks()
+void InsertHook::disableInsertHooks()
 {
 	for (auto hook : hooks)
 	{
@@ -52,7 +52,7 @@ void Hook::disableHooks()
 	hooks.clear();
 }
 
-Hook::~Hook()
+InsertHook::~InsertHook()
 {
 	CopyMemory(this->pHook, this->originalCode, 5);
 	VirtualFree(code, 0, MEM_RELEASE);
