@@ -34,6 +34,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="rp_dll.h" />
     <ClInclude Include="SharedMemory.h" />
+    <ClInclude Include="VirtualUniquePtr.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -167,6 +168,5 @@
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
-  <ImportGroup Label="ExtensionTargets">
-  </ImportGroup>
+  <ImportGroup Label="ExtensionTargets" />
 </Project>

@@ -15,18 +15,18 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     {
         setConsole();
         SharedMemory::getInstance();
-		InsertHook::addInsertHook(0x452732, [](const Registers&)
+		InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, [](const Registers&)
         {
-	         script(0, SharedMemory::getInstance());
+			std::cout << "hello" << std::endl;
+			script(0, SharedMemory::getInstance());
         });
-        break;
     }
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
         break;
     case DLL_PROCESS_DETACH:
         SharedMemory::deleteInstance();
-        InsertHook::disableInsertHooks();
+        InsertHook::deleteAll();
         break;
     }
     return TRUE;
