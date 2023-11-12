@@ -11,6 +11,7 @@ public:
 	}
 	VirtualUniquePtr(VirtualUniquePtr&& other) noexcept : ptr(other.ptr) { other.ptr = nullptr; }
 	VirtualUniquePtr(VirtualUniquePtr& other) = delete;
+	VirtualUniquePtr& operator=(VirtualUniquePtr& other) = delete;
 	VirtualUniquePtr& operator=(VirtualUniquePtr&& other) noexcept
 	{
 		if (this != &other) {
