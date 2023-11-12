@@ -157,7 +157,7 @@ class GameBoard(ob.ObjBase):
         return self.zombie_list.at(ret_idx)
 
 
-__game_board_cache: GameBoard = None  # 重复构造对象会导致多次decode字节码, 故缓存.
+__game_board_cache = None  # 重复构造对象会导致多次decode字节码, 故缓存.
 
 
 def get(controller: Controller) -> GameBoard:
@@ -173,6 +173,6 @@ def get(controller: Controller) -> GameBoard:
     """
     global __game_board_cache
     valid, p_board = controller.get_p_board()
-    if (__game_board_cache is None) or not valid:
+    if (not valid) or (__game_board_cache is None):
         __game_board_cache = GameBoard(p_board, controller)
     return __game_board_cache

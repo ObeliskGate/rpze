@@ -76,7 +76,7 @@ public:
 
 constexpr size_t POP_STACK_NUM_OFFSET = offsetof(InsertHook, popStackNum);
 
-inline void __declspec(naked) __fastcall hookStub(InsertHook* pInsertHook) // 用jmp调用 并且需要手动popfd popad的naked函数. 可能会帮上级函数一起ret.
+inline void __declspec(naked) hookStub() // 参数为ecx = InsertHook* 用jmp调用 并且需要手动popfd popad的naked函数. 可能会帮上级函数一起ret.
 {
 	__asm
 	{
@@ -87,10 +87,7 @@ inline void __declspec(naked) __fastcall hookStub(InsertHook* pInsertHook) // 用
 		call offset InsertHook::hookFunc
 		pop ecx
 		test al, al
-		jne LOriginalEnd
-		jmp LReturnEnd
-
-		LOriginalEnd :
+		jz LReturnEnd
 		call offset InsertHook::getAfterCodePtr
 		jmp eax
 
