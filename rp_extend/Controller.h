@@ -19,7 +19,7 @@ public:
 		return t;
 	}
 
-	inline std::tuple<bool, uint32_t> get_p_board() const // 第一位返回0表示无须换新
+	inline std::tuple<bool, uint32_t> get_p_board() const // 第一位返回true表示无须换新
 	{
 		return mem.getPBoard();
 	}

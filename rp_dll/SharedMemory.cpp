@@ -54,7 +54,8 @@ SharedMemory* SharedMemory::getInstance()
 }
 
 bool SharedMemory::deleteInstance()
-{ 
+{
+	if (!instancePtr) return false;
 	delete instancePtr;
 	instancePtr = nullptr;
 	return true;

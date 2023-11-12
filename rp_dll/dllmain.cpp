@@ -31,7 +31,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
                // }
                return true;
            });
-		InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, [](const Registers& regs)
+		InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, [](const Registers& regs) // Board::Board
 		{
 			auto boardPtr = regs.eax();
 			SharedMemory::getInstance()->boardPtr() = boardPtr;
