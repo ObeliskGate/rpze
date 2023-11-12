@@ -9,30 +9,30 @@ inline DWORD getJmpVal(void* pTo, void* pFrom)
 
 bool InsertHook::hookFunc(DWORD stackTopPtr)
 {
-	std::cout << std::hex << reinterpret_cast<DWORD>(this) << std::endl;
-	std::cout << std::hex << reinterpret_cast<DWORD>(this->afterCode.get()) << std::endl;
-	CopyMemory(registers.getBase(), reinterpret_cast<void*>(stackTopPtr + REGISTERS_SIZE), REGISTERS_SIZE);
+	CopyMemory(registers.getBase(), reinterpret_cast<void*>(stackTopPtr), REGISTERS_SIZE);
 	return hookFunctor(registers);
 }
 
 InsertHook::InsertHook(void* pInsert, size_t replacedSize, DWORD popStackNum, std::function<ReplaceHookFunc> hookFunc)
-	: pInsert(pInsert), replacedSize(replacedSize), popStackNum(popStackNum) , hookFunctor(std::move(hookFunc))
+	: pInsert(pInsert), replacedSize(replacedSize), hookFunctor(std::move(hookFunc)) , popStackNum(popStackNum)
 {
 
 	// originalCode¸³Öµ
-	originalCode = VirtualUniquePtr<char>(replacedSize + sizeof(INIT_CODE) - 1);
-	CopyMemory(originalCode.get(), pInsert, replacedSize);
-	CopyMemory(originalCode.get() + replacedSize, INIT_CODE, sizeof(INIT_CODE) - 1);
-	*reinterpret_cast<DWORD*>(originalCode.get() + replacedSize + 2) = reinterpret_cast<DWORD>(this);
-	*reinterpret_cast<DWORD*>(originalCode.get() + replacedSize + 7) = reinterpret_cast<DWORD>(&hookStub);
+	originalCode = VirtualUniquePtr<char>(sizeof(INIT_CODE) - 1);
+	CopyMemory(originalCode.get(), INIT_CODE, sizeof(INIT_CODE) - 1);
+	*reinterpret_cast<DWORD*>(originalCode.get() + 2) = reinterpret_cast<DWORD>(this);
+	*reinterpret_cast<DWORD*>(originalCode.get() + 7) = reinterpret_cast<DWORD>(&hookStub);
 
 
 
 	// afterCode¸³Öµ
-	this->afterCode = VirtualUniquePtr<char>(sizeof(END_CODE) - 1);
-	CopyMemory(this->afterCode.get(), END_CODE, sizeof(END_CODE) - 1);
-	*reinterpret_cast<DWORD*>(this->afterCode.get() + 3) =
-		getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, this->afterCode.get() + 2);
+	this->afterCode = VirtualUniquePtr<char>(replacedSize + sizeof(END_CODE) - 1);
+	afterCode[0] = '\x9d'; // popfd
+	afterCode[1] = '\x61'; // popad
+	CopyMemory(this->afterCode.get() + 2, pInsert, replacedSize);
+	afterCode[replacedSize + 2] = '\xe9'; // jmp originalCode
+	*reinterpret_cast<DWORD*>(this->afterCode.get() + replacedSize + 3) =
+		getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, this->afterCode.get() + replacedSize + 2);
 
 	// ×¢Èë
 	char* injectCode = new char[replacedSize];
@@ -44,12 +44,12 @@ InsertHook::InsertHook(void* pInsert, size_t replacedSize, DWORD popStackNum, st
 	}
 	*reinterpret_cast<DWORD*>(injectCode + 1) = getJmpVal(originalCode.get(), pInsert);
 	CopyMemory(pInsert, injectCode, replacedSize);
-	delete injectCode;
+	delete[] injectCode;
 }
 
 InsertHook::~InsertHook()
 {
-	CopyMemory(pInsert, originalCode.get(), replacedSize);
+	CopyMemory(pInsert, afterCode.get() + 2, replacedSize);
 }
 
 const InsertHook& InsertHook::addReplace(void* pInsert, size_t replacedSize, std::function<ReplaceHookFunc> hookFunc, DWORD popStackNum)

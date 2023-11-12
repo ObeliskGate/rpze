@@ -16,10 +16,21 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         setConsole();
         SharedMemory::getInstance();
 		InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, [](const Registers&)
-        {
-			std::cout << "hello" << std::endl;
-			script(0, SharedMemory::getInstance());
-        });
+	        {
+				script(0, SharedMemory::getInstance());
+	        });
+        InsertHook::addReplace(reinterpret_cast<void*>(0x524a70), 7, [](const Registers& regs)
+            {
+                auto zombie = regs.eax();
+				std::cout << "zombie: " << std::hex << zombie << std::endl;
+				if (zombie && readMemory<int32_t>(zombie + 0x24) == 2)
+				{
+                    writeMemory(400, zombie + 0xc);
+                    return false;
+				}
+                std::cout << "no zombie" << std::endl;
+                return true;
+            });
     }
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:
