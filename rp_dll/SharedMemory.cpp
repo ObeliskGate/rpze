@@ -72,10 +72,10 @@ bool SharedMemory::readMemory()
 			b = false;
 			break;
 		}
-		memcpy(const_cast<void*>(getReadResult()), *p, getMemoryNum());
+		memcpy(const_cast<void*>(getReadResult()), *p, memoryNum());
 		b = true;
 	} while (false);
-	getExecuteResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
+	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
 	return b;
 }
 
@@ -90,9 +90,9 @@ bool SharedMemory::writeMemory()
 			break;	
 
 		}
-		memcpy(p.value(), const_cast<const void*>(getWrittenVal()), getMemoryNum());
+		memcpy(p.value(), const_cast<const void*>(getWrittenVal()), memoryNum());
 		b = true;
 	} while (false);
-	getExecuteResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
+	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
 	return b;
 }

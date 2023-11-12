@@ -8,7 +8,7 @@ void Memory::getRemoteMemoryAddress()
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY_PTR;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);
 
-	if (getExecuteResult() == ExecuteResult::SUCCESS)
+	if (executeResult() == ExecuteResult::SUCCESS)
 		remoteMemoryAddress = *static_cast<volatile uint32_t*>(getReadResult());
 	else throw std::exception("unexpected behavior");
 }
@@ -33,15 +33,15 @@ Memory::Memory(DWORD pid)
 		std::cout << "find shared memory success" << std::endl;
 	}
 
-	pCurrentPhaseCode = &getPhaseCode();
-	pCurrentRunState = &getRunState();
-	getGlobalState() = GlobalState::CONNECTED;
+	pCurrentPhaseCode = &phaseCode();
+	pCurrentRunState = &runState();
+	globalState() = GlobalState::CONNECTED;
 	this->pid = pid;
 }
 
 std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<int32_t>& offsets)
 {
-	getMemoryNum() = size;
+	memoryNum() = size;
 	int idx = 0;
 	for (auto it : offsets)
 	{
@@ -51,14 +51,14 @@ std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<i
 	getOffsets()[idx] = OFFSET_END;
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);//等待执行完成
-	if (getExecuteResult() == ExecuteResult::SUCCESS) return getReadResult();
-	if (getExecuteResult() == ExecuteResult::FAIL) return {};
+	if (executeResult() == ExecuteResult::SUCCESS) return getReadResult();
+	if (executeResult() == ExecuteResult::FAIL) return {};
 	throw std::exception("unexpected behavior");
 }
 
 bool Memory::_writeMemory(const void* pVal, BYTE size, const std::vector<int32_t>& offsets)
 {
-	getMemoryNum() = size;
+	memoryNum() = size;
 	memcpy(getWrittenVal(), pVal, size);
 	int idx = 0;
 	for (auto it : offsets)
@@ -70,8 +70,8 @@ bool Memory::_writeMemory(const void* pVal, BYTE size, const std::vector<int32_t
 
 	getCurrentPhaseCode() = PhaseCode::WRITE_MEMORY;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
-	if (getExecuteResult() == ExecuteResult::SUCCESS) return true;
-	if (getExecuteResult() == ExecuteResult::FAIL) return false;
+	if (executeResult() == ExecuteResult::SUCCESS) return true;
+	if (executeResult() == ExecuteResult::FAIL) return false;
 	throw std::exception("unexpected behavior");
 }
 
@@ -79,10 +79,10 @@ bool Memory::startJumpFrame()
 {
 	if (isJumpingFrame) return false;
 	isJumpingFrame = true;
-	pCurrentPhaseCode = &getJumpingPhaseCode();
-	pCurrentRunState = &getJumpingRunState();
-	getJumpingPhaseCode() = PhaseCode::WAIT;
-	getPhaseCode() = PhaseCode::JUMP_FRAME;
+	pCurrentPhaseCode = &jumpingPhaseCode();
+	pCurrentRunState = &jumpingRunState();
+	jumpingPhaseCode() = PhaseCode::WAIT;
+	phaseCode() = PhaseCode::JUMP_FRAME;
 	return true;
 }
 
@@ -90,10 +90,10 @@ bool Memory::endJumpFrame()
 {
 	if (!isJumpingFrame) return false;
 	isJumpingFrame = false;
-	pCurrentPhaseCode = &getPhaseCode();
-	pCurrentRunState = &getRunState();
-	getPhaseCode() = PhaseCode::WAIT;
-	getJumpingPhaseCode() = PhaseCode::CONTINUE;
+	pCurrentPhaseCode = &phaseCode();
+	pCurrentRunState = &runState();
+	phaseCode() = PhaseCode::WAIT;
+	jumpingPhaseCode() = PhaseCode::CONTINUE;
 	return true;
 }
 
@@ -103,16 +103,16 @@ bool Memory::runCode(const char* codes, int num)
 
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
-	if (getExecuteResult() == ExecuteResult::SUCCESS) return true;
-	if (getExecuteResult() == ExecuteResult::FAIL) return false;
+	if (executeResult() == ExecuteResult::SUCCESS) return true;
+	if (executeResult() == ExecuteResult::FAIL) return false;
 	throw std::exception("unexpected behavior");
 }
 
 void Memory::endControl()
 {
-	getGlobalState() = GlobalState::NOT_CONNECTED;
-	getPhaseCode() = PhaseCode::CONTINUE;
-	getJumpingPhaseCode() = PhaseCode::CONTINUE;
+	globalState() = GlobalState::NOT_CONNECTED;
+	phaseCode() = PhaseCode::CONTINUE;
+	jumpingPhaseCode() = PhaseCode::CONTINUE;
 }
 
 uint32_t Memory::getWrittenAddress()

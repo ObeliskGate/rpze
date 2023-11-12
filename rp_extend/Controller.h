@@ -14,7 +14,7 @@ public:
 
 	inline std::optional<int32_t> get_time() const
 	{
-		auto t = mem.getGameTime();
+		auto t = mem.gameTime();
 		if (t == INT32_MIN) return {};
 		return t;
 	}
@@ -44,7 +44,7 @@ public:
 
 	inline void end() { mem.endControl(); }
 
-	inline void start() { mem.getGlobalState() = GlobalState::CONNECTED; }
+	inline void start() { mem.globalState() = GlobalState::CONNECTED; }
 
 	inline uint32_t result_address() { return mem.getWrittenAddress(); }
 

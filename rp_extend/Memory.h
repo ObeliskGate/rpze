@@ -38,22 +38,22 @@ public:
 	inline DWORD getPid() const { return pid; }
 
 	// 怎么运行游戏
-	inline volatile PhaseCode& getPhaseCode() const { return getRef<PhaseCode>(0); }
+	inline volatile PhaseCode& phaseCode() const { return getRef<PhaseCode>(0); }
 
 	// 游戏运行状态
-	inline volatile RunState& getRunState() const { return getRef<RunState>(4); }
+	inline volatile RunState& runState() const { return getRef<RunState>(4); }
 
 	// 游戏当前时间
-	inline volatile int32_t& getGameTime() const { return getRef<int32_t>(8); }
+	inline volatile int32_t& gameTime() const { return getRef<int32_t>(8); }
 
 	//  跳帧时怎么运行游戏
-	inline volatile PhaseCode& getJumpingPhaseCode() const { return getRef<PhaseCode>(12); }
+	inline volatile PhaseCode& jumpingPhaseCode() const { return getRef<PhaseCode>(12); }
 
 	// 跳帧时游戏的运行状态
-	inline volatile RunState& getJumpingRunState() const { return getRef<RunState>(16); }
+	inline volatile RunState& jumpingRunState() const { return getRef<RunState>(16); }
 
 	// 读写内存时 要读写的内存的位数, 最大为8
-	inline uint32_t& getMemoryNum() const { return getRef<uint32_t>(20); }
+	inline uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
 
 
 	static constexpr size_t LENGTH = 10;
@@ -68,16 +68,16 @@ public:
 	inline volatile void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
 	
 	// 获得全局状态
-	inline GlobalState& getGlobalState() const { return getRef<GlobalState>(80); }
+	inline GlobalState& globalState() const { return getRef<GlobalState>(80); }
 
 	// 读写结果
-	inline volatile ExecuteResult& getExecuteResult() const { return getRef<ExecuteResult>(84); }
+	inline volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(84); }
 
 	// 8字节 返回结果
 	inline volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + 88);  }
 
 	// p_board指针
-	inline volatile uint32_t& getBoardPtr() const { return getRef<uint32_t>(96); }
+	inline volatile uint32_t& boardPtr() const { return getRef<uint32_t>(96); }
 
 	// pBoard指针效验位
 	inline volatile bool& isBoardPtrValid() const { return getRef<bool>(100); }
@@ -134,7 +134,7 @@ public:
 	{
 		auto t = isBoardPtrValid();
 		isBoardPtrValid() = true;
-		return { t, getBoardPtr() };
+		return { t, boardPtr() };
 	}
 };
 
@@ -188,7 +188,7 @@ inline std::optional<T> Memory::readMemory(const std::vector<int32_t>& offsets)
 {
 	static_assert(sizeof(T) <= 8, "Please assert sizeof(T) <= 8. ");
 	if (offsets.size() > 10) return {};
-	if (getGlobalState() == GlobalState::NOT_CONNECTED) return _readRemoteMemory<T>(offsets);
+	if (globalState() == GlobalState::NOT_CONNECTED) return _readRemoteMemory<T>(offsets);
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p.has_value()) return {};
 	return *static_cast<volatile T*>(p.value());
@@ -199,6 +199,6 @@ inline bool Memory::writeMemory(T&& val, const std::vector<int32_t>& offsets)
 {
 	static_assert(sizeof(T) <= 8, "Please assert sizeof(T) <= 8.");
 	if (offsets.size() > 10) return false;
-	if (getGlobalState() == GlobalState::NOT_CONNECTED) return _writeRemoteMemory(std::forward<T>(val), offsets);
+	if (globalState() == GlobalState::NOT_CONNECTED) return _writeRemoteMemory(std::forward<T>(val), offsets);
 	return _writeMemory(&val, sizeof(T), offsets);
 }

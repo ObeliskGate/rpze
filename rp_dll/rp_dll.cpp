@@ -35,7 +35,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 				mov edx, p
 				call edx
 			}
-			SharedMemory::getInstance()->getExecuteResult() = ExecuteResult::SUCCESS;
+			SharedMemory::getInstance()->executeResult() = ExecuteResult::SUCCESS;
 			phaseCode = PhaseCode::WAIT;
 			continue;
 		}
@@ -68,7 +68,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		{
 			auto s = SharedMemory::getInstance();
 			*static_cast<volatile uint32_t*>(s->getReadResult()) = reinterpret_cast<uint32_t>(s->getSharedMemoryPtr());
-			s->getExecuteResult() = ExecuteResult::SUCCESS;
+			s->executeResult() = ExecuteResult::SUCCESS;
 			phaseCode = PhaseCode::WAIT;
 			continue;
 		}
@@ -78,19 +78,19 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 
 void __stdcall script(const DWORD isInGame, const SharedMemory* pSharedMemory)
 {
-	if (pSharedMemory->getGlobalState() == GlobalState::NOT_CONNECTED) return;
-	volatile PhaseCode* pPhaseCode = &pSharedMemory->getPhaseCode();
-	RunState* pRunState = &pSharedMemory->getRunState();
+	if (pSharedMemory->globalState() == GlobalState::NOT_CONNECTED) return;
+	volatile PhaseCode* pPhaseCode = &pSharedMemory->phaseCode();
+	RunState* pRunState = &pSharedMemory->runState();
 	if (isInGame)
 	{
-		if (pSharedMemory->getPhaseCode() != PhaseCode::JUMP_FRAME) return;
-		pPhaseCode = &pSharedMemory->getJumpingPhaseCode();
-		pRunState = &pSharedMemory->getJumpingRunState();
+		if (pSharedMemory->phaseCode() != PhaseCode::JUMP_FRAME) return;
+		pPhaseCode = &pSharedMemory->jumpingPhaseCode();
+		pRunState = &pSharedMemory->jumpingRunState();
 	}
 	*pPhaseCode = PhaseCode::WAIT;
 	*pRunState = RunState::OVER;
 	auto time = readMemory<DWORD>(0x6a9ec0, { 0x768 , 0x556c });
-	pSharedMemory->getGameTime() = time.value_or(INT32_MIN);
+	pSharedMemory->gameTime() = time.value_or(INT32_MIN);
 	doAsPhaseCode(*pPhaseCode);
 	*pRunState = RunState::RUNNING;
 }
