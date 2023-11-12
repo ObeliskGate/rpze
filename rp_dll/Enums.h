@@ -31,10 +31,10 @@ enum class GlobalState : int32_t
 	CONNECTED, // 已连接
 };
 
-enum class SlicePosition: int32_t // 这个应该是作为index用的
+enum class HookPosition : int32_t // 这个应该是作为index用的
 {
 	MAIN_LOOP = 0,
-	ZOMBIE_UPDATE_SPEED
+	ZOMBIE_PICK_RANDOM_SPEED
 };
 
-inline int32_t getIndex(SlicePosition pos) { return static_cast<int32_t>(pos); }
+inline int32_t getIndex(HookPosition pos) { return static_cast<int32_t>(pos); }

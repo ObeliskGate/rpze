@@ -76,7 +76,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 	}
 }
 
-void __stdcall script(const DWORD isInGame, const SharedMemory* pSharedMemory)
+void script(const DWORD isInGame, const SharedMemory* pSharedMemory)
 {
 	if (pSharedMemory->globalState() == GlobalState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode = &pSharedMemory->phaseCode();

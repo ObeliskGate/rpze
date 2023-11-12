@@ -82,6 +82,9 @@ public:
 	// pBoard指针效验位
 	inline volatile bool& isBoardPtrValid() const { return getRef<bool>(100); }
 
+	// remote钩子位置
+	volatile HookPosition& hookPosition() const { return getRef<HookPosition>(104); }
+
 	// 用来存放asm的指针, 从600开始
 	inline void* getAsmPtr() const { return getPtr() + 600; }
 

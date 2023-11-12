@@ -30,3 +30,11 @@ enum class GlobalState : int32_t
 	NOT_CONNECTED = 0, // 未连接
 	CONNECTED, // 已连接
 };
+
+enum class HookPosition : int32_t 
+{
+	MAIN_LOOP = 0,
+	ZOMBIE_PICK_RANDOM_SPEED
+};
+
+inline int32_t getIndex(HookPosition pos) { return static_cast<int32_t>(pos); }
