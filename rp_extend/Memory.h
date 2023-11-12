@@ -129,6 +129,13 @@ public:
 	void endControl();
 
 	uint32_t getWrittenAddress();
+
+	inline std::tuple<bool, uint32_t> getPBoard() const // 第一位返回0表示无须换新
+	{
+		auto t = isBoardPtrValid();
+		isBoardPtrValid() = true;
+		return { t, getBoardPtr() };
+	}
 };
 
 template <typename T>
