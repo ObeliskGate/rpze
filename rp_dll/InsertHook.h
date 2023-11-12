@@ -95,7 +95,7 @@ inline void __declspec(naked) __fastcall hookStub(InsertHook* pInsertHook) // ”√
 		jmp eax
 
 		LReturnEnd :
-		mov eax, [0x60b200]
+		mov eax, 0x6b0200
 		mov [eax], ecx
 		popfd
 		popad

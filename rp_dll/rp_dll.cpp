@@ -4,7 +4,7 @@
 
 #define __until(expr) do {} while (!(expr))
 
-void setConsole()
+void init()
 {
 	DWORD tmp;
 	VirtualProtect(reinterpret_cast<void*>(0x400000), 0x394000, PAGE_EXECUTE_READWRITE, &tmp);
@@ -89,17 +89,8 @@ void __stdcall script(const DWORD isInGame, const SharedMemory* pSharedMemory)
 	}
 	*pPhaseCode = PhaseCode::WAIT;
 	*pRunState = RunState::OVER;
-	auto pBoard = readMemory<DWORD>(0x6a9ec0, { 0x768 });
-	if (pBoard.has_value() && pBoard != 0)
-	{
-		pSharedMemory->getBoardPtr() = *pBoard;
-		pSharedMemory->getGameTime() = readMemory<int32_t>(*pBoard + 0x556c ).value_or(INT32_MIN);
-	}
-	else
-	{
-		pSharedMemory->getBoardPtr() = 0;
-		pSharedMemory->getGameTime() = INT32_MIN;
-	}
+	auto time = readMemory<DWORD>(0x6a9ec0, { 0x768 , 0x556c });
+	pSharedMemory->getGameTime() = time.value_or(INT32_MIN);
 	doAsPhaseCode(*pPhaseCode);
 	*pRunState = RunState::RUNNING;
 }

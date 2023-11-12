@@ -3,7 +3,7 @@
 #include "SharedMemory.h"
 
 // 设置控制台
-void setConsole();
+void init();
 
 // 根据PhaseCode控制本帧应该做什么
 void doAsPhaseCode(volatile PhaseCode& phaseCode);

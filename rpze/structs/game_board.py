@@ -157,7 +157,7 @@ class GameBoard(ob.ObjBase):
         return self.zombie_list.at(ret_idx)
 
 
-__game_board_cache: dict[int, GameBoard] = {}  # 重复构造对象会导致多次decode字节码, 故缓存.
+__game_board_cache: GameBoard = None  # 重复构造对象会导致多次decode字节码, 故缓存.
 
 
 def get(controller: Controller) -> GameBoard:
@@ -172,12 +172,7 @@ def get(controller: Controller) -> GameBoard:
         RuntimeError: Board对象不存在时抛出
     """
     global __game_board_cache
-    if (p_board := controller.get_p_board()) is not None and p_board != 0:
-        key = (controller.pid << 32) | p_board  # 似乎多次重开获得的Board对象地址可能会相同, 但我不觉得有更好的办法
-        if key in __game_board_cache:
-            return __game_board_cache[key]
-        else:
-            ret = GameBoard(p_board, controller)
-            __game_board_cache[key] = ret
-            return ret
-    raise RuntimeError("cannot find GameBoard! Maybe you are not in game?")
+    valid, p_board = controller.get_p_board()
+    if (__game_board_cache is None) or not valid:
+        __game_board_cache = GameBoard(p_board, controller)
+    return __game_board_cache

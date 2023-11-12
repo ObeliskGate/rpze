@@ -74,6 +74,9 @@ public:
 	// pBoard指针
 	inline uint32_t& getBoardPtr() const { return getRef<uint32_t>(96); }
 
+	// pBoard指针效验位
+	inline volatile bool& isBoardPtrValid() const { return getRef<bool>(100); }
+
 	// 用来存放asm的指针, 从600开始
 	inline void* getAsmPtr() const { return getPtr() + 600; }
 
