@@ -14,26 +14,16 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	case DLL_PROCESS_ATTACH:
 		{
 			init();
-			SharedMemory::getInstance();
 			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, [](const Registers&) // main loop LawnApp::UpdateFrames 
 			{
 				script(0, SharedMemory::getInstance());
 			});
 
-			//InsertHook::addReplace(reinterpret_cast<void*>(0x524a70), 7, [](const Registers& regs) // Zombie::PickRandomSpeed
-			//{
-			//	auto pSharedMemory = SharedMemory::getInstance();
-			//	if (pSharedMemory->globalState() == GlobalState::NOT_CONNECTED) return true;
-			//	pSharedMemory->hookPosition() = HookPosition::ZOMBIE_PICK_RANDOM_SPEED;
-			//	auto zombie = static_cast<uint32_t>(regs.eax());
-			//	*static_cast<volatile uint32_t*>(pSharedMemory->returnResult()) = zombie;
-			//	auto& phaseCode = pSharedMemory->phaseCode() == PhaseCode::JUMP_FRAME ? pSharedMemory->jumpingPhaseCode() : pSharedMemory->phaseCode();
-			//	auto& runState = pSharedMemory->phaseCode() == PhaseCode::JUMP_FRAME ? pSharedMemory->jumpingRunState() : pSharedMemory->runState();
-			//	phaseCode = PhaseCode::WAIT;
-			//	runState = RunState::OVER;
-			//	doAsPhaseCode(phaseCode);
-			//	return *static_cast<volatile bool*>(pSharedMemory->returnResult());
-			//});
+			// InsertHook::addReplace(reinterpret_cast<void*>(0x524a70), 7, 
+			// 	[](const Registers&, void*) -> std::optional<int32_t> // Zombie::PickRandomSpeed
+			// 	{
+			// 		return 0;
+			// 	});
 			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, [](const Registers& regs) // Board::Board
 			{
 				auto boardPtr = regs.eax();

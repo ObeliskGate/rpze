@@ -14,6 +14,7 @@ void init()
 	freopen_s(&_, "CONIN$", "r", stdin);
 	std::ios::sync_with_stdio();
 	std::cout << "console set" << std::endl;
+	SharedMemory::getInstance();
 }
 
 void doAsPhaseCode(volatile PhaseCode& phaseCode)

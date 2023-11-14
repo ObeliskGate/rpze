@@ -7,32 +7,55 @@ inline DWORD getJmpVal(void* pTo, void* pFrom)
 }
 
 
-bool InsertHook::hookFunc(DWORD stackTopPtr)
+bool InsertHook::hookFunc(BYTE* stackTopPtr)
 {
-	CopyMemory(registers.getBase(), reinterpret_cast<void*>(stackTopPtr), REGISTERS_SIZE);
-	return hookFunctor(registers);
+	registers = Registers(stackTopPtr);
+	auto ret = hookFunctor(registers, getOriginalFuncPtr());
+	if (ret.has_value())
+	{
+		registers.eax() = *ret;
+		return false;
+	}
+	return true;
 }
 
-InsertHook::InsertHook(void* pInsert, size_t replacedSize, DWORD popStackNum, std::function<ReplaceHookFunc> hookFunc)
+InsertHook::InsertHook(void* pInsert, size_t replacedSize, BYTE popStackNum, std::function<ReplaceHookFunc> hookFunc)
 	: pInsert(pInsert), replacedSize(replacedSize), hookFunctor(std::move(hookFunc)) , popStackNum(popStackNum)
 {
 
+	// beforeCode赋值
+	beforeCode = VirtualUniquePtr<char>(sizeof(INIT_CODE) - 1);
+	CopyMemory(beforeCode.get(), INIT_CODE, sizeof(INIT_CODE) - 1);
+	*reinterpret_cast<DWORD*>(beforeCode.get() + 2) = reinterpret_cast<DWORD>(this);
+	*reinterpret_cast<DWORD*>(beforeCode.get() + 7) = reinterpret_cast<DWORD>(&hookStub);
+
 	// originalCode赋值
-	originalCode = VirtualUniquePtr<char>(sizeof(INIT_CODE) - 1);
-	CopyMemory(originalCode.get(), INIT_CODE, sizeof(INIT_CODE) - 1);
-	*reinterpret_cast<DWORD*>(originalCode.get() + 2) = reinterpret_cast<DWORD>(this);
-	*reinterpret_cast<DWORD*>(originalCode.get() + 7) = reinterpret_cast<DWORD>(&hookStub);
-
-
+	originalCode = VirtualUniquePtr<char>(replacedSize + 5);
+	CopyMemory(originalCode.get(), pInsert, replacedSize);
+	originalCode[replacedSize] = '\xe9'; // jmp pInsert + replacedSize
+	*reinterpret_cast<DWORD*>(originalCode.get() + replacedSize + 1)
+		= getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, originalCode.get() + replacedSize);
 
 	// afterCode赋值
-	this->afterCode = VirtualUniquePtr<char>(replacedSize + sizeof(END_CODE) - 1);
+	this->afterCode = VirtualUniquePtr<char>(replacedSize + sizeof(AFTER_CODE) - 1);
 	afterCode[0] = '\x9d'; // popfd
 	afterCode[1] = '\x61'; // popad
 	CopyMemory(this->afterCode.get() + 2, pInsert, replacedSize);
 	afterCode[replacedSize + 2] = '\xe9'; // jmp originalCode
 	*reinterpret_cast<DWORD*>(this->afterCode.get() + replacedSize + 3) =
 		getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, this->afterCode.get() + replacedSize + 2);
+
+	// returnCode赋值
+	returnCode = VirtualUniquePtr<char>(sizeof(RETURN_CODE) - 1);
+	CopyMemory(returnCode.get(), RETURN_CODE, sizeof(RETURN_CODE) - 1);
+	if (popStackNum == 0)
+	{
+		returnCode[2] = '\xc3';
+	}
+	else
+	{
+		returnCode[3] = popStackNum;
+	}
 
 	// 注入
 	char* injectCode = new char[replacedSize];
@@ -42,17 +65,17 @@ InsertHook::InsertHook(void* pInsert, size_t replacedSize, DWORD popStackNum, st
 	{
 		injectCode[i] = '\x90'; // nop
 	}
-	*reinterpret_cast<DWORD*>(injectCode + 1) = getJmpVal(originalCode.get(), pInsert);
+	*reinterpret_cast<DWORD*>(injectCode + 1) = getJmpVal(beforeCode.get(), pInsert);
 	CopyMemory(pInsert, injectCode, replacedSize);
 	delete[] injectCode;
 }
 
 InsertHook::~InsertHook()
 {
-	CopyMemory(pInsert, afterCode.get() + 2, replacedSize);
+	CopyMemory(pInsert, originalCode.get(), replacedSize);
 }
 
-const InsertHook& InsertHook::addReplace(void* pInsert, size_t replacedSize, std::function<ReplaceHookFunc> hookFunc, DWORD popStackNum)
+const InsertHook& InsertHook::addReplace(void* pInsert, size_t replacedSize, std::function<ReplaceHookFunc> hookFunc, BYTE popStackNum)
 {
 	auto pHook = new InsertHook(pInsert, replacedSize, popStackNum, std::move(hookFunc));
 	hooks.push_back(pHook);
@@ -61,10 +84,11 @@ const InsertHook& InsertHook::addReplace(void* pInsert, size_t replacedSize, std
 
 const InsertHook& InsertHook::addInsert(void* pInsert, size_t replacedSize, std::function<InsertHookFunc> hookFunc)
 {
-	auto pHook = new InsertHook(pInsert, replacedSize, 0, [hookFunc = std::move(hookFunc)](Registers& registers) -> bool
+	auto pHook = new InsertHook(pInsert, replacedSize, 0, 
+		[hookFunc = std::move(hookFunc)](const Registers& registers, void* rawFuncPtr) -> std::optional<int>
 	{
 		hookFunc(registers);
-		return true;
+		return std::nullopt;
 	});
 	hooks.push_back(pHook);
 	return *pHook;
