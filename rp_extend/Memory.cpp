@@ -41,38 +41,30 @@ Memory::Memory(DWORD pid)
 
 std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<int32_t>& offsets)
 {
+	if (offsets.size() > LENGTH) return {};
 	memoryNum() = size;
-	int idx = 0;
-	for (auto it : offsets)
-	{
-		getOffsets()[idx] = it;
-		idx++;
-	}
-	getOffsets()[idx] = OFFSET_END;
+	CopyMemory(getOffsets(), offsets.data(), sizeof(int32_t) * offsets.size());
+	getOffsets()[offsets.size()] = OFFSET_END;
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);//等待执行完成
 	if (executeResult() == ExecuteResult::SUCCESS) return getReadResult();
 	if (executeResult() == ExecuteResult::FAIL) return {};
-	throw std::exception("unexpected behavior");
+	throw std::exception("unexpected behavior of _readMemory");
 }
 
 bool Memory::_writeMemory(const void* pVal, BYTE size, const std::vector<int32_t>& offsets)
 {
+	if (offsets.size() > LENGTH) return false;
 	memoryNum() = size;
 	memcpy(getWrittenVal(), pVal, size);
-	int idx = 0;
-	for (auto it : offsets)
-	{
-		getOffsets()[idx] = it;
-		idx++;
-	}
-	getOffsets()[idx] = OFFSET_END;
+	CopyMemory(getOffsets(), offsets.data(), sizeof(int32_t) * offsets.size());
+	getOffsets()[offsets.size()] = OFFSET_END;
 
 	getCurrentPhaseCode() = PhaseCode::WRITE_MEMORY;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
 	if (executeResult() == ExecuteResult::FAIL) return false;
-	throw std::exception("unexpected behavior");
+	throw std::exception("unexpected behavior of _writeMemory");
 }
 
 bool Memory::startJumpFrame()
@@ -99,13 +91,17 @@ bool Memory::endJumpFrame()
 
 bool Memory::runCode(const char* codes, int num)
 {
-	memcpy(reinterpret_cast<char*>(getAsmPtr()), codes, num);
-
+	if (num > 400)
+	{
+		executeResult() = ExecuteResult::FAIL;
+		throw std::exception("runCode: too many codes");
+	}
+	CopyMemory(getAsmPtr(), codes, num);
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
 	if (executeResult() == ExecuteResult::FAIL) return false;
-	throw std::exception("unexpected behavior");
+	throw std::exception("unexpected behavior of runCode");
 }
 
 void Memory::endControl()

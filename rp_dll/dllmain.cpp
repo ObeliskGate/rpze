@@ -4,6 +4,14 @@
 #include "InsertHook.h"
 #include "SharedMemory.h"
 
+void eaxFunc(int32_t eax_, void* rawFunc)
+{
+	__asm {
+		mov eax, eax_
+		call rawFunc
+	}
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule,
                       DWORD ul_reason_for_call,
                       LPVOID lpReserved
@@ -19,11 +27,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 				script(0, SharedMemory::getInstance());
 			});
 
-			// InsertHook::addReplace(reinterpret_cast<void*>(0x524a70), 7, 
-			// 	[](const Registers&, void*) -> std::optional<int32_t> // Zombie::PickRandomSpeed
-			// 	{
-			// 		return 0;
-			// 	});
+			InsertHook::addReplace(reinterpret_cast<void*>(0x524a70), 7, 
+				[](const Registers& registers, void* rawPtr) -> std::optional<int32_t> // Zombie::PickRandomSpeed
+				{
+					auto pZombie = registers.eax();
+					eaxFunc(pZombie, rawPtr);
+					return 0;
+				});
 			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, [](const Registers& regs) // Board::Board
 			{
 				auto boardPtr = regs.eax();
