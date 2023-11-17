@@ -4,7 +4,6 @@
 """
 from enum import IntEnum
 
-import basic.asm as asm
 import structs.obj_base as ob
 from structs.obj_base import ObjNode
 

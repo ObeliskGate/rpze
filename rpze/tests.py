@@ -54,7 +54,7 @@ def basic_test(controller: Controller):
 
 def asm_and_plant_test(ctler):
     plist = gb.get(ctler).plant_list
-    plant = gb.get(ctler).izombie_new_plant(1, 3, plt.PlantType.cabbagepult)
+    plant = gb.get(ctler).iz_new_plant(1, 3, plt.PlantType.cabbagepult)
     if plant is not None:
         print(plant.type_.name)
         print(plant)
@@ -67,7 +67,7 @@ def asm_and_plant_test(ctler):
 def zombie_list_test(ctler):
     zlist = gb.get(ctler).zombie_list
 
-    print(gb.get(ctler).izombie_place_zombie(0, 3, zmb.ZombieType.dancing))
+    print(gb.get(ctler).iz_place_zombie(0, 3, zmb.ZombieType.dancing))
     for z in ~zlist:
         if z.type_ == zmb.ZombieType.dancing:
             for _id in z.partner_ids:

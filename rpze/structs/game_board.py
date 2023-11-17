@@ -53,7 +53,7 @@ class GameBoard(ob.ObjBase):
     def mj_clock(self, value: int):
         self.controller.write_i32(value, [0x6a9ec0, 0x838])
 
-    def izombie_setup_plant(self, plant: Plant):
+    def iz_setup_plant(self, plant: Plant):
         """
         对植物进行IZ模式调整, 如纸板化, 土豆出土
 
@@ -98,7 +98,7 @@ class GameBoard(ob.ObjBase):
         asm.run(code, self.controller)
         return Plant(self.controller.result_u32, self.controller)
     
-    def izombie_new_plant(self, row: int, col: int, type_: PlantType) -> Plant | None:
+    def iz_new_plant(self, row: int, col: int, type_: PlantType) -> Plant | None:
         """
         判断植物能否种植在指定格子内, 若能则种植植物并对植物进行我是僵尸关卡的特殊调整.
 
@@ -129,7 +129,7 @@ class GameBoard(ob.ObjBase):
         asm.run(code, self.controller)
         return self.plant_list.find(next_idx)
     
-    def izombie_place_zombie(self, row: int, col: int, type_: ZombieType):
+    def iz_place_zombie(self, row: int, col: int, type_: ZombieType):
         """
         向指定位置放置僵尸.
 

@@ -317,7 +317,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
 
     def __getitem__(self, index):
-        return NotImplemented
+        ...
     
     def __invert__(self) -> c_abc.Iterator[T]:
         """
@@ -326,10 +326,9 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         Returns:
             迭代器, 仅迭代存活对象
         Examples:
-            >>> for zombie in ~zombie_list
-            迭代所有未回收的僵尸
+            >>> for objects in ~self:
+            迭代所有未回收的对象
         """
-        return NotImplemented
     
     @property
     def alive_iterator(self) -> c_abc.Iterator[T]:
@@ -351,12 +350,11 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
             TypeError: index不是int, ObjId或可解包对象
             ValueError: 可解包对象不是两个元素
         Example:
-            >>> zombie_list.find(-1)
-            当前最后一个僵尸对象(len(zombie_list) - 1)未回收时返回, 否则返回None
-            >>> zombie_list.find([1, 1])
+            >>> self.find(-1)
+            当前最后一个对象(len(self) - 1)未回收时返回, 否则返回None
+            >>> self.find((1, 1))
             若idx == 1的对象的rank==1, 返回该对象, 否则返回None
         """
-        return NotImplemented
 
 
 def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
