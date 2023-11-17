@@ -5,7 +5,6 @@
 from enum import IntEnum
 
 import structs.obj_base as ob
-from structs.obj_base import ObjNode, ObjId
 
 
 class ProjectileType(IntEnum):
@@ -35,7 +34,7 @@ class ProjectileMotionType(IntEnum):
     cattail = 9
 
 
-class Projectile(ObjNode):
+class Projectile(ob.ObjNode):
     ITERATOR_FUNC_ADDRESS = 0x41C9B0
     
     OBJ_SIZE = 0x94
@@ -58,7 +57,7 @@ class Projectile(ObjNode):
         0x58, ProjectileMotionType, "子弹运动类型")
     
     @property
-    def target_zombie_id(self) -> ObjId:
+    def target_zombie_id(self) -> ob.ObjId:
         """香蒲子弹目标僵尸"""
         return ob.ObjId(self.base_ptr + 0x88, self.controller)
     

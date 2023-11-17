@@ -288,7 +288,6 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         Returns:
             T: 对应下标的元素, 不确保存活
         """
-        return NotImplemented
 
     @typing.overload
     def __getitem__(self, index: int) -> T:
