@@ -199,4 +199,19 @@ class Plant(ObjNode):
 
 
 class PlantList(ob.obj_list(Plant)):
-    pass
+    def get_by_pos(self, row: int, col: int) -> Plant | None:
+        """
+        通过row, col找到对应植物
+        
+        获取编号最小的. 不支持南瓜花盆一类获取所有植物, 更不支持叠种.
+        
+        Args:
+            row: 行数, 从0开始
+            col: 列数, 从0开始
+        Returns:
+            对应位置编号最小的植物, 找不到返回None
+        """
+        for plant in ~self:
+            if plant.row == row and plant.col == col:
+                return plant
+        return None

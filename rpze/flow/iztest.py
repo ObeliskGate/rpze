@@ -197,15 +197,21 @@ class IzTest:
         """
         @self.flow_factory.connect(until(0), only_once=True)
         def init_plant(_):
+            # todo 清栈
             for row, line in enumerate(self.plantTypeList[0]):
                 for col, type_ in enumerate(line):
                     if type_ is not None:
-                        self._target_plants.append(self.game_board.iz_new_plant(row, col, type_))
+                        plant = self.game_board.iz_new_plant(row, col, type_)
+                        if (row, col) in self.target_plants_pos:
+                            self._target_plants.append(plant)
             for row, line in enumerate(self.plantTypeList[1]):
                 for col, type_ in enumerate(line):
                     if type_ is not None:
-                        self._target_plants.append(self.game_board.iz_new_plant(row, col, type_))
+                        plant = self.game_board.iz_new_plant(row, col, type_)
+                        if (row, col) in self.target_plants_pos:
+                            self._target_plants.append(plant)
             self.game_board.mj_clock = self.mj_init_phase
+            # todo 设置目标脑子的指针
 
         for op in self.placeZombieList:
             self.flow_factory.connect(until(op.time), only_once=True,
@@ -215,7 +221,7 @@ class IzTest:
         def check_end(_):
             if (False not in [plant.is_dead for plant in self._target_plants]) and \
                     (False not in [brain.id.rank == 0 for brain in self._target_brains]):
-                # todo, 返回内容设计. 可能思路是给iz_test对象传"数据收集"回调
+                # todo, 返回内容设计. 可能思路是给iz_test对象(或者FlowFactory)传"数据收集"回调
                 return TickRunnerResult.END_FLOW
             if self.game_board.zombie_list.__len__() == 0:
                 # todo, 返回内容设计
