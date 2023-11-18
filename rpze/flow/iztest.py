@@ -89,7 +89,7 @@ def parse_plant_type_list(plant_type_str: str) -> PlantTypeList:
         if not plus_plant_indices:
             if (t := len(line)) != 5:
                 raise ValueError(f"line {row} must have 5 plants, instead of {t} plants")
-            first_list[row] = [plant_abbr_to_type[abbr] for abbr in line]
+            first_list[row] = [(plant_abbr_to_type[abbr] if abbr != '.' else None) for abbr in line]
         else:
             if plus_plant_indices[0] == -1:
                 raise ValueError(f"line {row} can't start with +")
@@ -98,9 +98,9 @@ def parse_plant_type_list(plant_type_str: str) -> PlantTypeList:
                 if char == "+":
                     continue
                 if i in plus_plant_indices:
-                    second_list[row][col] = plant_abbr_to_type[char]
+                    second_list[row][col] = plant_abbr_to_type[char] if char != '.' else None
                 else:
-                    first_list[row][col] = plant_abbr_to_type[char]
+                    first_list[row][col] = plant_abbr_to_type[char] if char != '.' else None
                 col += 1
             if col != 5:
                 raise ValueError(f"line {row} must have 5 plants, instead of {t} plants")
