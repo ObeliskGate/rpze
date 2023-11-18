@@ -6,6 +6,7 @@ import time
 import structs.game_board as gb
 import structs.plant as plt
 import structs.zombie as zmb
+from flow.flow import FlowFactory, TickRunnerResult
 from rp_extend import Controller
 
 
@@ -80,3 +81,40 @@ def griditem_test(ctler):
     glist = gb.get(ctler).griditem_list
     for g in ~glist:
         print(f"{g}, hp is {g.brain_hp}")
+
+
+def flow_test(ctler):
+    fr = None
+    while True:
+        ctler.before()
+        if vc.kbhit():
+            c = vc.getch()
+            if c == b't':
+                board = gb.get(ctler)
+                for p in ~board.plant_list:
+                    p.die()
+                magnet = board.iz_new_plant(2, 2, plt.PlantType.magnetshroom)
+                board.iz_place_zombie(1, 4, zmb.ZombieType.digger)
+                ff = FlowFactory()
+
+                @ff.add_flow()
+                def place_digger_flow(_):
+                    for i in range(5):
+                        yield lambda _: magnet.status_cd == 1500 - 914
+                        board.iz_new_plant(i, 1, plt.PlantType.split_pea)
+                        board.iz_new_plant(i, 0, plt.PlantType.snow_pea)
+                        board.iz_place_zombie(i, 5, zmb.ZombieType.digger)
+
+                @ff.add_tick_runner()
+                def add_sun_tick_runner(_):
+                    board.sun_num += 10
+                    if board.sun_num >= 9990:
+                        board.sun_num = 9990
+                        return TickRunnerResult.DONE
+                    return TickRunnerResult.NEXT
+
+                fr = ff.get_runner()
+        if fr is not None:
+            fr.run()
+        ctler.next_frame()
+

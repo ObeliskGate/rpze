@@ -5,6 +5,7 @@
 from enum import IntEnum
 
 import structs.obj_base as ob
+from basic import asm
 from structs.obj_base import ObjNode
 
 
@@ -184,6 +185,17 @@ class Plant(ObjNode):
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
+
+    def die(self):
+        """
+        令自己死亡
+        """
+        code = f"""
+            push {self.base_ptr};
+            mov edx, {0x4679b0};  // Plant::Die
+            call edx;
+            ret;"""
+        asm.run(code, self.controller)
 
 
 class PlantList(ob.obj_list(Plant)):

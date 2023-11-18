@@ -5,6 +5,7 @@
 from enum import IntEnum
 
 import structs.obj_base as ob
+from basic import asm
 
 
 # 数据结构和pvz_emulator命名保持一致
@@ -219,6 +220,17 @@ class Zombie(ob.ObjNode):
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"
+
+    def die_no_loot(self):
+        """
+        令僵尸消失，移除僵尸附件和动画，同时处理除掉落外的僵尸消失相关事件（会触发过关奖品掉落的判定）。
+        """
+        code = f"""
+            mov ecx, {self.base_ptr};
+            mov edx, {0x530510}; // Zombie::DieNoLoot
+            call edx;
+            ret;"""
+        asm.run(code, self.controller)
 
 
 class ZombieList(ob.obj_list(Zombie)):
