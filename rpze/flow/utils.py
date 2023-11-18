@@ -45,7 +45,7 @@ def delay(time: int, flow_runner: FlowRunner) -> CondFunc:
     return until(flow_runner.time + time)
 
 
-def until_precise_digger_time(magnetshroom: Plant) -> CondFunc:
+def until_precise_digger(magnetshroom: Plant) -> CondFunc:
     """
     生成一个判断磁铁是否到达精确矿时间的函数
 
@@ -59,7 +59,7 @@ def until_precise_digger_time(magnetshroom: Plant) -> CondFunc:
         >>> def flow(_):
         ...     ...  # do something
         ...     gb.iz_place_zombie(0, 5, ZombieType.digger)
-        ...     yield until_precise_digger_time(magnetshroom)
+        ...     yield until_precise_digger(magnetshroom)
         ...     gb.iz_place_zombie(1, 5, ZombieType.digger)
         ...     ...  # do other thing
         为2-6精确矿

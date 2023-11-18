@@ -222,8 +222,8 @@ class ObjId(ObjBase):
             ValueError: 可解包不是两个元素
         """
         if isinstance(val, ObjId):
-            return ((self.controller.read_i32([self.base_ptr]) ==
-                    val.controller.read_i32([val.base_ptr]))
+            return ((self.controller.read_u32([self.base_ptr]) ==
+                    val.controller.read_u32([val.base_ptr]))
                     and self.controller == val.controller)
         try:
             index, rank = val
@@ -233,7 +233,7 @@ class ObjId(ObjBase):
                             f"not {type(val).__name__} instance") from te
         except ValueError as ve:
             raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
-        return self.controller.read_i32([self.base_ptr]) == ((rank << 16) | index)
+        return self.controller.read_u32([self.base_ptr]) == ((rank << 16) | index)
     
     def __ne__(self, val: typing.Self | tuple[int, int]) -> bool:
         return not (self.__eq__(val))
@@ -386,7 +386,7 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
     class _ObjListImplement(_ObjList[T], abc.ABC):
         def __init__(self, base_ptr: int, ctler: Controller):
             super().__init__(base_ptr, ctler)
-            self._array_base_ptr = ctler.read_i32([base_ptr])
+            self._array_base_ptr = ctler.read_u32([base_ptr])
             p_board = ctler.read_u32([0x6a9ec0, 0x768])
             self._code = f"""
                 push esi

@@ -22,8 +22,7 @@ CondFunc: TypeAlias = Callable[["FlowRunner"], bool]
 FlowGenerator: TypeAlias = Generator[CondFunc, None, Any]
 Flow: TypeAlias = Callable[["FlowRunner"], FlowGenerator]
 TickRunner: TypeAlias = Callable[["FlowRunner"], TickRunnerResult]
-PriorityTickRunner = namedtuple(
-    "PriorityTickRunner", ["priority", "tick_runner"])
+PriorityTickRunner = namedtuple("PriorityTickRunner", ["priority", "tick_runner"])
 
 
 class FlowRunner:
@@ -42,8 +41,7 @@ class FlowRunner:
             flows: flow列表
             flow_priority: flows执行优先级
         """
-        self._flow_generator_list: list[list[CondFunc, FlowGenerator]] =\
-            [[lambda _: True, i(self)] for i in flows]
+        self._flow_generator_list: list[list[CondFunc, FlowGenerator]] = [[lambda _: True, i(self)] for i in flows]
 
         def __flow_tick_runner(self_: FlowRunner):
             if not self_._flow_generator_list:
