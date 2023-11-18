@@ -7,7 +7,7 @@ import structs.game_board as gb
 import structs.plant as plt
 import structs.zombie as zmb
 from flow.flow import FlowFactory, TickRunnerResult
-from flow.utils import until_precise_digger_time
+from flow.utils import until_precise_digger, delay
 from rp_extend import Controller
 
 
@@ -101,10 +101,14 @@ def flow_test(ctler):
                 @ff.add_flow()
                 def place_digger_flow(_):
                     for i in range(5):
-                        yield until_precise_digger_time(magnet)
+                        yield until_precise_digger(magnet)
                         board.iz_new_plant(i, 1, plt.PlantType.split_pea)
                         board.iz_new_plant(i, 0, plt.PlantType.snow_pea)
                         board.iz_place_zombie(i, 5, zmb.ZombieType.digger)
+                    yield delay(1500, _)
+                    board.iz_new_plant(1, 1, plt.PlantType.split_pea)
+                    board.iz_new_plant(1, 0, plt.PlantType.snow_pea)
+                    board.iz_place_zombie(1, 5, zmb.ZombieType.digger)
 
                 @ff.add_tick_runner()
                 def add_sun_tick_runner(_):

@@ -59,7 +59,7 @@ class Projectile(ob.ObjNode):
     @property
     def target_zombie_id(self) -> ob.ObjId:
         """香蒲子弹目标僵尸"""
-        return ob.ObjId(self.base_ptr + 0x88, self.controller)
+        return ob.ObjId(self.base_ptr + 0x88, self._controller)
     
 
 class ProjectileList(ob.obj_list(Projectile)):

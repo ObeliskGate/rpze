@@ -42,16 +42,16 @@ class GameBoard(ob.ObjBase):
     @property
     def game_time(self):
         """游戏时间(包括选卡停留的时间)"""
-        return self.controller.get_time()
+        return self._controller.get_time()
 
     @property
     def mj_clock(self) -> int:
         """mj时钟"""
-        return self.controller.read_i32([0x6a9ec0, 0x838])  # 我真看不懂为什么mj时钟在LawnApp底下啊
+        return self._controller.read_i32([0x6a9ec0, 0x838])  # 我真看不懂为什么mj时钟在LawnApp底下啊
 
     @mj_clock.setter
     def mj_clock(self, value: int):
-        self.controller.write_i32(value, [0x6a9ec0, 0x838])
+        self._controller.write_i32(value, [0x6a9ec0, 0x838])
 
     def iz_setup_plant(self, plant: Plant):
         """
@@ -70,7 +70,7 @@ class GameBoard(ob.ObjBase):
             mov ecx, 0x42A530; // Challenge::IZombieSetupPlant
             call ecx;
             ret;"""
-        asm.run(code, self.controller)
+        asm.run(code, self._controller)
 
     def plain_new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
         """
@@ -93,10 +93,10 @@ class GameBoard(ob.ObjBase):
             mov eax, {self.base_ptr};
             mov edx, 0x40CE20;  // Board::NewPlant
             call edx;
-            mov [{self.controller.result_address}], eax;
+            mov [{self._controller.result_address}], eax;
             ret;'''
-        asm.run(code, self.controller)
-        return Plant(self.controller.result_u32, self.controller)
+        asm.run(code, self._controller)
+        return Plant(self._controller.result_u32, self._controller)
     
     def iz_new_plant(self, row: int, col: int, type_: PlantType) -> Plant | None:
         """
@@ -126,7 +126,7 @@ class GameBoard(ob.ObjBase):
             pop edi;
             pop ebx;
             ret;"""
-        asm.run(code, self.controller)
+        asm.run(code, self._controller)
         return self.plant_list.find(next_idx)
     
     def iz_place_zombie(self, row: int, col: int, type_: ZombieType):
@@ -153,7 +153,7 @@ class GameBoard(ob.ObjBase):
             mov edx, 0x42a0f0;
             call edx;
             ret;'''
-        asm.run(code, self.controller)
+        asm.run(code, self._controller)
         return self.zombie_list.at(ret_idx)
 
 

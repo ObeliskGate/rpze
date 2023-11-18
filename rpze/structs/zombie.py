@@ -211,12 +211,12 @@ class Zombie(ob.ObjNode):
     @property
     def master_id(self) -> ob.ObjId:  # 似乎所有ObjNode subclass都用Property而不是Attribute更好看
         """舞王id"""
-        return ob.ObjId(self.base_ptr + 0xf0, self.controller)
+        return ob.ObjId(self.base_ptr + 0xf0, self._controller)
 
     @property
     def partner_ids(self) -> tuple[ob.ObjId, ob.ObjId, ob.ObjId, ob.ObjId]:
         """伴舞id"""
-        return tuple(ob.ObjId(self.base_ptr + 0xf4 + i * 4, self.controller) for i in range(4))
+        return tuple(ob.ObjId(self.base_ptr + 0xf4 + i * 4, self._controller) for i in range(4))
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"
@@ -230,7 +230,7 @@ class Zombie(ob.ObjNode):
             mov edx, {0x530510}; // Zombie::DieNoLoot
             call edx;
             ret;"""
-        asm.run(code, self.controller)
+        asm.run(code, self._controller)
 
 
 class ZombieList(ob.obj_list(Zombie)):

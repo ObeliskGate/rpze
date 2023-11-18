@@ -181,7 +181,7 @@ class Plant(ObjNode):
     @property
     def target_zombie_id(self) -> ob.ObjId:
         """倭瓜, 水草目标僵尸编号"""
-        return ob.ObjId(self.base_ptr + 0x12c, self.controller)
+        return ob.ObjId(self.base_ptr + 0x12c, self._controller)
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
@@ -195,7 +195,7 @@ class Plant(ObjNode):
             mov edx, {0x4679b0};  // Plant::Die
             call edx;
             ret;"""
-        asm.run(code, self.controller)
+        asm.run(code, self._controller)
 
 
 class PlantList(ob.obj_list(Plant)):

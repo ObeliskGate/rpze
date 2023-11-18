@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import heapq
-from collections import namedtuple
 from collections.abc import Generator, Callable
 from enum import Enum, auto
 from itertools import count
@@ -15,14 +14,19 @@ from typing import TypeAlias, Any
 
 class TickRunnerResult(Enum):
     DONE = auto(),
-    NEXT = auto()
+    NEXT = auto(),
+    END_FLOW = auto()
 
 
 CondFunc: TypeAlias = Callable[["FlowRunner"], bool]
 FlowGenerator: TypeAlias = Generator[CondFunc, None, Any]
 Flow: TypeAlias = Callable[["FlowRunner"], FlowGenerator]
 TickRunner: TypeAlias = Callable[["FlowRunner"], TickRunnerResult]
-PriorityTickRunner = namedtuple("PriorityTickRunner", ["priority", "tick_runner"])
+PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
+
+
+class StopRun(Exception):
+    pass
 
 
 class FlowRunner:
@@ -67,7 +71,8 @@ class FlowRunner:
         """
         运行时添加TickRunner的方法
 
-        不支持加权. 运行时添加的TickRunner会被放在最后执行
+        不支持加权. 运行时添加的TickRunner会被放在最后执行.
+
         Args:
             tick_runner: 需要添加的TickRunner, 为空时返回装饰器
         Examples:
@@ -94,7 +99,8 @@ class FlowRunner:
         """
         运行时把tick_runner绑定到cond上的方法, 可以采用类似add的装饰器形式
         
-        即 在cond(self)返回true时执行func(self)
+        即 在cond(self)返回true时执行func(self).
+
         Args:
             cond: 执行func的条件函数
             only_once: 为true时 只要有一次满足cond则返回
@@ -120,14 +126,20 @@ class FlowRunner:
             return TickRunnerResult.NEXT
         self.add(__tick_runner)
 
-    def run(self):
+    def run(self) -> bool:
+        """
+        运行一次tick_runner
+
+        Returns:
+            所有tick_runner都执行完毕时返回True
+        """
         for idx, func in enumerate(self.tick_runners):
-            if func is None:
-                continue
-            ret = func(self)
-            if ret is TickRunnerResult.DONE:
-                self.tick_runners[idx] = None
+            if (ret := func(self)) is TickRunnerResult.DONE:
+                self.tick_runners.pop(idx)  # 哎呀怎么有人从list里面pop东西呢
+            elif ret is TickRunnerResult.END_FLOW:
+                return True
         self.time += 1
+        return not self.tick_runners
 
 
 class FlowFactory:
