@@ -4,7 +4,7 @@
 """
 
 import structs.obj_base as ob
-from structs.griditem import GriditemList
+from structs.griditem import GriditemList, Griditem, GriditemType
 from structs.plant import PlantList, Plant, PlantType
 from structs.projectile import ProjectileList
 from rp_extend import Controller
@@ -155,6 +155,143 @@ class GameBoard(ob.ObjBase):
             ret;'''
         asm.run(code, self._controller)
         return self.zombie_list.at(ret_idx)
+
+    def pixel_to_col(self, x: int, y: int = 0) -> int:
+        """
+        将坐标转换为列数
+
+        Args:
+            x: x坐标
+            y: y坐标, 仅在禅境花园有用
+        Returns:
+            对应的列数, 0开始
+        """
+        code = f"""
+            push edi;
+            mov edi, {y};
+            mov eax, {x};
+            mov ecx, {self.base_ptr};
+            mov edx, {0x41c4c0};  // Board::PixelToGridX 
+            call edx;
+            mov [{self._controller.result_address}], eax;
+            pop edi;
+            ret;"""
+        asm.run(code, self._controller)
+        return self._controller.result_i32
+
+    def pixel_to_row(self, x: int, y: int) -> int:
+        """
+        将坐标转换为行数
+
+        Args:
+            x: x坐标
+            y: y坐标
+        Returns:
+            对应的行数, 0开始, 对地图外的点, 返回-1
+        """
+        code = f"""
+            push ebx;
+            mov ecx, {y};
+            mov eax, {x};
+            mov edx, {self.base_ptr};
+            mov ebx, {0x41c550};  // Board::PixelToGridY
+            call ebx;
+            mov [{self._controller.result_address}], eax;
+            pop ebx;
+            ret;"""
+        asm.run(code, self._controller)
+        return self._controller.result_i32
+
+    def pixel_to_grid(self, x: int, y: int) -> tuple[int, int]:
+        """
+        将坐标转换为行列
+
+        Args:
+            x: x坐标
+            y: y坐标
+        Returns:
+            (row, col)元组， 均从0开始
+        """
+        return self.pixel_to_row(x, y), self.pixel_to_col(x, y)
+
+    def grid_to_pixel_x(self, col: int, row: int = 0):
+        """
+        将行列转换为x坐标
+
+        请注意参数顺序!!!
+
+        Args:
+            col: 列数, 0开始
+            row: 行数, 0开始, 仅在花园有用
+        Returns:
+            对应的x坐标
+        """
+        code = f"""
+            push esi;
+            mov esi, {row};
+            mov eax, {col};
+            mov ecx, {self.base_ptr};
+            mov edx, {0x41C680};  // Board::GridToPixelX
+            call edx;
+            mov [{self._controller.result_address}], eax;
+            pop esi;
+            ret;"""
+        asm.run(code, self._controller)
+        return self._controller.result_i32
+
+    def grid_to_pixel_y(self, row: int, col: int) -> int:
+        """
+        将行列转换为y坐标
+
+        Args:
+            row: 行数, 0开始
+            col: 列数, 0开始
+        Returns:
+            对应的y坐标
+        """
+        code = f"""
+            push ebx;
+            mov ebx, {self.base_ptr};
+            mov eax, {row};
+            mov ecx, {col};
+            mov edx, {0x41c740};  // Board::GridToPixelY
+            call edx;
+            mov [{self._controller.result_address}], eax;
+            pop ebx;
+            ret;"""
+        asm.run(code, self._controller)
+        return self._controller.result_i32
+
+    def grid_to_pixel(self, row: int, col: int) -> tuple[int, int]:
+        """
+        将行列转换为像素坐标
+
+        Args:
+            row: 行数, 0开始
+            col: 列数, 0开始
+        Returns:
+            (x, y)元组
+        """
+        return self.grid_to_pixel_x(col, row), self.grid_to_pixel_y(row, col)
+
+    def new_iz_brain(self, row: int) -> Griditem:  # 我非常无语为什么这个函数原版没有
+        """
+        构造一个新的IZ脑子, 用于我是僵尸关卡
+
+        Args:
+            row: 构造所在行, 0开始
+        Returns:
+            构造的IZ脑子
+        """
+        ret = self.griditem_list.alloc_griditem()
+        ret.type_ = GriditemType.brain
+        ret.row = row
+        ret.col = 0
+        ret.layer = 302000 + 10000 * row  # from cvp
+        ret.brain_hp = 70
+        ret.x = float(self.grid_to_pixel_x(0, 0) - 40)
+        ret.y = float(self.grid_to_pixel_y(row, 0) + 40)
+        return ret
 
 
 __game_board_cache = None  # 重复构造对象会导致多次decode字节码, 故缓存.

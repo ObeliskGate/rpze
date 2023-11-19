@@ -5,6 +5,7 @@
 from enum import IntEnum
 
 import structs.obj_base as ob
+from basic import asm
 
 
 class GriditemType(IntEnum):
@@ -37,9 +38,31 @@ class Griditem(ob.ObjNode):
         对于ize中脑子, 初始为70, 每次被啃时-= 1(区别于植物血量 -= 4)
         """)
 
+    layer: int = ob.property_i32(0x1c, "图层")
+
+    x: float = ob.property_f32(0x24, "x坐标")
+
+    y: float = ob.property_f32(0x28, "y坐标")
+
     def __str__(self):
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
 
 
 class GriditemList(ob.obj_list(Griditem)):
-    pass
+    def alloc_griditem(self) -> Griditem:
+        """
+        中申请新的griditem对象
+
+        Returns:
+            申请出的Griditem对象
+        """
+        code = f"""
+            push esi;
+            mov esi, {self.base_ptr};
+            mov edx, {0x41E1C0};  // DataArray<GridItem>::DataArrayAlloc
+            call edx;
+            mov [{self._controller.result_address}], eax;
+            pop esi;
+            ret;"""
+        asm.run(code, self._controller)
+        return Griditem(self._controller.result_u32, self._controller)

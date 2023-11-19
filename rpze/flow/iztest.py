@@ -2,9 +2,8 @@
 """
 iztools 全场测试功能模拟
 """
-import typing
 from random import randint
-from typing import TypeAlias
+from typing import TypeAlias, Self
 
 from flow.flow import FlowFactory, TickRunnerResult
 from flow.utils import until
@@ -48,24 +47,24 @@ zombie_abbr_to_type: dict[str, ZombieType] = {
     "ww": ZombieType.dancing, "mj": ZombieType.dancing
 }
 PlaceZombieOp = namedtuple("PlaceZombieOp", ["type_", "time", "row", "col"])
-PlantTypeList: TypeAlias = tuple[list[list[PlantType | None]], list[list[PlantType | None]]]
+PlantTypeList: TypeAlias = list[list[PlantType | None]]
 
 
-def parse_pos_str(pos_str: str, minus_one: bool = True) -> tuple[int, int]:
+def parse_grid_str(grid_str: str, minus_one: bool = True) -> tuple[int, int]:
     """
-    根据'{row}-{col}'字符串返回(row, col)对象
+    根据f'{row}-{col}'字符串返回(row, col)对象
 
     Args:
-        pos_str: 形如'1-2'的字符串
-        minus_one: 为True时会自动为row, col减一，使其从0开始
+        grid_str: 形如'1-2'的字符串
+        minus_one: 为True时会自动为row, col减1，使其从0开始
     Returns:
         (row, col)元组
     """
-    return (int(pos_str.split('-')[0]) - 1, int(pos_str.split('-')[1]) - 1) if minus_one else \
-        (int(pos_str.split('-')[0]), int(pos_str.split('-')[1]))
+    return (int(grid_str.split('-')[0]) - 1, int(grid_str.split('-')[1]) - 1) if minus_one else \
+        (int(grid_str.split('-')[0]), int(grid_str.split('-')[1]))
 
 
-def parse_plant_type_list(plant_type_str: str) -> PlantTypeList:
+def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantTypeList]:
     """
     根据iztools植物字符串生成植物列表
 
@@ -116,7 +115,7 @@ def parse_target_list(target_str: str) -> tuple[list[tuple[int, int]], list[int]
     Returns:
         两个列表, 分别表示目标植物和目标脑子的位置
     """
-    poses = [parse_pos_str(pos) for pos in target_str.strip().split()]
+    poses = [parse_grid_str(pos) for pos in target_str.strip().split()]
     return [pos for pos in poses if pos[1] != -1], [pos[0] for pos in poses if pos[1] == -1]
 
 
@@ -136,7 +135,7 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
         raise ValueError(f"place_zombie_string must have 3 lines, instead of {t} lines")
     types = [zombie_abbr_to_type[abbr] for abbr in lines[0].strip().split()]
     times = [int(time) for time in lines[1].strip().split()]
-    rows, cols = zip(*[parse_pos_str(pos) for pos in lines[2].strip().split()])  # zip(*list)转置
+    rows, cols = zip(*[parse_grid_str(pos) for pos in lines[2].strip().split()])  # zip(*list)转置
     if not (len(types) == len(times) == len(rows) == len(cols)):
         raise ValueError("length of types, times, rows and cols must be equal")
     return [PlaceZombieOp(*tpl) for tpl in zip(types, times, rows, cols)]
@@ -144,7 +143,7 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
 
 class IzTest:
     def __init__(self, game_board_: GameBoard):
-        self.plantTypeList: PlantTypeList = ([], [])
+        self.plantTypeList: tuple[PlantTypeList, PlantTypeList] = ([], [])
         self.placeZombieList: list[PlaceZombieOp] = []
         self.repeat_time: int = 1000
         self.mj_init_phase: int = randint(0, 459)
@@ -156,7 +155,7 @@ class IzTest:
         self._target_plants: list[Plant] = []
         self._target_brains: list[Griditem] = []
 
-    def init(self, iztools_str: str) -> typing.Self:
+    def init(self, iztools_str: str) -> Self:
         """
         通过iztools字符串初始化iztest对象
 
@@ -184,7 +183,7 @@ class IzTest:
         lines = iztools_str.strip().splitlines(False)
         self.repeat_time, mj_init_phase = map(int, lines[0].strip().split())
         if mj_init_phase < -1 or mj_init_phase >= 460:
-            raise ValueError(f"mj_init_phase must be in [-1, 459], not{mj_init_phase}")
+            raise ValueError(f"mj_init_phase must be in [-1, 459], not {mj_init_phase}")
         self.mj_init_phase = mj_init_phase if mj_init_phase != -1 else randint(0, 459)
         self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
         self.plantTypeList = parse_plant_type_list('\n'.join(lines[2:7]))
@@ -196,8 +195,8 @@ class IzTest:
         设置flow_factory
         """
         @self.flow_factory.connect(until(0), only_once=True)
-        def init_plant(_):
-            # todo 清栈
+        def _init(_):
+            # todo 清掉所有对象的栈
             for row, line in enumerate(self.plantTypeList[0]):
                 for col, type_ in enumerate(line):
                     if type_ is not None:
@@ -211,14 +210,19 @@ class IzTest:
                         if (row, col) in self.target_plants_pos:
                             self._target_plants.append(plant)
             self.game_board.mj_clock = self.mj_init_phase
-            # todo 设置目标脑子的指针
+
+            for i in range(5):
+                brain = self.game_board.new_iz_brain(i)
+                if i in self.target_brains_pos:
+                    self._target_brains.append(brain)
 
         for op in self.placeZombieList:
-            self.flow_factory.connect(until(op.time), only_once=True,
-                                      func=lambda _: self.game_board.iz_place_zombie(op.row, op.col, op.type_))
+            @self.flow_factory.connect(until(op.time), only_once=True)
+            def _place_zombie(_):
+                self.game_board.iz_place_zombie(op.row, op.col, op.type_)
 
         @self.flow_factory.add_tick_runner()
-        def check_end(_):
+        def _check_end(_):
             if (False not in [plant.is_dead for plant in self._target_plants]) and \
                     (False not in [brain.id.rank == 0 for brain in self._target_brains]):
                 # todo, 返回内容设计. 可能思路是给iz_test对象(或者FlowFactory)传"数据收集"回调
