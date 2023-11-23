@@ -3,6 +3,7 @@
 场地物品相关的枚举和类
 """
 from enum import IntEnum
+from typing import Self
 
 import structs.obj_base as ob
 from basic import asm
@@ -24,7 +25,7 @@ class Griditem(ob.ObjNode):
     """
     OBJ_SIZE = 0xEC
 
-    ITERATOR_FUNC_ADDRESS = 0x41CAD0
+    _ITERATOR_FUNC_ADDRESS = 0x41CAD0
 
     type_: GriditemType = ob.property_int_enum(0x8, GriditemType, "场地物品类型")
 
@@ -66,3 +67,12 @@ class GriditemList(ob.obj_list(Griditem)):
             ret;"""
         asm.run(code, self._controller)
         return Griditem(self._controller.result_u32, self._controller)
+
+    def free_all(self) -> Self:
+        code = f"""
+            mov eax, {self.base_ptr};
+            mov edx, {0x41E7D0} // DataArray<GridItem>::DataArrayFreeAll
+            call edx;
+            ret;"""
+        asm.run(code, self._controller)
+        return self

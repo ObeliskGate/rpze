@@ -2,6 +2,7 @@
 """
 植物相关的枚举和类
 """
+import typing
 from enum import IntEnum
 
 import structs.obj_base as ob
@@ -107,7 +108,7 @@ class PlantStatus(IntEnum):
 
 
 class Plant(ObjNode):
-    ITERATOR_FUNC_ADDRESS = 0x41c950
+    _ITERATOR_FUNC_ADDRESS = 0x41c950
 
     OBJ_SIZE = 0x14c
 
@@ -215,3 +216,12 @@ class PlantList(ob.obj_list(Plant)):
             if plant.row == row and plant.col == col:
                 return plant
         return None
+
+    def free_all(self) -> typing.Self:
+        code = f"""
+            mov eax, {self.base_ptr};
+            mov edx, {0x41E590} // DataArray<Plant>::DataArrayFreeAll
+            call edx;
+            ret;"""
+        asm.run(code, self._controller)
+        return self

@@ -3,8 +3,10 @@
 子弹相关的枚举和类
 """
 from enum import IntEnum
+from typing import Self
 
 import structs.obj_base as ob
+from basic import asm
 
 
 class ProjectileType(IntEnum):
@@ -35,7 +37,7 @@ class ProjectileMotionType(IntEnum):
 
 
 class Projectile(ob.ObjNode):
-    ITERATOR_FUNC_ADDRESS = 0x41C9B0
+    _ITERATOR_FUNC_ADDRESS = 0x41C9B0
     
     OBJ_SIZE = 0x94
     
@@ -63,4 +65,13 @@ class Projectile(ob.ObjNode):
     
 
 class ProjectileList(ob.obj_list(Projectile)):
-    pass
+    def free_all(self) -> Self:
+        code = f"""
+            push edi;
+            mov edi, {self.base_ptr};
+            mov edx, {0x41E600} // DataArray<Projectile>::DataArrayFreeAll
+            call edx;
+            pop edi;
+            ret;"""
+        asm.run(code, self._controller)
+        return self

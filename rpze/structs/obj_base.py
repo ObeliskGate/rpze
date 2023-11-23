@@ -253,7 +253,7 @@ class ObjNode(ObjBase, abc.ABC):
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
         super().__init__(base_ptr, ctler)
         self.id = ObjId(base_ptr + self.OBJ_SIZE - 4, ctler)
-    
+
     ITERATOR_FUNC_ADDRESS: int = NotImplemented
     """返回pvz中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
@@ -276,7 +276,9 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     next_rank: int = property_i32(20, "下一个对象的序列号")
 
-    def __len__(self):
+    max_length: int = property_i32(4, "最大时对象数")
+
+    def __len__(self) -> int:
         return self._controller.read_i32([self.base_ptr + 4])
 
     def at(self, index: int) -> T:
@@ -317,7 +319,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     def __getitem__(self, index):
         ...
-    
+
     def __invert__(self) -> c_abc.Iterator[T]:
         """
         迭代所有未回收对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
@@ -326,9 +328,10 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
             迭代器, 仅迭代存活对象
         Examples:
             >>> for objects in ~self:
+            ...     ...  # do something
             迭代所有未回收的对象
         """
-    
+
     @property
     def alive_iterator(self) -> c_abc.Iterator[T]:
         """与__invert__()相同"""
@@ -355,13 +358,35 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
             若idx == 1的对象的rank==1, 返回该对象, 否则返回None
         """
 
+    def reset_stack(self) -> typing.Self:
+        """
+        清栈
 
-def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
+        在所有对象都被回收时调用. 让本对象之后申请对象从0开始申请
+        Returns:
+            返回自己
+        Raises:
+            RuntimeError: 不是所有对象都被回收时候抛出
+        """
+
+    @abc.abstractmethod
+    def free_all(self) -> typing.Self:  # 破游戏reg优化玩太花了导致的抽象方法
+        """
+        析构所有对象
+
+        Returns:
+            返回自己
+        """
+
+
+def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjList[T]]:
     """
     根据node_cls构造对应的NodeClsObject的父类
     
     Args:
         node_cls: ObjNode的子类
+        iterator_p_board_reg:
+            用于存储Board指针的寄存器, reanimation和粒子系统为eax, 其他为edx
     Returns:
         管理node_cls对象的数组的父类
     """
@@ -392,13 +417,13 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
                 push esi
                 push edx
                 mov esi, {self._controller.result_address};
-                mov edx, {p_board};
+                mov {iterator_p_board_reg}, {p_board};
                 mov ecx, {node_cls.ITERATOR_FUNC_ADDRESS};
                 call ecx;
                 mov [{self._controller.result_address + 4}], al;
                 pop edx
                 pop esi
-                ret;"""
+                ret;"""  # 可恶的reg优化
             
             self._iterate_func_asm = None
 
@@ -441,5 +466,17 @@ def obj_list(node_cls: type[T]) -> type[_ObjList[T]]:
             if self._iterate_func_asm is None:
                 self._iterate_func_asm = asm.decode(self._code)
             return _ObjIterator(self._controller, self._iterate_func_asm)
+
+        def reset_stack(self):
+            if self.obj_num:
+                raise RuntimeError("cannot reset stack when there are still objects alive")
+            next_idx = self.next_index
+            self.next_index = 0
+            length = self.max_length
+            self.max_length = 0
+            while next_idx != length:
+                next_idx = (t := self.at(next_idx).id).index
+                t.index = 0
+            return self
 
     return _ObjListImplement

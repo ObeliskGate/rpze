@@ -310,8 +310,8 @@ def get_board(controller: Controller) -> GameBoard:
     """
     global __game_board_cache
     valid, p_board = controller.get_p_board()
+    if not p_board:
+        raise RuntimeError("Board object doesn't exist!")  # 期待Board对象存在, 用异常不用Optional
     if (not valid) or (__game_board_cache is None):
-        if not p_board:
-            raise RuntimeError("Board object doesn't exist!")  # 期待Board对象存在, 用异常不用Optional
         __game_board_cache = GameBoard(p_board, controller)
     return __game_board_cache

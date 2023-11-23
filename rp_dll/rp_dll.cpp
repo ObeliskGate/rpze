@@ -42,8 +42,8 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		}
 		case PhaseCode::JUMP_FRAME:
 		{
-			auto pBoard = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
 			auto pSharedMemory = SharedMemory::getInstance();
+			auto pBoard = pSharedMemory->boardPtr();
 			while (phaseCode == PhaseCode::JUMP_FRAME)
 			{
 				__asm
@@ -90,8 +90,6 @@ void script(const DWORD isInGame, const SharedMemory* pSharedMemory)
 	}
 	*pPhaseCode = PhaseCode::WAIT;
 	*pRunState = RunState::OVER;
-	auto time = readMemory<DWORD>(0x6a9ec0, { 0x768 , 0x556c });
-	pSharedMemory->gameTime() = time.value_or(INT32_MIN);
 	doAsPhaseCode(*pPhaseCode);
 	*pRunState = RunState::RUNNING;
 }

@@ -3,6 +3,7 @@
 僵尸相关的枚举和类
 """
 from enum import IntEnum
+from typing import Self
 
 import structs.obj_base as ob
 from basic import asm
@@ -132,7 +133,7 @@ class ZombieAccessoriesType2(IntEnum):
 
 
 class Zombie(ob.ObjNode):
-    ITERATOR_FUNC_ADDRESS = 0x41C8F0
+    _ITERATOR_FUNC_ADDRESS = 0x41C8F0
 
     OBJ_SIZE = 0x15c
 
@@ -234,4 +235,13 @@ class Zombie(ob.ObjNode):
 
 
 class ZombieList(ob.obj_list(Zombie)):
-    pass
+    def free_all(self) -> Self:
+        code = f"""
+            push edi;
+            mov edi, {self.base_ptr};
+            mov edx, {0x41E4D0} // DataArray<Zombie>::DataArrayFreeAll
+            call edx;
+            pop edi;
+            ret;"""
+        asm.run(code, self._controller)
+        return self

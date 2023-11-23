@@ -17,6 +17,7 @@ def basic_test(controller: Controller):
     start_clock = int(time.time())
     while True:
         controller.before()
+            
         if vc.kbhit():
             c = vc.getch()
             if c == b'j':
@@ -25,6 +26,14 @@ def basic_test(controller: Controller):
                 start_clock = int(time.time())
                 controller.start_jump_frame()
                 print(c, start_time)
+            elif c == b'u':
+                print("u")
+                board = gb.get_board(controller)
+                board.plant_list.free_all()
+                board.plant_list.reset_stack()
+                for i in range(5):
+                    board.iz_new_plant(4 - i, 1, plt.PlantType.cactus)
+           
             elif c == b's':
                 print(controller.get_time())
             elif c == b'r':
@@ -85,7 +94,7 @@ def griditem_test(ctler):
 
 
 def flow_test(ctler):
-    fm = None
+    flow_manager = None
     while True:
         ctler.before()
         if vc.kbhit():
@@ -99,13 +108,13 @@ def flow_test(ctler):
                 ff = FlowFactory()
 
                 @ff.add_flow()  # vscode说这些函数都没用过...
-                def place_digger_flow(_):
+                def place_digger_flow(fm):
                     for i in range(5):
                         yield until_precise_digger(magnet)
                         board.iz_new_plant(i, 1, plt.PlantType.split_pea)
                         board.iz_new_plant(i, 0, plt.PlantType.snow_pea)
                         board.iz_place_zombie(i, 5, zmb.ZombieType.digger)
-                    yield delay(1500, _)
+                    yield delay(1500, fm)
                     board.iz_new_plant(1, 1, plt.PlantType.split_pea)
                     board.iz_new_plant(1, 0, plt.PlantType.snow_pea)
                     board.iz_place_zombie(1, 5, zmb.ZombieType.digger)
@@ -118,7 +127,7 @@ def flow_test(ctler):
                         return TickRunnerResult.DONE
                     return TickRunnerResult.NEXT
 
-                fm = ff.get_manager()
-        if fm is not None:
-            fm.run()
+                flow_manager = ff.get_manager()
+        if flow_manager is not None:
+            flow_manager.run()
         ctler.next_frame()

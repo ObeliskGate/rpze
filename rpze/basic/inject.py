@@ -4,6 +4,8 @@ import win32process as win_p
 import os
 import subprocess
 
+from rp_extend import Controller
+
 
 def find_window(window_name: str) -> int:
     """
@@ -41,17 +43,19 @@ def open_game(game_path: str, num: int = 1) -> list[int]:
     return ret
 
 
-def inject(pids: list[int]) -> None:
+def inject(pids: list[int]) -> list[Controller]:
     """
     对pids中的每一个进程注入dll
     
     Args:
         pids: process id列表
+    Returns:
+        所有进程的Controller对象组成的列表
     """
     dll_path = os.path.abspath(".\\bin\\rp_dll.dll")
     s = f'.\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '
     for i in pids:
         s += str(i)
         s += ' '
-
     os.system(s)
+    return [Controller(pid) for pid in pids]

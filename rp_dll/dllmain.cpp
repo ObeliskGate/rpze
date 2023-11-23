@@ -24,6 +24,9 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			init();
 			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, [](const Registers&) // main loop LawnApp::UpdateFrames 
 			{
+				auto pSharedMemory = SharedMemory::getInstance();
+				pSharedMemory->gameTime() = readMemory<int32_t>(0x6a9ec0, { 0x768 , 0x556c }).value_or(INT32_MIN);
+				pSharedMemory->boardPtr() = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
 				script(0, SharedMemory::getInstance());
 			});
 
@@ -34,19 +37,11 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 					eaxFunc(pZombie, rawPtr);
 					return 0;
 				});
-			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
-				[](const Registers& regs) // Board::Board
-			{
-				auto boardPtr = regs.eax();
-				SharedMemory::getInstance()->boardPtr() = boardPtr;
-				SharedMemory::getInstance()->isBoardPtrValid() = false;
-			});
-			InsertHook::addInsert(reinterpret_cast<void*>(0x408690), 7, 
-				[](const Registers&) // Board::~Board
-			{
-				SharedMemory::getInstance()->boardPtr() = 0;
-				SharedMemory::getInstance()->isBoardPtrValid() = false;
-			});
+			 InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
+			 	[](const Registers&) // Board::Board
+			 	{
+			 		SharedMemory::getInstance()->isBoardPtrValid() = false;
+			 	});
 		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
