@@ -218,11 +218,11 @@ class GameBoard(ob.ObjBase):
         """
         将行列转换为x坐标
 
-        请注意参数顺序!!!
+        **请注意参数顺序!!!**
 
         Args:
             col: 列数, 0开始
-            row: 行数, 0开始, 仅在花园有用
+            row: 行数, 0开始, 仅在禅境花园有用
         Returns:
             对应的x坐标
         """
@@ -283,7 +283,7 @@ class GameBoard(ob.ObjBase):
         Returns:
             构造的IZ脑子
         """
-        ret = self.griditem_list.alloc_griditem()
+        ret = self.griditem_list.alloc_item()
         ret.type_ = GriditemType.brain
         ret.row = row
         ret.col = 0
@@ -297,7 +297,7 @@ class GameBoard(ob.ObjBase):
 __game_board_cache = None  # 重复构造对象会导致多次decode字节码, 故缓存.
 
 
-def get(controller: Controller) -> GameBoard:
+def get_board(controller: Controller) -> GameBoard:
     """
     获取当前游戏主界面对象
 
@@ -311,5 +311,7 @@ def get(controller: Controller) -> GameBoard:
     global __game_board_cache
     valid, p_board = controller.get_p_board()
     if (not valid) or (__game_board_cache is None):
+        if not p_board:
+            raise RuntimeError("Board object doesn't exist!")  # 期待Board对象存在, 用异常不用Optional
         __game_board_cache = GameBoard(p_board, controller)
     return __game_board_cache

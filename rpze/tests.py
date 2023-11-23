@@ -55,8 +55,8 @@ def basic_test(controller: Controller):
 
 
 def asm_and_plant_test(ctler):
-    plist = gb.get(ctler).plant_list
-    plant = gb.get(ctler).iz_new_plant(1, 3, plt.PlantType.cabbagepult)
+    plist = gb.get_board(ctler).plant_list
+    plant = gb.get_board(ctler).iz_new_plant(1, 3, plt.PlantType.cabbagepult)
     if plant is not None:
         print(plant.type_.name)
         print(plant)
@@ -67,9 +67,9 @@ def asm_and_plant_test(ctler):
 
 
 def zombie_list_test(ctler):
-    zlist = gb.get(ctler).zombie_list
+    zlist = gb.get_board(ctler).zombie_list
 
-    print(gb.get(ctler).iz_place_zombie(0, 3, zmb.ZombieType.dancing))
+    print(gb.get_board(ctler).iz_place_zombie(0, 3, zmb.ZombieType.dancing))
     for z in ~zlist:
         if z.type_ == zmb.ZombieType.dancing:
             for _id in z.partner_ids:
@@ -79,26 +79,26 @@ def zombie_list_test(ctler):
 
 
 def griditem_test(ctler):
-    glist = gb.get(ctler).griditem_list
+    glist = gb.get_board(ctler).griditem_list
     for g in ~glist:
         print(f"{g}, hp is {g.brain_hp}")
 
 
 def flow_test(ctler):
-    fr = None
+    fm = None
     while True:
         ctler.before()
         if vc.kbhit():
             c = vc.getch()
             if c == b't':
-                board = gb.get(ctler)
+                board = gb.get_board(ctler)
                 for p in ~board.plant_list:
                     p.die()
                 magnet = board.iz_new_plant(2, 2, plt.PlantType.magnetshroom)
                 board.iz_place_zombie(1, 4, zmb.ZombieType.digger)
                 ff = FlowFactory()
 
-                @ff.add_flow()
+                @ff.add_flow()  # vscode说这些函数都没用过...
                 def place_digger_flow(_):
                     for i in range(5):
                         yield until_precise_digger(magnet)
@@ -118,8 +118,7 @@ def flow_test(ctler):
                         return TickRunnerResult.DONE
                     return TickRunnerResult.NEXT
 
-                fr = ff.get_runner()
-        if fr is not None:
-            fr.run()
+                fm = ff.get_manager()
+        if fm is not None:
+            fm.run()
         ctler.next_frame()
-

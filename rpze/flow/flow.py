@@ -3,83 +3,102 @@
 流程控制相关的函数和类
 """
 
-from __future__ import annotations
+from __future__ import annotations  # 标准连这个破玩意都拖了3个版本不默认是吧
 
 import heapq
 from collections.abc import Generator, Callable
 from enum import Enum, auto
 from itertools import count
-from typing import TypeAlias, Any
+from typing import TypeAlias, Self
 
 
 class TickRunnerResult(Enum):
+    """TickRunner的返回值"""
     DONE = auto(),
+    """本tick runner以后再也不执行时返回"""
     NEXT = auto(),
-    END_FLOW = auto()
+    """本tick runner以后还会执行时返回"""
+    BREAK_RUN = auto()  # 不用异常打断. StopIteration形式的返回值和type hint系统匹配程度太差.
+    """需要打断本次run时返回"""
 
 
-CondFunc: TypeAlias = Callable[["FlowRunner"], bool]
-FlowGenerator: TypeAlias = Generator[CondFunc, None, Any]
-Flow: TypeAlias = Callable[["FlowRunner"], FlowGenerator]
-TickRunner: TypeAlias = Callable[["FlowRunner"], TickRunnerResult]
+CondFunc: TypeAlias = Callable[["FlowManager"], bool]
+"""判断条件的函数"""
+FlowGenerator: TypeAlias = Generator[CondFunc, None, TickRunnerResult | None]
+"""Flow返回的生成器"""
+Flow: TypeAlias = Callable[["FlowManager"], FlowGenerator]
+"""
+yield CondFunc函数的生成器函数
+
+要求 yield (FlowManager) -> bool 且 (不return或者return TickRunnerResult):
+    - 当yield返回函数执行为True时候继续往下执行
+    - 返回None则无异常. 返回其他值的时候 均打断Flow并且把返回值返回给FlowManager
+"""
+TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult]
+"""帧运行函数"""
 PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
+"""带权重的帧运行函数"""
 
 
-class FlowRunner:
+class FlowManager:
     """
-    运行TickRunner函数的对象
+    运行Flow和TickRunner函数的对象
 
     Attributes:
-        tick_runners: 所有TickRunner组成的堆, 运行时按顺序执行
+        tick_runners: 所有TickRunner组成的函数, 运行时按顺序执行
         time: 每执行一次do自增1
     """
-    def __init__(self, tick_runners: list[PriorityTickRunner],
-                 flows: list[Flow], flow_priority):
+    def __init__(self, tick_runners: list[PriorityTickRunner], flows: list[Flow], flow_priority):
         """
         Args:
             tick_runners: tick_runner列表, 以PriorityTickRunner形式提供以便排序
             flows: flow列表
             flow_priority: flows执行优先级
         """
-        self._flow_generator_list: list[list[CondFunc, FlowGenerator]] = [[lambda _: True, i(self)] for i in flows]
+        self._flow_generator_list: list[list[CondFunc, FlowGenerator]] \
+            = [[lambda _: True, i(self)] for i in flows]
 
-        def __flow_tick_runner(self_: FlowRunner):
+        def __flow_tick_runner(self_: FlowManager) -> TickRunnerResult:
             if not self_._flow_generator_list:
                 return TickRunnerResult.DONE
             for idx, (cond_func, flow) in enumerate(self_._flow_generator_list):
                 if cond_func(self_):
                     try:
                         self_._flow_generator_list[idx][0] = next(flow)
-                    except StopIteration:
-                        self_._flow_generator_list.pop(idx)
+                    except StopIteration as se:  # StopIteration.value为generator返回值
+                        self_._flow_generator_list.pop(idx)  # 早该换成链表了
+                        if se.value is None:
+                            continue
+                        return se.value
                 else:
                     continue
             return TickRunnerResult.NEXT
 
         _counter = count()
         tick_runner_heap = [(-priority, next(_counter), it) for priority, it in tick_runners]
+        heapq.heapify(tick_runner_heap)
         heapq.heappush(tick_runner_heap, (-flow_priority, next(_counter), __flow_tick_runner))
-
+        # -priority让priority越大优先级别越高
         self.tick_runners: list[TickRunner | None] = [i[2] for i in tick_runner_heap]
         self.time = 0
 
-    def add(self, tick_runner: TickRunner = None) -> Callable[[TickRunner], TickRunner]:
+    def add(self) -> Callable[[TickRunner], TickRunner]:
         """
         运行时添加TickRunner的装饰器
 
-        不支持加权. 运行时添加的TickRunner会被放在最后执行.
+        运行时添加的TickRunner会被放在最后执行. 即, 不支持加优先级, 但确保本帧执行.
 
         Examples:
-            >>> flow_runner = FlowRunner()
-            >>> @flow_runner.add()
-            ... def tr(fr: FlowRunner) -> TickRunnerResult:
-            ...     pass
+            >>> flow_manager = FlowManager()
+            >>> @flow_manager.add()
+            ... def tr(fm: FlowManager) -> TickRunnerResult:
+            ...     ...
             为装饰器形式使用
 
-            >>> flow_runner = FlowRunner()
-            >>> def tr(fr: FlowRunner) -> TickRunnerResult:
-            ...     pass
-            >>> flow_runner.add()(tick_runner)
+            >>> flow_manager = FlowManager()
+            >>> def tr(fm: FlowManager) -> TickRunnerResult:
+            ...     ...
+            >>> flow_manager.add()(tr)
             为函数形式使用
         """
         def _decorator(tr: TickRunner):
@@ -88,7 +107,7 @@ class FlowRunner:
         return _decorator
 
     def connect(self, cond: CondFunc, only_once: bool = False) \
-            -> Callable[[Callable[["FlowRunner"], Any]], TickRunner]:
+            -> Callable[[Callable[[Self], None]], TickRunner]:
         """
         运行时把tick_runner绑定到cond上的方法, 与add使用方法相同
         
@@ -98,14 +117,14 @@ class FlowRunner:
             cond: 执行func的条件函数
             only_once: 为true时 只要有一次满足cond则返回
         """
-        def _decorator(tr: Callable[["FlowRunner"], Any]):
-            def __decorated_tick_runner(fr: FlowRunner):
-                if cond(fr):
-                    tr(fr)
+        def _decorator(tr: Callable[[Self], None]) -> TickRunner:
+            def __decorated_tick_runner(fm: FlowManager):
+                if cond(fm):
+                    tr(fm)
                     if only_once:
                         return TickRunnerResult.DONE
                 return TickRunnerResult.NEXT
-            self.add(__decorated_tick_runner)
+            self.add()(__decorated_tick_runner)
             return __decorated_tick_runner
         return _decorator
 
@@ -114,20 +133,20 @@ class FlowRunner:
         运行一次内部所有函数
 
         Returns:
-            所有tick_runner都执行完毕, 或有人返回停止运行时返回True
+            所有tick_runner都执行完毕时返回True
         """
         for idx, func in enumerate(self.tick_runners):
             if (ret := func(self)) is TickRunnerResult.DONE:
-                self.tick_runners.pop(idx)  # 哎呀怎么有人从list里面pop东西呢
-            elif ret is TickRunnerResult.END_FLOW:
-                return True
+                self.tick_runners.pop(idx)  # 早该换成链表了
+            elif ret is TickRunnerResult.BREAK_RUN:
+                break
         self.time += 1
         return not self.tick_runners
 
 
 class FlowFactory:
     """
-    用于生成FlowRunner的工厂对象
+    用于生成FlowManager的工厂对象
 
     Attributes:
         flow_list: 所有flow组成的flow_list
@@ -139,16 +158,16 @@ class FlowFactory:
 
     def add_flow(self) -> Callable[[Flow], Flow]:
         """
-        添加flow的方法, 与FlowRunner.add使用方法相同
+        添加flow的方法, 与FlowManager.add使用方法相同
         """
-        def _decorator(f: Flow):
+        def _decorator(f: Flow) -> Flow:
             self.flow_list.append(f)
             return f
         return _decorator
 
     def add_tick_runner(self, priority: int = 0) -> Callable[[TickRunner], TickRunner]:
         """
-        添加tick_runner的方法, 与FlowRunner.add使用方法相同
+        添加tick_runner的方法, 与FlowManager.add使用方法相同
 
         Args:
             priority: 权重 越大越优先执行
@@ -159,19 +178,19 @@ class FlowFactory:
         return _decorator
 
     def connect(self, cond: CondFunc, priority: int = 0, only_once: bool = False) \
-            -> Callable[[Callable[[FlowRunner], Any]], TickRunner]:
+            -> Callable[[Callable[[FlowManager], None]], TickRunner]:
         """
-        把tick_runner绑定到cond上的方法, 与FlowRunner.add使用方法相同
+        把tick_runner绑定到cond上的方法, 与FlowManager.add使用方法相同
 
         Args:
             cond: 执行func的条件函数
             priority: 权重 越大越优先执行
-            only_once: 为true时 只要有一次满足cond则返回
+            only_once: 为true时 仅当第一次满足cond时执行
         """
-        def _decorator(tr: TickRunner):
-            def __decorated_tick_runner(fr: FlowRunner):
-                if cond(fr):
-                    tr(fr)
+        def _decorator(tr) -> TickRunner:
+            def __decorated_tick_runner(fm: FlowManager):
+                if cond(fm):
+                    tr(fm)
                     if only_once:
                         return TickRunnerResult.DONE
                 return TickRunnerResult.NEXT
@@ -179,13 +198,13 @@ class FlowFactory:
             return __decorated_tick_runner
         return _decorator
 
-    def get_runner(self, flow_priority=0) -> FlowRunner:
+    def get_manager(self, flow_priority: int = 0) -> FlowManager:
         """
-        生成FlowRunner的方法
+        生成FlowManager的方法
 
         Args:
             flow_priority: flow在tick runner中的权重, 越大越优先执行
         Returns:
-            生成的FlowRunner对象
+            生成的FlowManager对象
         """
-        return FlowRunner(self.tick_runner_list, self.flow_list, flow_priority)
+        return FlowManager(self.tick_runner_list, self.flow_list, flow_priority)

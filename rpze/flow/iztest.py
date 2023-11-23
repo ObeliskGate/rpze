@@ -2,12 +2,14 @@
 """
 iztools 全场测试功能模拟
 """
+from collections.abc import Callable
 from random import randint
-from typing import TypeAlias, Self
+from typing import TypeAlias, Self, Any
 
 from flow.flow import FlowFactory, TickRunnerResult
 from flow.utils import until
-from structs.game_board import GameBoard
+from rp_extend import Controller
+from structs.game_board import GameBoard, get_board
 from structs.griditem import Griditem
 from structs.plant import PlantType, Plant
 from structs.zombie import ZombieType
@@ -47,6 +49,15 @@ zombie_abbr_to_type: dict[str, ZombieType] = {
     "ww": ZombieType.dancing, "mj": ZombieType.dancing
 }
 PlaceZombieOp = namedtuple("PlaceZombieOp", ["type_", "time", "row", "col"])
+"""
+描述僵尸放置操作的对象
+
+Attributes:
+    type_ (ZombieType) : 要放置的僵尸类型
+    time (int) : 放置的时间
+    row (int) : 放置的行, 从0开始
+    col (int) : 放置的列, 从0开始
+"""  # Pycharm这里不显示docstring的Attributes
 PlantTypeList: TypeAlias = list[list[PlantType | None]]
 
 
@@ -126,7 +137,7 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
     Args:
         place_zombie_str: 与izt要求相同的僵尸放置字符串.
     Returns:
-        一个列表, 返回(row: int, col: int, type_: ZombieType, time: int)的namedtuple; row, col从0开始
+        一个列表, 返回所有僵尸操作, 用PlaceZombieOp表示
     Raises:
         ValueError: place_zombie_string格式错误时抛出
     """
@@ -142,32 +153,44 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
 
 
 class IzTest:
-    def __init__(self, game_board_: GameBoard):
-        self.plantTypeList: tuple[PlantTypeList, PlantTypeList] = ([], [])
-        self.placeZombieList: list[PlaceZombieOp] = []
+    def __init__(self, controller: Controller):
+        self.plant_type_lists: tuple[PlantTypeList, PlantTypeList] = ([], [])
+        self.place_zombie_list: list[PlaceZombieOp] = []
         self.repeat_time: int = 1000
         self.mj_init_phase: int = randint(0, 459)
         self.target_plants_pos: list[tuple[int, int]] = []
         self.target_brains_pos: list[int] = []
-        self.game_board: GameBoard = game_board_
+        self.game_board: GameBoard = get_board(controller)
+        self.controller: Controller = controller
         self.flow_factory: FlowFactory = FlowFactory()
 
+        self._end_callback: Callable[[bool], None] = lambda _: None
+        self._has_origin_zombie: bool = True
         self._target_plants: list[Plant] = []
         self._target_brains: list[Griditem] = []
+        self._last_test_succeeded: bool = False
+        self._success_time = 0
+        self._test_time = 0
 
     def init(self, iztools_str: str) -> Self:
         """
         通过iztools字符串初始化iztest对象
 
+        与iztools的输入格式不完全相同:
+            - 允许首位空行以及每行首尾空格.
+            - 支持第二行空行表示无目标植物.
+            - 支持不输入8 9 10行表示不放置僵尸: 若此行为空, 则不启用内置的判断输赢功能.
+            - (暂且)不支持通过书写顺序调整僵尸编号.
+
         Args:
-            iztools_str: iztools标准输入字符串
+            iztools_str: iztools输入字符串
         Returns:
-            返回自己
+            self
         Raises:
             ValueError: 输入字符串格式错误时抛出
         Examples:
-            >>> game_board: GameBoard = ...
-            >>> iz_test = IzTest(game_board).init('''
+            >>> ctler: Controller = ...
+            >>> iz_test = IzTest(ctler).init('''
             ...     1000 -1
             ...     3-0 4-0 5-0 3-3
             ...     .....
@@ -181,34 +204,82 @@ class IzTest:
             如上为iztools默认例子的输入方式.
         """
         lines = iztools_str.strip().splitlines(False)
-        self.repeat_time, mj_init_phase = map(int, lines[0].strip().split())
-        if mj_init_phase < -1 or mj_init_phase >= 460:
-            raise ValueError(f"mj_init_phase must be in [-1, 459], not {mj_init_phase}")
-        self.mj_init_phase = mj_init_phase if mj_init_phase != -1 else randint(0, 459)
-        self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
-        self.plantTypeList = parse_plant_type_list('\n'.join(lines[2:7]))
-        self.placeZombieList = parse_zombie_place_list('\n'.join(lines[7:10]))
+        try:
+            self.repeat_time, mj_init_phase = map(int, lines[0].strip().split())
+            if mj_init_phase < -1 or mj_init_phase >= 460:
+                raise ValueError(f"mj_init_phase must be in [-1, 459], not {mj_init_phase}")
+            self.mj_init_phase = mj_init_phase if mj_init_phase != -1 else randint(0, 459)
+            self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
+            self.plant_type_lists = parse_plant_type_list('\n'.join(lines[2:7]))
+            for target_pos in self.target_plants_pos:
+                if (self.plant_type_lists[0][target_pos[0]][target_pos[1]] is None
+                        and self.plant_type_lists[1][target_pos[0]][target_pos[1]] is None):
+                    raise ValueError(f"target plant at {target_pos} is None")
+            if len(lines) == 7:
+                self.place_zombie_list = []
+                self._has_origin_zombie = False
+                return self
+            self.place_zombie_list = parse_zombie_place_list('\n'.join(lines[7:10]))
+        except IndexError:
+            raise ValueError(f"iztools_str must have 7 or 10 lines, not {len(lines)} lines")
         return self
 
-    def _set_flow_factory(self):
+    def set_end_callback(self) -> Callable[[Callable[[bool], None]], Callable[[bool], None]]:
+        """
+        装饰器, 设置结束时的回调函数
+
+        回调的bool参数为本次测试是否成功
+
+        Returns:
+            添加用装饰器
+        """
+
+        def _decorator(func: Callable[[bool], Any]):
+            self._end_callback = func
+            return func
+        return _decorator
+
+    def win(self) -> TickRunnerResult:
+        """
+        返回本函数, 表示本次测试成功
+
+        Returns:
+            TickRunnerResult.BREAK_RUN
+        """
+        self._last_test_succeeded = True
+        self._end_callback(True)
+        self._success_time += 1
+        self._test_time += 1
+        return TickRunnerResult.BREAK_RUN
+
+    def lose(self) -> TickRunnerResult:
+        """
+        返回本函数, 表示本次测试失败
+
+        Returns:
+            TickRunnerResult.BREAK_RUN
+        """
+        self._last_test_succeeded = False
+        self._end_callback(False)
+        self._test_time += 1
+        return TickRunnerResult.BREAK_RUN
+
+    def _set_flow_factory(self) -> Self:
         """
         设置flow_factory
         """
         @self.flow_factory.connect(until(0), only_once=True)
         def _init(_):
-            # todo 清掉所有对象的栈
-            for row, line in enumerate(self.plantTypeList[0]):
-                for col, type_ in enumerate(line):
-                    if type_ is not None:
+            # todo 清掉所有obj_list的栈
+            for plant_list in self.plant_type_lists:
+                for row, line in enumerate(plant_list):
+                    for col, type_ in enumerate(line):
+                        if type_ is None:
+                            continue
                         plant = self.game_board.iz_new_plant(row, col, type_)
                         if (row, col) in self.target_plants_pos:
                             self._target_plants.append(plant)
-            for row, line in enumerate(self.plantTypeList[1]):
-                for col, type_ in enumerate(line):
-                    if type_ is not None:
-                        plant = self.game_board.iz_new_plant(row, col, type_)
-                        if (row, col) in self.target_plants_pos:
-                            self._target_plants.append(plant)
+
             self.game_board.mj_clock = self.mj_init_phase
 
             for i in range(5):
@@ -216,18 +287,19 @@ class IzTest:
                 if i in self.target_brains_pos:
                     self._target_brains.append(brain)
 
-        for op in self.placeZombieList:
+        for op in self.place_zombie_list:
             @self.flow_factory.connect(until(op.time), only_once=True)
             def _place_zombie(_):
                 self.game_board.iz_place_zombie(op.row, op.col, op.type_)
 
-        @self.flow_factory.add_tick_runner()
-        def _check_end(_):
-            if (False not in [plant.is_dead for plant in self._target_plants]) and \
-                    (False not in [brain.id.rank == 0 for brain in self._target_brains]):
-                # todo, 返回内容设计. 可能思路是给iz_test对象(或者FlowFactory)传"数据收集"回调
-                return TickRunnerResult.END_FLOW
-            if self.game_board.zombie_list.__len__() == 0:
-                # todo, 返回内容设计
-                return TickRunnerResult.END_FLOW
-            return TickRunnerResult.NEXT
+        if not self._has_origin_zombie:
+            @self.flow_factory.add_tick_runner()
+            def _check_end(_):
+                if all(plant.is_dead for plant in self._target_plants) \
+                        and all(brain.id.rank == 0 for brain in self._target_brains):
+                    return self.win()  # all iterable对象所有元素为True时候True
+                if self.game_board.zombie_list.obj_num == 0:
+                    return self.lose()
+                return TickRunnerResult.NEXT
+
+        return self

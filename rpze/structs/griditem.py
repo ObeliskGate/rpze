@@ -14,7 +14,7 @@ class GriditemType(IntEnum):
     ladder = 0x3,
     brain_aq = 0x6,
     vase = 0x7,
-    rake = 0xB,
+    rake = 0xb,
     brain = 0xc
 
 
@@ -49,9 +49,9 @@ class Griditem(ob.ObjNode):
 
 
 class GriditemList(ob.obj_list(Griditem)):
-    def alloc_griditem(self) -> Griditem:
+    def alloc_item(self) -> Griditem:
         """
-        中申请新的griditem对象
+        从内存数组中申请新的griditem对象
 
         Returns:
             申请出的Griditem对象

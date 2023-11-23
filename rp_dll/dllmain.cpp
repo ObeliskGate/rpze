@@ -34,10 +34,17 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 					eaxFunc(pZombie, rawPtr);
 					return 0;
 				});
-			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, [](const Registers& regs) // Board::Board
+			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
+				[](const Registers& regs) // Board::Board
 			{
 				auto boardPtr = regs.eax();
 				SharedMemory::getInstance()->boardPtr() = boardPtr;
+				SharedMemory::getInstance()->isBoardPtrValid() = false;
+			});
+			InsertHook::addInsert(reinterpret_cast<void*>(0x408690), 7, 
+				[](const Registers&) // Board::~Board
+			{
+				SharedMemory::getInstance()->boardPtr() = 0;
 				SharedMemory::getInstance()->isBoardPtrValid() = false;
 			});
 		}

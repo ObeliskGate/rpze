@@ -2,47 +2,46 @@
 """
 简化flow编写的工具函数
 """
-from flow.flow import FlowRunner, CondFunc
+from flow.flow import FlowManager, CondFunc
 from structs.plant import Plant
 
 
 # flow utils
 def until(time: int) -> CondFunc:
     """
-    生成一个判断时间是否到达的函数
+    生成一个 判断时间是否到达 的函数
 
     Args:
         time: 到time时返回True
     Examples:
         >>> def flow(_):
-        ...     ...  # do something
         ...     yield until(100)
-        ...     ...  # do other thing
-        为一个 在time == 100时执行do otherthing的flow
+        ...     ...  # do something
+        为一个 在time == 100时执行do something的flow
     """
     return lambda fr: fr.time == time
 
 
-def delay(time: int, flow_runner: FlowRunner) -> CondFunc:
+def delay(time: int, flow_manager: FlowManager) -> CondFunc:
     """
     生成一个 延迟time帧后返回True 的函数
 
     Args:
         time: 延迟用时间
-        flow_runner: 当前FlowRunner对象
+        flow_manager: 当前FlowManager对象
     Examples:
         >>> from structs.game_board import GameBoard
         >>> from structs.zombie import ZombieType
         >>> gb: GameBoard = ...
-        >>> def flow(fr: FlowRunner):
+        >>> def flow(fm: FlowManager):
         ...     ...  # do something
         ...     gb.iz_place_zombie(0, 5, ZombieType.pole_vaulting)
-        ...     yield delay(50, fr)
+        ...     yield delay(50, fm)
         ...     gb.iz_place_zombie(0, 5, ZombieType.pole_vaulting)
         ...     ...  # do other thing
         为连放双撑杆
     """
-    return until(flow_runner.time + time)
+    return until(flow_manager.time + time)
 
 
 def until_precise_digger(magnetshroom: Plant) -> CondFunc:
