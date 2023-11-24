@@ -3,10 +3,12 @@
 简化flow编写的工具函数
 """
 from flow.flow import FlowManager, CondFunc
-from structs.plant import Plant
+from structs.plant import Plant, PlantType
+from structs.zombie import ZombieType
 
 
 # flow utils
+# 除去delay以外 所有的CondFunc factory以until + 情况命名
 def until(time: int) -> CondFunc:
     """
     生成一个 判断时间是否到达 的函数
@@ -64,3 +66,41 @@ def until_precise_digger(magnetshroom: Plant) -> CondFunc:
         为2-6精确矿
     """
     return lambda _: magnetshroom.status_cd == 1500 - 913
+
+
+# ize utils
+ize_plant_types: set[PlantType] = {
+    PlantType.pea_shooter,
+    PlantType.sunflower,
+    PlantType.wallnut,
+    PlantType.potato_mine,
+    PlantType.snow_pea,
+    PlantType.chomper,
+    PlantType.repeater,
+    PlantType.puffshroom,
+    PlantType.doomshroom,
+    PlantType.scaredyshroom,
+    PlantType.squash,
+    PlantType.threepeater,
+    PlantType.spikeweed,
+    PlantType.torchwood,
+    PlantType.split_pea,
+    PlantType.starfruit,
+    PlantType.magnetshroom,
+    PlantType.kernelpult,
+    PlantType.umbrella_leaf
+}
+"""所有ize中出现的植物"""
+
+ize_zombie_types: set[ZombieType] = {
+    ZombieType.imp,
+    ZombieType.conehead,
+    ZombieType.pole_vaulting,
+    ZombieType.buckethead,
+    ZombieType.bungee,
+    ZombieType.digger,
+    ZombieType.ladder,
+    ZombieType.football,
+    ZombieType.dancing
+}
+"""所有ize中出现的僵尸"""

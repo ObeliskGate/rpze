@@ -133,7 +133,7 @@ class ZombieAccessoriesType2(IntEnum):
 
 
 class Zombie(ob.ObjNode):
-    _ITERATOR_FUNC_ADDRESS = 0x41C8F0
+    ITERATOR_FUNC_ADDRESS = 0x41C8F0
 
     OBJ_SIZE = 0x15c
 

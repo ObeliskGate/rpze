@@ -412,19 +412,16 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
         def __init__(self, base_ptr: int, ctler: Controller):
             super().__init__(base_ptr, ctler)
             self._array_base_ptr = ctler.read_u32([base_ptr])
-            p_board = ctler.read_u32([0x6a9ec0, 0x768])
+            p_board = ctler.get_p_board()[1]
             self._code = f"""
-                push esi
-                push edx
+                push esi;
                 mov esi, {self._controller.result_address};
                 mov {iterator_p_board_reg}, {p_board};
                 mov ecx, {node_cls.ITERATOR_FUNC_ADDRESS};
                 call ecx;
                 mov [{self._controller.result_address + 4}], al;
-                pop edx
-                pop esi
+                pop esi;
                 ret;"""  # 可恶的reg优化
-            
             self._iterate_func_asm = None
 
         def at(self, index: int) -> T:

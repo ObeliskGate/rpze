@@ -129,6 +129,8 @@ public:
 
 	bool runCode(const char* codes, int num);
 
+	void startControl();
+
 	void endControl();
 
 	uint32_t getWrittenAddress();

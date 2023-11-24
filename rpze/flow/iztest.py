@@ -2,9 +2,10 @@
 """
 iztools 全场测试功能模拟
 """
+from collections import namedtuple
 from collections.abc import Callable
 from random import randint
-from typing import TypeAlias, Self, Any
+from typing import TypeAlias, Self
 
 from flow.flow import FlowFactory, TickRunnerResult, FlowManager
 from flow.utils import until
@@ -13,7 +14,6 @@ from structs.game_board import GameBoard, get_board
 from structs.griditem import Griditem
 from structs.plant import PlantType, Plant
 from structs.zombie import ZombieType
-from collections import namedtuple
 
 plant_abbr_to_type: dict[str, PlantType] = {
     ".": PlantType.none,
@@ -149,7 +149,7 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
     rows, cols = zip(*[parse_grid_str(pos) for pos in lines[2].strip().split()])  # zip(*list)转置
     if not (len(types) == len(times) == len(rows) == len(cols)):
         raise ValueError("length of types, times, rows and cols must be equal")
-    return [PlaceZombieOp(*tpl) for tpl in zip(types, times, rows, cols)]
+    return [PlaceZombieOp(*op) for op in zip(types, times, rows, cols)]
 
 
 class IzTest:
@@ -164,6 +164,7 @@ class IzTest:
         self.game_board: GameBoard = get_board(controller)
         self.controller: Controller = controller
         self.flow_factory: FlowFactory = FlowFactory()
+        self.handle_generate_cd: bool = True
 
         # 运行时候会时刻改变的量. protected, 不建议修改
         self._end_callback: Callable[[bool], None] = lambda _: None
@@ -175,7 +176,7 @@ class IzTest:
         self._test_time: int = 0
         self._flow_manager: FlowManager | None = None
 
-    def init_by_str(self, iztools_str: str) -> Self:
+    def init_by_str(self, iztools_str: str, reset_generate_cd: bool = False) -> Self:
         """
         通过iztools字符串初始化iztest对象
 
@@ -186,6 +187,7 @@ class IzTest:
             - (暂且)不支持通过书写顺序调整僵尸编号.
 
         Args:
+            reset_generate_cd: 攻击间隔处理 in iztools
             iztools_str: iztools输入字符串
         Returns:
             self
@@ -206,6 +208,7 @@ class IzTest:
             ...     4-6  4-6  4-6  4-6''')
             如上为iztools默认例子的输入方式.
         """
+        self.handle_generate_cd = reset_generate_cd
         lines = iztools_str.strip().splitlines(False)
         try:
             self.repeat_time, mj_init_phase = map(int, lines[0].strip().split())
@@ -279,6 +282,8 @@ class IzTest:
                             continue
                         plant = board.iz_new_plant(row, col, type_)
                         assert plant is not None
+                        if self.handle_generate_cd:
+                            plant.randomize_generate_cd()
                         if (row, col) in self.target_plants_pos:
                             self._target_plants.append(plant)
 

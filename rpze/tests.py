@@ -15,6 +15,7 @@ def basic_test(controller: Controller):
     start_time = 0
     b = True
     start_clock = int(time.time())
+    controller.start()
     while True:
         controller.before()
             
@@ -46,7 +47,6 @@ def basic_test(controller: Controller):
                 print('q')
                 controller.end()
                 print("sun", controller.read_i32([0x6a9ec0, 0x768, 0x5560]))
-                os.system("pause")
                 break
             elif c == b't':
                 print(c)
@@ -100,6 +100,7 @@ def flow_test(ctler):
         if vc.kbhit():
             c = vc.getch()
             if c == b't':
+                ctler.start()
                 board = gb.get_board(ctler)
                 for p in ~board.plant_list:
                     p.die()

@@ -25,7 +25,7 @@ class Griditem(ob.ObjNode):
     """
     OBJ_SIZE = 0xEC
 
-    _ITERATOR_FUNC_ADDRESS = 0x41CAD0
+    ITERATOR_FUNC_ADDRESS = 0x41CAD0
 
     type_: GriditemType = ob.property_int_enum(0x8, GriditemType, "场地物品类型")
 

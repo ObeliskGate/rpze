@@ -37,7 +37,7 @@ class ProjectileMotionType(IntEnum):
 
 
 class Projectile(ob.ObjNode):
-    _ITERATOR_FUNC_ADDRESS = 0x41C9B0
+    ITERATOR_FUNC_ADDRESS = 0x41C9B0
     
     OBJ_SIZE = 0x94
     

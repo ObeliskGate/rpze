@@ -44,7 +44,7 @@ public:
 
 	inline void end() { mem.endControl(); }
 
-	inline void start() { mem.globalState() = GlobalState::CONNECTED; }
+	inline void start() { mem.startControl(); }
 
 	inline uint32_t result_address() { return mem.getWrittenAddress(); }
 

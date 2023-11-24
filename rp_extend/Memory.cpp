@@ -28,14 +28,11 @@ Memory::Memory(DWORD pid)
 		std::cerr << "create shared memory failed: " << GetLastError() << std::endl;
 		throw std::exception("create shared memory failed");
 	}
-	else
-	{
-		std::cout << "find shared memory success" << std::endl;
-	}
+	std::cout << "find shared memory success" << std::endl;
 
 	pCurrentPhaseCode = &phaseCode();
 	pCurrentRunState = &runState();
-	globalState() = GlobalState::CONNECTED;
+	globalState() = GlobalState::NOT_CONNECTED;
 	this->pid = pid;
 }
 
@@ -102,6 +99,13 @@ bool Memory::runCode(const char* codes, int num)
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
 	if (executeResult() == ExecuteResult::FAIL) return false;
 	throw std::exception("unexpected behavior of runCode");
+}
+
+void Memory::startControl()
+{
+	phaseCode() = PhaseCode::CONTINUE;
+	jumpingPhaseCode() = PhaseCode::CONTINUE;
+	globalState() = GlobalState::CONNECTED;
 }
 
 void Memory::endControl()
