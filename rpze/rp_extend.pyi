@@ -1,6 +1,14 @@
 # -*- coding: utf_8 -*- 
 from __future__ import annotations
-__all__ = ['Controller']
+__all__ = ['HookPosition', 'Controller']
+
+from enum import Enum
+class HookPosition(Enum):
+    MAIN_LOOP = 0,
+    ZOMBIE_PICK_RANDOM_SPEED = 1,
+    CHALLENGE_I_ZOMBIE_SCORE_BRAIN = 2
+    
+
 class Controller:
     result_bool: bool
     result_f32: float
@@ -27,6 +35,8 @@ class Controller:
     def get_time(self) -> int | None: ...
     def get_p_board(self) -> tuple[bool, int]: ...
     def run_code(self, asm_code: bytes, code_length: int) -> bool: ...
+    def open_hook(self, hook: HookPosition) -> None: ...
+    def close_hook(self, hook: HookPosition) -> None: ...
     
     @property
     def result_address(self) -> int: ...

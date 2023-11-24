@@ -30,15 +30,20 @@ SharedMemory::SharedMemory()
 	{
 		getOffsets()[i] = OFFSET_END;
 	}
+	globalState() = HookState::NOT_CONNECTED;
+	for (size_t i = 0; i < LENGTH; i++)
+	{
+		hookStateArr()[i] = HookState::NOT_CONNECTED;
+	}
 }
 
 std::optional<void*> SharedMemory::getReadWritePtr() const
 {
-	int32_t ptr = getOffsets()[0];
+	uint32_t ptr = getOffsets()[0];
 	for (size_t i = 1; i < LENGTH; i++)
 	{
 		if (getOffsets()[i] == OFFSET_END) break;
-		ptr = *reinterpret_cast<int32_t*>(ptr);
+		ptr = *reinterpret_cast<uint32_t*>(ptr);
 		if (!ptr) return {};
 		ptr += getOffsets()[i];
 	}

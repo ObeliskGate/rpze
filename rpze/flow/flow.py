@@ -30,7 +30,7 @@ Flow: TypeAlias = Callable[["FlowManager"], FlowGenerator]
 """
 yield CondFunc函数的生成器函数
 
-要求 yield (FlowManager) -> bool 且 (不return或者return TickRunnerResult):
+要求 yield (FlowManager) -> bool 且 不返回或者return TickRunnerResult:
     - 当yield返回函数执行为True时候继续往下执行
     - 返回None则无异常. 返回其他值的时候 均打断Flow并且把返回值返回给FlowManager
 """
@@ -107,41 +107,44 @@ class FlowManager:
         return _decorator
 
     def connect(self, cond: CondFunc, only_once: bool = False) \
-            -> Callable[[Callable[[Self], None]], TickRunner]:
+            -> Callable[[Callable[[Self], TickRunnerResult | None]], Callable[[Self], TickRunnerResult | None]]:
         """
         运行时把tick_runner绑定到cond上的方法, 与add使用方法相同
         
         即 在cond(self)返回true时执行func(self).
 
         Args:
-            cond: 执行func的条件函数
-            only_once: 为true时 只要有一次满足cond则返回
+            cond: 执行func的条件函数. 返回None时按照only_once判断; 返回TickRunnerResult时直接返回.
+            only_once: 为True时 只要有一次满足cond则返回
         """
-        def _decorator(tr: Callable[[Self], None]) -> TickRunner:
+        def _decorator(tr: Callable[[Self], None]) -> Callable[[Self], None]:
             def __decorated_tick_runner(fm: FlowManager):
                 if cond(fm):
-                    tr(fm)
-                    if only_once:
-                        return TickRunnerResult.DONE
+                    ret = tr(fm)
+                    if ret is None:
+                        return TickRunnerResult.DONE if only_once else TickRunnerResult.NEXT
+                    return ret
                 return TickRunnerResult.NEXT
             self.add()(__decorated_tick_runner)
-            return __decorated_tick_runner
+            return tr
         return _decorator
 
-    def run(self) -> bool:
+    def run(self) -> TickRunnerResult:
         """
         运行一次内部所有函数
 
         Returns:
-            所有tick_runner都执行完毕时返回True
+            所有tick_runner都执行完毕时返回DONE, 内部有人打断时返回BREAK_RUN, 否则返回NEXT.
         """
-        for idx, func in enumerate(self.tick_runners):
+        if (trs := self.tick_runners) is None:
+            return TickRunnerResult.DONE
+        for idx, func in enumerate(trs):
             if (ret := func(self)) is TickRunnerResult.DONE:
                 self.tick_runners.pop(idx)  # 早该换成链表了
             elif ret is TickRunnerResult.BREAK_RUN:
-                break
+                return TickRunnerResult.BREAK_RUN
         self.time += 1
-        return not self.tick_runners
+        return TickRunnerResult.NEXT
 
 
 class FlowFactory:
@@ -183,16 +186,17 @@ class FlowFactory:
         把tick_runner绑定到cond上的方法, 与FlowManager.add使用方法相同
 
         Args:
-            cond: 执行func的条件函数
+            cond: 执行func的条件函数. 返回None时按照only_once判断; 返回TickRunnerResult时直接返回.
             priority: 权重 越大越优先执行
             only_once: 为true时 仅当第一次满足cond时执行
         """
         def _decorator(tr) -> TickRunner:
             def __decorated_tick_runner(fm: FlowManager):
                 if cond(fm):
-                    tr(fm)
-                    if only_once:
-                        return TickRunnerResult.DONE
+                    ret = tr(fm)
+                    if ret is None:
+                        return TickRunnerResult.DONE if only_once else TickRunnerResult.NEXT
+                    return ret
                 return TickRunnerResult.NEXT
             self.add_tick_runner(priority)(__decorated_tick_runner)
             return __decorated_tick_runner

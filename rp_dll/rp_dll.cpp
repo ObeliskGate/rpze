@@ -52,7 +52,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 					mov edx, 0x415D40 // Board::Update
 					call edx
 				}
-				script(1, pSharedMemory);
+				mainHook(1, pSharedMemory);
 			}
 			continue;
 		}
@@ -77,9 +77,10 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 	}
 }
 
-void script(const DWORD isInGame, const SharedMemory* pSharedMemory)
+void mainHook(const DWORD isInGame, const SharedMemory* pSharedMemory)
 {
-	if (pSharedMemory->globalState() == GlobalState::NOT_CONNECTED) return;
+	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED || 
+		pSharedMemory->hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode = &pSharedMemory->phaseCode();
 	RunState* pRunState = &pSharedMemory->runState();
 	if (isInGame)
@@ -92,6 +93,14 @@ void script(const DWORD isInGame, const SharedMemory* pSharedMemory)
 	*pRunState = RunState::OVER;
 	doAsPhaseCode(*pPhaseCode);
 	*pRunState = RunState::RUNNING;
+}
+
+bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook)
+{
+	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED ||
+		pSharedMemory->hookStateArr()[getHookIndex(hook)] == HookState::NOT_CONNECTED)
+		return true;
+	return false;
 }
 
 #undef __until

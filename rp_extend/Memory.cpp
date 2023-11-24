@@ -32,15 +32,15 @@ Memory::Memory(DWORD pid)
 
 	pCurrentPhaseCode = &phaseCode();
 	pCurrentRunState = &runState();
-	globalState() = GlobalState::NOT_CONNECTED;
+	globalState() = HookState::NOT_CONNECTED;
 	this->pid = pid;
 }
 
-std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<int32_t>& offsets)
+std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<uint32_t>& offsets)
 {
 	if (offsets.size() > LENGTH) return {};
 	memoryNum() = size;
-	CopyMemory(getOffsets(), offsets.data(), sizeof(int32_t) * offsets.size());
+	CopyMemory(getOffsets(), offsets.data(), sizeof(uint32_t) * offsets.size());
 	getOffsets()[offsets.size()] = OFFSET_END;
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);//等待执行完成
@@ -49,12 +49,12 @@ std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<i
 	throw std::exception("unexpected behavior of _readMemory");
 }
 
-bool Memory::_writeMemory(const void* pVal, BYTE size, const std::vector<int32_t>& offsets)
+bool Memory::_writeMemory(const void* pVal, BYTE size, const std::vector<uint32_t>& offsets)
 {
 	if (offsets.size() > LENGTH) return false;
 	memoryNum() = size;
 	memcpy(getWrittenVal(), pVal, size);
-	CopyMemory(getOffsets(), offsets.data(), sizeof(int32_t) * offsets.size());
+	CopyMemory(getOffsets(), offsets.data(), sizeof(uint32_t) * offsets.size());
 	getOffsets()[offsets.size()] = OFFSET_END;
 
 	getCurrentPhaseCode() = PhaseCode::WRITE_MEMORY;
@@ -105,14 +105,24 @@ void Memory::startControl()
 {
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
-	globalState() = GlobalState::CONNECTED;
+	globalState() = HookState::CONNECTED;
 }
 
 void Memory::endControl()
 {
-	globalState() = GlobalState::NOT_CONNECTED;
+	globalState() = HookState::NOT_CONNECTED;
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
+}
+
+void Memory::openHook(HookPosition hook)
+{
+	hookStateArr()[getHookIndex(hook)] = HookState::CONNECTED;
+}
+
+void Memory::closeHook(HookPosition hook)
+{
+	hookStateArr()[getHookIndex(hook)] = HookState::NOT_CONNECTED;
 }
 
 uint32_t Memory::getWrittenAddress()

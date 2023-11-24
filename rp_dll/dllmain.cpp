@@ -1,5 +1,8 @@
 // dllmain.cpp : 定义 DLL 应用程序的入口点。
 #include "pch.h"
+
+#include <corecrt_io.h>
+
 #include "rp_dll.h"
 #include "InsertHook.h"
 #include "SharedMemory.h"
@@ -27,7 +30,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 				auto pSharedMemory = SharedMemory::getInstance();
 				pSharedMemory->gameTime() = readMemory<int32_t>(0x6a9ec0, { 0x768 , 0x556c }).value_or(INT32_MIN);
 				pSharedMemory->boardPtr() = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
-				script(0, SharedMemory::getInstance());
+				mainHook(0, SharedMemory::getInstance());
 			});
 
 			InsertHook::addReplace(reinterpret_cast<void*>(0x524a70), 7, 
@@ -42,6 +45,15 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			 	{
 			 		SharedMemory::getInstance()->isBoardPtrValid() = false;
 			 	});
+			InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), 9,
+				[](const Registers&, void*) -> std::optional<int32_t> 
+				{
+					if (closableHook(SharedMemory::getInstance(), HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN))
+					{
+						return {};
+					}
+					return 0;
+				});
 		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:

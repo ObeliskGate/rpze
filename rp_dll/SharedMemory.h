@@ -51,10 +51,11 @@ public:
 	inline volatile const uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
 
 
+#undef max
 	static constexpr size_t LENGTH = 10;
-	static constexpr int32_t OFFSET_END = -1;
+	static constexpr uint32_t OFFSET_END = std::numeric_limits<uint32_t>::max();
 	// 读写内存时的偏移, 如{0x6a9ec0, 0x768, OFFSET_END, ...}, 遇到OFFSET_END停止读取
-	inline volatile int32_t* getOffsets() const { return reinterpret_cast<int32_t*>(getPtr() + 24); }
+	inline volatile uint32_t* getOffsets() const { return reinterpret_cast<uint32_t*>(getPtr() + 24); }
 
 	// 占位8个字节, 读写内存时 指向写入的内存的内容的指针
 	inline volatile const void* getWrittenVal() const { return static_cast<void*>(getPtr() + 64); }
@@ -63,7 +64,7 @@ public:
 	inline volatile void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
 
 	// 全局状态
-	inline volatile GlobalState& globalState() const { return getRef<GlobalState>(80); }
+	inline volatile HookState& globalState() const { return getRef<HookState>(80); }
 
 	// 执行结果
 	inline ExecuteResult& executeResult() const { return getRef<ExecuteResult>(84); }
@@ -77,8 +78,9 @@ public:
 	// pBoard指针效验位
 	inline volatile bool& isBoardPtrValid() const { return getRef<bool>(100); }
 
-	// remote钩子位置
-	volatile HookPosition& hookPosition() const { return getRef<HookPosition>(104); }
+	// 开10个
+	// hook位置的状态
+	inline volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 104); }
 
 	// 用来存放asm的指针, 从600开始
 	inline void* getAsmPtr() const { return getPtr() + 600; }

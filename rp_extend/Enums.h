@@ -25,7 +25,7 @@ enum class ExecuteResult : int32_t
 	FAIL // 执行失败
 };
 
-enum class GlobalState : int32_t
+enum class HookState : int32_t
 {
 	NOT_CONNECTED = 0, // 未连接
 	CONNECTED, // 已连接
@@ -34,7 +34,8 @@ enum class GlobalState : int32_t
 enum class HookPosition : int32_t 
 {
 	MAIN_LOOP = 0,
-	ZOMBIE_PICK_RANDOM_SPEED
+	ZOMBIE_PICK_RANDOM_SPEED,
+	CHALLENGE_I_ZOMBIE_SCORE_BRAIN
 };
 
-inline int32_t getIndex(HookPosition pos) { return static_cast<int32_t>(pos); }
+inline size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }

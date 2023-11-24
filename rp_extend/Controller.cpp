@@ -3,6 +3,10 @@
 
 PYBIND11_MODULE(rp_extend, m)
 {
+	py::enum_<HookPosition>(m, "HookPosition")
+		.value("MAIN_LOOP", HookPosition::MAIN_LOOP)
+		.value("ZOMBIE_PICK_RANDOM_SPEED", HookPosition::ZOMBIE_PICK_RANDOM_SPEED)
+		.value("CHALLENGE_I_ZOMBIE_SCORE_BRAIN", HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN);
 
 	py::class_<Controller>(m, "Controller")
 		.def(py::init<DWORD>())
@@ -18,6 +22,8 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("run_code", &Controller::run_code)
 		.def("start", &Controller::start)
 		.def("end", &Controller::end)
+		.def("open_hook", &Controller::open_hook)
+		.def("close_hook", &Controller::close_hook)
 
 		// read
 		.def("read_bool", &Controller::read_memory<bool>)

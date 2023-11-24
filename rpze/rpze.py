@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*-   
 import basic.inject as inject
-from rp_extend import Controller
+from rp_extend import Controller, HookPosition
 from tests import flow_test, basic_test
 
 if __name__ == "__main__":

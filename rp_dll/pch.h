@@ -17,6 +17,7 @@
 #include <optional>
 #include <array>
 #include <functional>
+#include <limits>
 
 constexpr wchar_t SHARED_MEMORY_NAME_AFFIX[] = L"rp_dll_shared_memory_";
 
