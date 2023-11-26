@@ -32,6 +32,7 @@
   <ItemGroup>
     <Compile Include="basic\asm.py" />
     <Compile Include="basic\inject.py" />
+    <Compile Include="examples\iztools_example.py" />
     <Compile Include="flow\flow.py" />
     <Compile Include="flow\iztest.py" />
     <Compile Include="flow\utils.py" />
@@ -48,6 +49,7 @@
   <ItemGroup>
     <Folder Include="basic\" />
     <Folder Include="flow\" />
+    <Folder Include="examples\" />
     <Folder Include="structs\" />
   </ItemGroup>
   <ItemGroup>

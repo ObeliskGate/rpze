@@ -9,7 +9,9 @@ void Memory::getRemoteMemoryAddress()
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);
 
 	if (executeResult() == ExecuteResult::SUCCESS)
+	{
 		remoteMemoryAddress = *static_cast<volatile uint32_t*>(getReadResult());
+	}
 	else throw std::exception("unexpected behavior");
 }
 
@@ -32,8 +34,12 @@ Memory::Memory(DWORD pid)
 
 	pCurrentPhaseCode = &phaseCode();
 	pCurrentRunState = &runState();
-	globalState() = HookState::NOT_CONNECTED;
 	this->pid = pid;
+	globalState() = HookState::CONNECTED;
+	startControl();
+	__until(getCurrentPhaseCode() == PhaseCode::WAIT);
+	getRemoteMemoryAddress();
+	endControl();
 }
 
 std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<uint32_t>& offsets)
@@ -105,12 +111,14 @@ void Memory::startControl()
 {
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
-	globalState() = HookState::CONNECTED;
+	openHook(HookPosition::MAIN_LOOP);
+	__until(phaseCode() == PhaseCode::WAIT);
+	next();
 }
 
 void Memory::endControl()
 {
-	globalState() = HookState::NOT_CONNECTED;
+	closeHook(HookPosition::MAIN_LOOP);
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
 }
@@ -127,7 +135,6 @@ void Memory::closeHook(HookPosition hook)
 
 uint32_t Memory::getWrittenAddress()
 {
-	if (!remoteMemoryAddress) getRemoteMemoryAddress();
 	return remoteMemoryAddress + 88;
 }
 

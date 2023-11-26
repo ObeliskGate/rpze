@@ -61,17 +61,22 @@ class FlowManager:
         def __flow_tick_runner(self_: FlowManager) -> TickRunnerResult:
             if not self_._flow_generator_list:
                 return TickRunnerResult.DONE
+            pop_list = []
             for idx, (cond_func, flow) in enumerate(self_._flow_generator_list):
                 if cond_func(self_):
                     try:
                         self_._flow_generator_list[idx][0] = next(flow)
                     except StopIteration as se:  # StopIteration.value为generator返回值
-                        self_._flow_generator_list.pop(idx)  # 早该换成链表了
+                        pop_list.append(idx)  # 早该换成链表了
                         if se.value is None:
                             continue
+                        for i in pop_list[::-1]:
+                            self_._flow_generator_list.pop(i)
                         return se.value
                 else:
                     continue
+            for i in pop_list[::-1]:
+                self_._flow_generator_list.pop(i)
             return TickRunnerResult.NEXT
 
         _counter = count()
@@ -136,14 +141,19 @@ class FlowManager:
         Returns:
             所有tick_runner都执行完毕时返回DONE, 内部有人打断时返回BREAK_RUN, 否则返回NEXT.
         """
+        pop_list = []
         if (trs := self.tick_runners) is None:
             return TickRunnerResult.DONE
         for idx, func in enumerate(trs):
             if (ret := func(self)) is TickRunnerResult.DONE:
-                self.tick_runners.pop(idx)  # 早该换成链表了
+                pop_list.append(idx)  # 早该换成链表了
             elif ret is TickRunnerResult.BREAK_RUN:
+                for i in pop_list[::-1]:
+                    self.tick_runners.pop(i)
                 return TickRunnerResult.BREAK_RUN
         self.time += 1
+        for i in pop_list[::-1]:
+            trs.pop(i)
         return TickRunnerResult.NEXT
 
 
@@ -181,7 +191,7 @@ class FlowFactory:
         return _decorator
 
     def connect(self, cond: CondFunc, priority: int = 0, only_once: bool = False) \
-            -> Callable[[Callable[[FlowManager], None]], TickRunner]:
+            -> Callable[[Callable[[Self], TickRunnerResult | None]], Callable[[Self], TickRunnerResult | None]]:
         """
         把tick_runner绑定到cond上的方法, 与FlowManager.add使用方法相同
 
@@ -199,10 +209,10 @@ class FlowFactory:
                     return ret
                 return TickRunnerResult.NEXT
             self.add_tick_runner(priority)(__decorated_tick_runner)
-            return __decorated_tick_runner
+            return tr
         return _decorator
 
-    def get_manager(self, flow_priority: int = 0) -> FlowManager:
+    def build_manager(self, flow_priority: int = 0) -> FlowManager:
         """
         生成FlowManager的方法
 

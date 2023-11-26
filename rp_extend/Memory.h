@@ -30,7 +30,8 @@ public:
 	explicit Memory(DWORD pid);
 
 	~Memory() { 
-		endControl(); 
+		endControl();
+		globalState() = HookState::NOT_CONNECTED;
 		UnmapViewOfFile(pBuf);
 		CloseHandle(hMemory);  
 	}
@@ -200,7 +201,8 @@ inline std::optional<T> Memory::readMemory(const std::vector<uint32_t>& offsets)
 {
 	static_assert(sizeof(T) <= 8, "Please assert sizeof(T) <= 8. ");
 	if (offsets.size() > 10) return {};
-	if (globalState() == HookState::NOT_CONNECTED) return _readRemoteMemory<T>(offsets);
+	if (globalState() == HookState::NOT_CONNECTED || hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) 
+		return _readRemoteMemory<T>(offsets);
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p.has_value()) return {};
 	return *static_cast<volatile T*>(p.value());
@@ -211,6 +213,7 @@ inline bool Memory::writeMemory(T&& val, const std::vector<uint32_t>& offsets)
 {
 	static_assert(sizeof(T) <= 8, "Please assert sizeof(T) <= 8.");
 	if (offsets.size() > 10) return false;
-	if (globalState() == HookState::NOT_CONNECTED) return _writeRemoteMemory(std::forward<T>(val), offsets);
+	if (globalState() == HookState::NOT_CONNECTED || hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) 
+		return _writeRemoteMemory(std::forward<T>(val), offsets);
 	return _writeMemory(&val, sizeof(T), offsets);
 }

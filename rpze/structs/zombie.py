@@ -236,12 +236,32 @@ class Zombie(ob.ObjNode):
 
 class ZombieList(ob.obj_list(Zombie)):
     def free_all(self) -> Self:
+        p_board = self._controller.get_p_board()[1]
         code = f"""
             push edi;
-            mov edi, {self.base_ptr};
-            mov edx, {0x41E4D0} // DataArray<Zombie>::DataArrayFreeAll
-            call edx;
-            pop edi;
-            ret;"""
+            push esi;
+            push ebx;
+            mov ebx, {Zombie.ITERATOR_FUNC_ADDRESS};
+            mov edi, {0x530510};
+            mov esi, {self._controller.result_address};
+            xor edx, edx;
+            mov [esi], edx;
+            LIterate:
+                mov edx, {p_board};
+                call ebx;  // Board::IterateZombie
+                test al, al;
+                jz LFreeAll;
+                mov ecx, [esi]
+                call edi;  // Zombie::DieNoLoot
+                jmp LIterate;
+                
+            LFreeAll:
+                mov edi, {self.base_ptr}
+                mov edx, {0x41e4d0};  // DataArray<Zombie>::DataArrayFreeAll
+                call edx;
+                pop ebx;
+                pop esi;
+                pop edi;
+                ret;"""
         asm.run(code, self._controller)
         return self

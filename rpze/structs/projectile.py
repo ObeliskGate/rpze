@@ -62,16 +62,48 @@ class Projectile(ob.ObjNode):
     def target_zombie_id(self) -> ob.ObjId:
         """香蒲子弹目标僵尸"""
         return ob.ObjId(self.base_ptr + 0x88, self._controller)
+
+    def die(self):
+        """
+        令自己死亡
+        """
+        code = f"""
+            mov eax, {self.base_ptr};
+            mov edx, {0x46EB20};  // Projectile::Die
+            call edx;
+            ret;"""
+        asm.run(code, self._controller)
     
 
 class ProjectileList(ob.obj_list(Projectile)):
     def free_all(self) -> Self:
+        p_board = self._controller.get_p_board()[1]
         code = f"""
-            push edi;
-            mov edi, {self.base_ptr};
-            mov edx, {0x41E600} // DataArray<Projectile>::DataArrayFreeAll
-            call edx;
-            pop edi;
-            ret;"""
+                push edi;   
+                push esi;
+                push ebx;
+                mov ebx, {Projectile.ITERATOR_FUNC_ADDRESS};
+                mov edi, {0x46EB20};
+                mov esi, {self._controller.result_address};
+                xor edx, edx;
+                xor edx, edx;
+                mov [esi], edx;
+                LIterate:
+                    mov edx, {p_board};
+                    call ebx;  // Board::IterateProjectile
+                    test al, al;
+                    jz LFreeAll;
+                    mov eax, [esi]
+                    call edi;  // Projectile::Die
+                    jmp LIterate;
+                    
+                LFreeAll:
+                    mov edi, {self.base_ptr}
+                    mov edx, {0x41e600};  // DataArray<Zombie>::DataArrayFreeAll
+                    call edx;
+                    pop ebx;
+                    pop esi;
+                    pop edi;
+                    ret;"""
         asm.run(code, self._controller)
         return self

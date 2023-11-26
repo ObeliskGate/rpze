@@ -33,7 +33,7 @@ class GameBoard(ob.ObjBase):
         self.projectile_list: ProjectileList = ProjectileList(base_ptr + 0xc8, controller)
         self.griditem_list: GriditemList = GriditemList(base_ptr + 0x11c, controller)
 
-    _p_challenge: int = ob.property_i32(0x160, "Challenge对象指针")
+    _p_challenge: int = ob.property_u32(0x160, "Challenge对象指针")
 
     is_dance_mode: bool = ob.property_bool(0x5765, "在dance秘籍时中为True")
 
@@ -76,7 +76,7 @@ class GameBoard(ob.ObjBase):
         """
         关卡内种植植物
         
-        此函数不会创建种植的音、特效且不会触发限制种植类关卡种植特定植物的特殊效果
+        此函数不会创建种植的音、特效且不会触发限制种植类关卡种植特定植物的特殊效果.
         
         Args:
             row: 行, 从0开始
@@ -145,6 +145,8 @@ class GameBoard(ob.ObjBase):
         if not (p_c := self._p_challenge):
             raise ValueError("Challenge object doesn't exist!")
         ret_idx = self.zombie_list.next_index
+        if p_c != (t := self._controller.read_u32([self.base_ptr + 0x160])):
+            print(p_c, t)
         code = f'''
             mov eax, {row};
             push {col};
@@ -310,8 +312,8 @@ def get_board(controller: Controller) -> GameBoard:
     """
     global __game_board_cache
     valid, p_board = controller.get_p_board()
-    if not p_board:
-        raise RuntimeError("Board object doesn't exist!")  # 期待Board对象存在, 用异常不用Optional
+    if not p_board:  # 期待Board对象存在, 用异常不用Optional
+        raise RuntimeError("Board object doesn't exist!")
     if (not valid) or (__game_board_cache is None):
         __game_board_cache = GameBoard(p_board, controller)
     return __game_board_cache

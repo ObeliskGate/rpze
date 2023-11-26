@@ -68,11 +68,46 @@ class GriditemList(ob.obj_list(Griditem)):
         asm.run(code, self._controller)
         return Griditem(self._controller.result_u32, self._controller)
 
-    def free_all(self) -> Self:
+    def die(self):
+        """
+        令自己死亡
+        """
         code = f"""
-            mov eax, {self.base_ptr};
-            mov edx, {0x41E7D0} // DataArray<GridItem>::DataArrayFreeAll
-            call edx;
+            push esi;
+            mov esi, {self.base_ptr};
+            mov edx, 0x44D000
+            call edx; // Griditem::GriditemDie
             ret;"""
+        asm.run(code, self._controller)
+
+    def free_all(self) -> Self:
+        p_board = self._controller.get_p_board()[1]
+        code = f"""
+                push edi;
+                push esi;
+                push ebx;
+                mov ebx, {Griditem.ITERATOR_FUNC_ADDRESS};
+                mov edi, {0x44D000};
+                mov esi, {self._controller.result_address};
+                xor edx, edx;
+                mov [esi], edx;
+                LIterate:
+                    mov edx, {p_board};
+                    call ebx;  // Board::IterateGriditem
+                    test al, al;
+                    jz LFreeAll;
+                    mov esi, [esi];
+                    call edi;  // Griditem::GriditemDie
+                    mov esi, {self._controller.result_address};
+                    jmp LIterate;
+                    
+                LFreeAll:
+                    mov eax, {self.base_ptr}
+                    mov edx, {0x41E7D0};  // DataArray<Griditem>::DataArrayFreeAll
+                    call edx;
+                    pop ebx;
+                    pop esi;
+                    pop edi;
+                    ret;"""
         asm.run(code, self._controller)
         return self

@@ -1,8 +1,6 @@
 // dllmain.cpp : 定义 DLL 应用程序的入口点。
 #include "pch.h"
 
-#include <corecrt_io.h>
-
 #include "rp_dll.h"
 #include "InsertHook.h"
 #include "SharedMemory.h"
@@ -27,9 +25,6 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			init();
 			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, [](const Registers&) // main loop LawnApp::UpdateFrames 
 			{
-				auto pSharedMemory = SharedMemory::getInstance();
-				pSharedMemory->gameTime() = readMemory<int32_t>(0x6a9ec0, { 0x768 , 0x556c }).value_or(INT32_MIN);
-				pSharedMemory->boardPtr() = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
 				mainHook(0, SharedMemory::getInstance());
 			});
 

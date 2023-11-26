@@ -44,13 +44,28 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		{
 			auto pSharedMemory = SharedMemory::getInstance();
 			auto pBoard = pSharedMemory->boardPtr();
+			auto pLawnApp = *reinterpret_cast<BYTE**>(0x6a9ec0);
 			while (phaseCode == PhaseCode::JUMP_FRAME)
 			{
+				*reinterpret_cast<int32_t*>(pLawnApp + 0x838) += 1;  // mjClock++
 				__asm
 				{
-					mov ecx, pBoard
-					mov edx, 0x415D40 // Board::Update
+					push esi
+					mov esi, pBoard
+					mov edx, 0x41BAD0  // Board::ProcessDeleteQueue
 					call edx
+					mov ecx, pBoard
+					mov edx, 0x415D40  // Board::Update
+					call edx
+					mov esi, pLawnApp
+					mov eax, [esi + 0x820]
+					push eax
+					mov edx, 0x445680  // EffectSystem::ProcessDeleteQueue
+					call edx
+					mov eax, esi
+					mov edx, 0x4524F0  // LawnApp::CheckForGameEnd
+					call edx
+					pop esi
 				}
 				mainHook(1, pSharedMemory);
 			}
@@ -79,6 +94,8 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 
 void mainHook(const DWORD isInGame, const SharedMemory* pSharedMemory)
 {
+	pSharedMemory->gameTime() = readMemory<int32_t>(0x6a9ec0, { 0x768 , 0x556c }).value_or(INT32_MIN);
+	pSharedMemory->boardPtr() = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
 	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED || 
 		pSharedMemory->hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode = &pSharedMemory->phaseCode();

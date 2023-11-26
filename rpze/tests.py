@@ -37,6 +37,10 @@ def basic_test(controller: Controller):
            
             elif c == b's':
                 print(controller.get_time())
+                board = gb.get_board(controller)
+                print(board.iz_place_zombie(1, 4, zmb.ZombieType.digger))
+                for z in ~board.zombie_list:
+                    print(z)
             elif c == b'r':
                 print("sun", controller.read_i32([0x6a9ec0, 0x768, 0x5560]))
                 controller.write_i32(8000, [0x6a9ec0, 0x768, 0x5560])
@@ -128,7 +132,7 @@ def flow_test(ctler):
                         return TickRunnerResult.DONE
                     return TickRunnerResult.NEXT
 
-                flow_manager = ff.get_manager()
+                flow_manager = ff.build_manager()
         if flow_manager is not None:
             flow_manager.run()
         ctler.next_frame()

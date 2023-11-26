@@ -370,9 +370,9 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
 
     @abc.abstractmethod
-    def free_all(self) -> typing.Self:  # 破游戏reg优化玩太花了导致的抽象方法
+    def free_all(self) -> typing.Self:  # DataArrayFreeAll会泄露动画对象.
         """
-        析构所有对象
+        析构所有对象.
 
         Returns:
             返回自己
@@ -419,7 +419,7 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
                 mov {iterator_p_board_reg}, {p_board};
                 mov ecx, {node_cls.ITERATOR_FUNC_ADDRESS};
                 call ecx;
-                mov [{self._controller.result_address + 4}], al;
+                mov [esi + 4], al;
                 pop esi;
                 ret;"""  # 可恶的reg优化
             self._iterate_func_asm = None

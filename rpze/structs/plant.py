@@ -240,10 +240,32 @@ class PlantList(ob.obj_list(Plant)):
         return None
 
     def free_all(self) -> typing.Self:
+        p_board = self._controller.get_p_board()[1]
         code = f"""
-            mov eax, {self.base_ptr};
-            mov edx, {0x41E590} // DataArray<Plant>::DataArrayFreeAll
-            call edx;
-            ret;"""
+            push esi;
+            push ebx;
+            push edi;
+            mov ebx, {Plant.ITERATOR_FUNC_ADDRESS};
+            mov edi, {0x4679b0};
+            mov esi, {self._controller.result_address};
+            xor edx, edx;
+            mov [esi], edx;
+            LIterate:
+                mov edx, {p_board};
+                call ebx;  // Board::IteratePlant
+                test al, al;
+                jz LFreeAll;
+                push dword ptr [esi];
+                call edi;  // Plant::Die
+                jmp LIterate;
+                
+            LFreeAll:
+                mov eax, {self.base_ptr};
+                mov edx, {0x41E590}; // DataArray<Plant>::DataArrayFreeAll
+                call edx;
+                pop edi;
+                pop ebx;
+                pop esi;
+                ret;"""
         asm.run(code, self._controller)
         return self
