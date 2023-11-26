@@ -27,7 +27,7 @@ plant_abbr_to_type: dict[str, PlantType] = {
     "z": PlantType.chomper,
     "2": PlantType.repeater,
     "p": PlantType.puffshroom,
-    "d": PlantType.doomshroom,
+    "d": PlantType.fumeshroom,
     "x": PlantType.scaredyshroom,
     "w": PlantType.squash,
     "3": PlantType.threepeater,

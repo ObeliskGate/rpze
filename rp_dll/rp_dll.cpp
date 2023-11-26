@@ -54,7 +54,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 					mov esi, pBoard
 					mov edx, 0x41BAD0  // Board::ProcessDeleteQueue
 					call edx
-					mov ecx, pBoard
+					mov ecx, esi
 					mov edx, 0x415D40  // Board::Update
 					call edx
 					mov esi, pLawnApp
