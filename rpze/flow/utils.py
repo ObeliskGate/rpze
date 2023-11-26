@@ -20,20 +20,19 @@ def until(time: int) -> CondFunc:
         >>> def flow(_):
         ...     yield until(100)
         ...     ...  # do something
-        为一个 在time == 100时执行do something的flow
+        为一个 在time >= 100时执行do something的flow
     """
-    return lambda fr: fr.time == time
+    return lambda fr: fr.time >= time
 
 
-def delay(time: int, flow_manager: FlowManager) -> CondFunc:
+def delay(time: int) -> CondFunc:
     """
     生成一个 延迟time帧后返回True 的函数
 
-    **yield delay 0等效于yield delay 1**, 所有flow返回的condFunc均从下一cs开始执行
-
     Args:
         time: 延迟用时间
-        flow_manager: 当前FlowManager对象
+    Raises:
+        ValueError: time <= 0时候抛出.
     Examples:
         >>> gb: GameBoard = ...
         >>> def flow(fm: FlowManager):
@@ -44,7 +43,16 @@ def delay(time: int, flow_manager: FlowManager) -> CondFunc:
         ...     ...  # do other thing
         为连放双撑杆
     """
-    return until(flow_manager.time + time)
+    if time <= 0:
+        raise ValueError(f"time must be positive, not {time}")
+
+    def _cond_func(fm: FlowManager, args: list[int | None] = [None]) -> bool:
+        if args[0] is None:  # args[0]为start_time
+            args[0] = fm.time
+        if args[0] <= fm.time - time + 1:
+            return True
+        return False
+    return _cond_func
 
 
 def until_precise_digger(magnetshroom: Plant) -> CondFunc:
@@ -100,7 +108,7 @@ def until_plant_last_shoot(plant: Plant) -> CondFunc:
 
 # flow generator utils
 def continuous_place_zombie(board: GameBoard, row: int, col: int, zombie_type: ZombieType,
-                            time: int = 2, interval: int = 20) -> Flow:
+                            time: int = 2, interval: int = 20) -> FlowGenerator:
     """
     生成一个连续放僵尸的flow
 
@@ -117,15 +125,14 @@ def continuous_place_zombie(board: GameBoard, row: int, col: int, zombie_type: Z
         >>> gb: GameBoard = ...
         >>> def flow(flow_manager):
         ...    ...  # do something
-        ...    yield from continuous_place_zombie(gb, 0, 5, ZombieType.pole_vaulting)(flow_manager)
+        ...    yield from continuous_place_zombie(gb, 0, 5, ZombieType.pole_vaulting)
         为在1-6连放双撑杆
     """
-    def _flow(fm: FlowManager):
+    board.iz_place_zombie(row, col, zombie_type)
+    for _ in range(time - 1):
+        yield delay(interval)
         board.iz_place_zombie(row, col, zombie_type)
-        for _ in range(time - 1):
-            yield delay(interval, fm)
-            board.iz_place_zombie(row, col, zombie_type)
-    return _flow
+    return None  # satisfy pycharm type check
 
 
 # ize utils

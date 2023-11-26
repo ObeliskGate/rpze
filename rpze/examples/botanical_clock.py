@@ -25,23 +25,23 @@ def botanical_clock(ctler: Controller):
                     2-6''')
 
     @iz_test.flow_factory.add_flow()
-    def place_zombie(fm: FlowManager):
+    def place_zombie(_):
         board = iz_test.game_board
         flower = board.plant_list.get_by_pos(1, 4)
         yield lambda _: flower.hp <= 4
         board.iz_place_zombie(1, 5, ZombieType.pole_vaulting)
         star = board.plant_list.get_by_pos(0, 4)
         yield until_plant_last_shoot(star)
-        yield delay(151 - 96 + random.randint(0, 14), fm)
+        yield delay(151 - 96 + random.randint(0, 14))
         # 上面randint不加是必过, 需要判断星星打几下而不是直接找最后一下不攻击再放, 来不及
-        yield from continuous_place_zombie(board, 0, 5, ZombieType.imp)(fm)
+        yield from continuous_place_zombie(board, 0, 5, ZombieType.imp)
         yield until_plant_die(star)
-        yield delay(100, fm)
-        yield from continuous_place_zombie(board, 3, 5, ZombieType.pole_vaulting)(fm)
+        yield delay(100)
+        yield from continuous_place_zombie(board, 3, 5, ZombieType.pole_vaulting)
         yield until_plant_die(board.plant_list.get_by_pos(3, 0))  # 三线死亡
         board.iz_place_zombie(4, 8, ZombieType.pole_vaulting)
         yield until_plant_last_shoot(board.plant_list.get_by_pos(4, 4))
-        yield delay(151 + random.randint(0, 14), fm)
+        yield delay(151 + random.randint(0, 14))
         board.iz_place_zombie(4, 5, ZombieType.imp)
 
     row_one_fail_count = 0

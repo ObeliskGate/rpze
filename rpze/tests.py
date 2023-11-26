@@ -119,7 +119,7 @@ def flow_test(ctler):
                         board.iz_new_plant(i, 1, plt.PlantType.split_pea)
                         board.iz_new_plant(i, 0, plt.PlantType.snow_pea)
                         board.iz_place_zombie(i, 5, zmb.ZombieType.digger)
-                    yield delay(1500, fm)
+                    yield delay(1500)
                     board.iz_new_plant(1, 1, plt.PlantType.split_pea)
                     board.iz_new_plant(1, 0, plt.PlantType.snow_pea)
                     board.iz_place_zombie(1, 5, zmb.ZombieType.digger)
