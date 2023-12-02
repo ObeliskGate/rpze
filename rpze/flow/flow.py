@@ -3,10 +3,10 @@
 流程控制相关的函数和类
 """
 
-from __future__ import annotations  # 标准连这个破玩意都拖了3个版本不默认是吧
+from __future__ import annotations
 
 import heapq
-from collections.abc import Generator, Callable
+from collections.abc import Callable, Awaitable, Coroutine
 from enum import Enum, auto
 from itertools import count
 from typing import TypeAlias, Self
@@ -24,20 +24,52 @@ class TickRunnerResult(Enum):
 
 CondFunc: TypeAlias = Callable[["FlowManager"], bool]
 """判断条件的函数"""
-FlowGenerator: TypeAlias = Generator[CondFunc, None, TickRunnerResult | None]
-"""Flow返回的生成器"""
-Flow: TypeAlias = Callable[["FlowManager"], FlowGenerator]
-"""
-yield CondFunc函数的生成器函数
-
-要求 yield (FlowManager) -> bool 且 不返回或者return TickRunnerResult:
-    - 当yield返回函数执行为True时候继续往下执行
-    - 返回None则无异常. 返回其他值的时候 均打断Flow并且把返回值返回给FlowManager
-"""
+FlowCoroutine: TypeAlias = Coroutine[CondFunc, None, TickRunnerResult | None]
+"""Flow返回的协程对象"""
+Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
+"""yield CondFunc函数的async def函数"""
 TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult]
 """帧运行函数"""
 PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
 """带权重的帧运行函数"""
+
+
+class AwaitableCondFunc(CondFunc, Awaitable):
+
+    def __init__(self, func: CondFunc):
+        self.func: CondFunc = func
+
+    def __call__(self, fm: FlowManager) -> bool:
+        return self.func(fm)
+
+    def __await__(self):
+        def _generator(t):
+            yield t
+        return _generator(self.func)
+
+    def __and__(self, other: CondFunc) -> Self:
+        def _cond_func(fm: FlowManager) -> bool:
+            return self.func(fm) and other(fm)
+        return AwaitableCondFunc(_cond_func)
+
+    def __or__(self, other: CondFunc) -> Self:
+        def _cond_func(fm: FlowManager) -> bool:
+            return self.func(fm) or other(fm)
+        return AwaitableCondFunc(_cond_func)
+
+    def __invert__(self) -> Self:
+        def _cond_func(fm: FlowManager) -> bool:
+            return not self.func(fm)
+        return AwaitableCondFunc(_cond_func)
+
+    def after(self, delay_time: int) -> Self:
+        def _cond_func(fm: FlowManager, event_time=[None]) -> bool:
+            if self.func(fm) and event_time[0] is None:
+                event_time[0] = fm.time
+            if event_time[0] is not None and event_time[0] <= fm.time - delay_time:
+                return True
+            return False
+        return AwaitableCondFunc(_cond_func)
 
 
 class FlowManager:
@@ -55,28 +87,28 @@ class FlowManager:
             flows: flow列表
             flow_priority: flows执行优先级
         """
-        self._flow_generator_list: list[list[CondFunc, FlowGenerator]] \
+        self._flow_coro_list: list[list[CondFunc, FlowCoroutine]] \
             = [[lambda _: True, i(self)] for i in flows]
 
         def __flow_tick_runner(self_: FlowManager) -> TickRunnerResult:
-            if not self_._flow_generator_list:
+            if not self_._flow_coro_list:
                 return TickRunnerResult.DONE
             pop_list = []
-            for idx, (cond_func, flow) in enumerate(self_._flow_generator_list):
+            for idx, (cond_func, flow) in enumerate(self_._flow_coro_list):
                 if cond_func(self_):
                     try:
-                        self_._flow_generator_list[idx][0] = next(flow)
-                    except StopIteration as se:  # StopIteration.value为generator返回值
+                        self_._flow_coro_list[idx][0] = flow.send(None)
+                    except StopIteration as se:  # StopIteration.value为返回值
                         pop_list.append(idx)  # 早该换成链表了
                         if se.value is None:
                             continue
                         for i in pop_list[::-1]:
-                            self_._flow_generator_list.pop(i)
+                            self_._flow_coro_list.pop(i)
                         return se.value
                 else:
                     continue
             for i in pop_list[::-1]:
-                self_._flow_generator_list.pop(i)
+                self_._flow_coro_list.pop(i)
             return TickRunnerResult.NEXT
 
         _counter = count()
@@ -112,7 +144,8 @@ class FlowManager:
         return _decorator
 
     def connect(self, cond: CondFunc, only_once: bool = False) \
-            -> Callable[[Callable[[Self], TickRunnerResult | None]], Callable[[Self], TickRunnerResult | None]]:
+            -> Callable[[Callable[[Self], TickRunnerResult | None]],
+                        Callable[[Self], TickRunnerResult | None]]:
         """
         运行时把tick_runner绑定到cond上的方法, 与add使用方法相同
         
@@ -191,7 +224,8 @@ class FlowFactory:
         return _decorator
 
     def connect(self, cond: CondFunc, priority: int = 0, only_once: bool = False) \
-            -> Callable[[Callable[[Self], TickRunnerResult | None]], Callable[[Self], TickRunnerResult | None]]:
+            -> Callable[[Callable[[Self], TickRunnerResult | None]],
+            Callable[[Self], TickRunnerResult | None]]:
         """
         把tick_runner绑定到cond上的方法, 与FlowManager.add使用方法相同
 

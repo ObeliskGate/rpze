@@ -7,49 +7,15 @@ from collections import namedtuple
 from collections.abc import Callable
 from random import randint
 from typing import TypeAlias, Self
-from msvcrt import kbhit, getch
 
 from flow.flow import FlowFactory, TickRunnerResult, FlowManager
-from flow.utils import until
+from flow.utils import until, plant_abbr_to_type, zombie_abbr_to_type
 from rp_extend import Controller, HookPosition
 from structs.game_board import GameBoard, get_board
 from structs.griditem import Griditem
+from structs.obj_base import parse_grid_str
 from structs.plant import PlantType, Plant
-from structs.zombie import ZombieType
 
-plant_abbr_to_type: dict[str, PlantType] = {
-    ".": PlantType.none,
-    "1": PlantType.pea_shooter,
-    "h": PlantType.sunflower,
-    "o": PlantType.wallnut,
-    "t": PlantType.potato_mine,
-    "b": PlantType.snow_pea,
-    "z": PlantType.chomper,
-    "2": PlantType.repeater,
-    "p": PlantType.puffshroom,
-    "d": PlantType.fumeshroom,
-    "x": PlantType.scaredyshroom,
-    "w": PlantType.squash,
-    "3": PlantType.threepeater,
-    "_": PlantType.spikeweed,
-    "j": PlantType.torchwood,
-    "l": PlantType.split_pea,
-    "5": PlantType.starfruit,
-    "c": PlantType.magnetshroom,
-    "y": PlantType.kernelpult,
-    "s": PlantType.umbrella_leaf
-}
-zombie_abbr_to_type: dict[str, ZombieType] = {
-    "xg": ZombieType.imp,
-    "lz": ZombieType.conehead,
-    "cg": ZombieType.pole_vaulting,
-    "tt": ZombieType.buckethead,
-    "bj": ZombieType.bungee, "xt": ZombieType.bungee,
-    "kg": ZombieType.digger,
-    "tz": ZombieType.ladder, "ft": ZombieType.ladder,
-    "gl": ZombieType.football,
-    "ww": ZombieType.dancing, "mj": ZombieType.dancing
-}
 PlaceZombieOp = namedtuple("PlaceZombieOp", ["type_", "time", "row", "col"])
 """
 描述僵尸放置操作的对象
@@ -60,21 +26,8 @@ Attributes:
     row (int) : 放置的行, 从0开始
     col (int) : 放置的列, 从0开始
 """  # Pycharm这里不显示docstring的Attributes
+
 PlantTypeList: TypeAlias = list[list[PlantType | None]]
-
-
-def parse_grid_str(grid_str: str, minus_one: bool = True) -> tuple[int, int]:
-    """
-    根据f'{row}-{col}'字符串返回(row, col)对象
-
-    Args:
-        grid_str: 形如'1-2'的字符串
-        minus_one: 为True时会自动为row, col减1，使其从0开始
-    Returns:
-        (row, col)元组
-    """
-    return (int(grid_str.split('-')[0]) - 1, int(grid_str.split('-')[1]) - 1) if minus_one else \
-        (int(grid_str.split('-')[0]), int(grid_str.split('-')[1]))
 
 
 def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantTypeList]:

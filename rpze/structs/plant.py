@@ -239,6 +239,23 @@ class PlantList(ob.obj_list(Plant)):
                 return plant
         return None
 
+    @typing.overload
+    def __getitem__(self, grid_str: str) -> typing.Self:
+        """
+        通过grid_str坐标获取植物
+
+        Args:
+            grid_str: 格子字符串
+        Returns:
+            对应位置编号最小的植物, 找不到返回None
+        """
+
+    def __getitem__(self, item):
+        if isinstance(item, str):
+            row, col = ob.parse_grid_str(item)
+            return self.get_by_pos(row, col)
+        return super().__getitem__(item)
+
     def free_all(self) -> typing.Self:
         p_board = self._controller.get_p_board()[1]
         code = f"""

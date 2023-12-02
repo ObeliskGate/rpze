@@ -299,18 +299,22 @@ class GameBoard(ob.ObjBase):
 __game_board_cache = None  # 重复构造对象会导致多次decode字节码, 故缓存.
 
 
-def get_board(controller: Controller) -> GameBoard:
+def get_board(controller: Controller | None = None) -> GameBoard:
     """
     获取当前游戏主界面对象
 
     Args:
-        controller: pvz控制器对象
+        controller: pvz控制器对象. 当为None时, 取得上一个缓存的GameBoard对象.
     Returns:
         当前游戏主界面对象
     Raises:
         RuntimeError: Board对象不存在时抛出
     """
     global __game_board_cache
+    if controller is None:
+        if __game_board_cache is None:
+            raise RuntimeError("Board object doesn't exist!")
+        return __game_board_cache
     valid, p_board = controller.get_p_board()
     if not p_board:  # 期待Board对象存在, 用异常不用Optional
         raise RuntimeError("Board object doesn't exist!")
