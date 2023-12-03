@@ -98,7 +98,7 @@
       <AdditionalLibraryDirectories>C:\programs\python311\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetDir)$(ProjectName).pyd $(SolutionDir)rpze</Command>
+      <Command>copy $(TargetDir)$(ProjectName).pyd $(SolutionDir)rpze\src\rpze</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -121,7 +121,7 @@
       <AdditionalLibraryDirectories>C:\programs\python311\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetDir)$(ProjectName).pyd $(SolutionDir)rpze</Command>
+      <Command>copy $(TargetDir)$(ProjectName).pyd $(SolutionDir)rpze\src\rpze</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -140,7 +140,7 @@
       <AdditionalLibraryDirectories>C:\programs\python311\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetDir)$(ProjectName).pyd $(SolutionDir)rpze</Command>
+      <Command>copy $(TargetDir)$(ProjectName).pyd $(SolutionDir)rpze\src\rpze</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -164,7 +164,7 @@
       <AdditionalLibraryDirectories>C:\programs\python311\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetDir)$(ProjectName).pyd $(SolutionDir)rpze</Command>
+      <Command>copy $(TargetDir)$(ProjectName).pyd $(SolutionDir)rpze\src\rpze</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

@@ -105,7 +105,7 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetDir)$(ProjectName).dll $(SolutionDir)rpze\bin\</Command>
+      <Command>copy $(TargetDir)$(ProjectName).dll $(SolutionDir)rpze\src\rpze\bin\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -129,7 +129,7 @@
       <EnableUAC>false</EnableUAC>
     </Link>
     <PostBuildEvent>
-      <Command>copy $(TargetDir)$(ProjectName).dll $(SolutionDir)rpze\bin\</Command>
+      <Command>copy $(TargetDir)$(ProjectName).dll $(SolutionDir)rpze\src\rpze\bin\</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
