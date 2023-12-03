@@ -30,34 +30,56 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="basic\asm.py" />
-    <Compile Include="basic\inject.py" />
-    <Compile Include="examples\botanical_clock.py" />
-    <Compile Include="examples\iztools_example.py" />
-    <Compile Include="flow\flow.py" />
-    <Compile Include="flow\iztest.py" />
-    <Compile Include="flow\utils.py" />
     <Compile Include="rpze.py" />
-    <Compile Include="structs\game_board.py" />
-    <Compile Include="structs\griditem.py" />
-    <Compile Include="structs\obj_base.py" />
-    <Compile Include="structs\plant.py" />
-    <Compile Include="structs\projectile.py" />
-    <Compile Include="structs\zombie.py" />
+    <Compile Include="src\basic\asm.py" />
+    <Compile Include="src\basic\inject.py" />
+    <Compile Include="src\examples\botanical_clock.py" />
+    <Compile Include="src\examples\iztools_example.py" />
+    <Compile Include="src\flow\flow.py" />
+    <Compile Include="src\flow\iztest.py" />
+    <Compile Include="src\flow\utils.py" />
+    <Compile Include="src\structs\game_board.py" />
+    <Compile Include="src\structs\griditem.py" />
+    <Compile Include="src\structs\obj_base.py" />
+    <Compile Include="src\structs\plant.py" />
+    <Compile Include="src\structs\projectile.py" />
+    <Compile Include="src\structs\zombie.py" />
     <Compile Include="tests.py" />
-    <Compile Include="__init__.py" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="basic\" />
-    <Folder Include="flow\" />
-    <Folder Include="examples\" />
-    <Folder Include="structs\" />
+    <Folder Include="src\" />
+    <Folder Include="src\basic\" />
+    <Folder Include="src\basic\__pycache__\" />
+    <Folder Include="src\examples\" />
+    <Folder Include="src\examples\__pycache__\" />
+    <Folder Include="src\flow\" />
+    <Folder Include="src\flow\__pycache__\" />
+    <Folder Include="src\rpze.egg-info\" />
+    <Folder Include="src\structs\" />
+    <Folder Include="src\structs\__pycache__\" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="Global|PythonCore|3.11" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="rp_extend.pyi" />
+    <Content Include="src\basic\__pycache__\asm.cpython-311.pyc" />
+    <Content Include="src\basic\__pycache__\inject.cpython-311.pyc" />
+    <Content Include="src\examples\__pycache__\botanical_clock.cpython-311.pyc" />
+    <Content Include="src\examples\__pycache__\iztools_example.cpython-311.pyc" />
+    <Content Include="src\flow\__pycache__\flow.cpython-311.pyc" />
+    <Content Include="src\flow\__pycache__\iztest.cpython-311.pyc" />
+    <Content Include="src\flow\__pycache__\utils.cpython-311.pyc" />
+    <Content Include="src\rpze.egg-info\dependency_links.txt" />
+    <Content Include="src\rpze.egg-info\PKG-INFO" />
+    <Content Include="src\rpze.egg-info\requires.txt" />
+    <Content Include="src\rpze.egg-info\SOURCES.txt" />
+    <Content Include="src\rpze.egg-info\top_level.txt" />
+    <Content Include="src\structs\__pycache__\game_board.cpython-311.pyc" />
+    <Content Include="src\structs\__pycache__\griditem.cpython-311.pyc" />
+    <Content Include="src\structs\__pycache__\obj_base.cpython-311.pyc" />
+    <Content Include="src\structs\__pycache__\plant.cpython-311.pyc" />
+    <Content Include="src\structs\__pycache__\projectile.cpython-311.pyc" />
+    <Content Include="src\structs\__pycache__\zombie.cpython-311.pyc" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

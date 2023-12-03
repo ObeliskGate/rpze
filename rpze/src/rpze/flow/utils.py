@@ -5,11 +5,11 @@
 from collections.abc import Callable
 from typing import Any, overload
 
-from flow.flow import FlowManager, AwaitableCondFunc, CondFunc
-from structs.game_board import GameBoard, get_board
-from structs.obj_base import parse_grid_str
-from structs.plant import Plant, PlantType
-from structs.zombie import ZombieType, Zombie
+from .flow import FlowManager, AwaitableCondFunc, CondFunc
+from ..structs.game_board import GameBoard, get_board
+from ..structs.obj_base import parse_grid_str
+from ..structs.plant import Plant, PlantType
+from ..structs.zombie import ZombieType, Zombie
 
 
 # flow utils

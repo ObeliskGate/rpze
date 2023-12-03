@@ -5,8 +5,8 @@
 from enum import IntEnum
 from typing import Self
 
-import structs.obj_base as ob
-from basic import asm
+from . import obj_base as ob
+from ..basic import asm
 
 
 class GriditemType(IntEnum):

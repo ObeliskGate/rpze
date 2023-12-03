@@ -2,8 +2,8 @@
 """
 iztools 默认例子的测试
 """
-from flow.iztest import IzTest
-from rp_extend import Controller
+from ..flow.iztest import IzTest
+from ..rp_extend import Controller
 
 
 def default_test(ctler: Controller):

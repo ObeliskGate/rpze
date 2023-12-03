@@ -4,7 +4,7 @@ import win32process as win_p
 import os
 import subprocess
 
-from rp_extend import Controller
+from ..rp_extend import Controller
 
 
 def find_window(window_name: str) -> int:
@@ -52,10 +52,17 @@ def inject(pids: list[int]) -> list[Controller]:
     Returns:
         所有进程的Controller对象组成的列表
     """
-    dll_path = os.path.abspath(".\\bin\\rp_dll.dll")
-    s = f'.\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '
+    current_dir = os.getcwd()
+    os.chdir(os.path.dirname(__file__))
+    dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
+    s = f'..\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '
     for i in pids:
         s += str(i)
         s += ' '
-    os.system(s)
+    try:
+        os.system(s)
+    except RuntimeError as re:
+        raise re
+    finally:
+        os.chdir(current_dir)
     return [Controller(pid) for pid in pids]

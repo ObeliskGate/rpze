@@ -8,8 +8,8 @@ import typing
 from enum import IntEnum
 from functools import lru_cache
 
-from basic import asm
-from rp_extend import Controller
+from ..basic import asm
+from ..rp_extend import Controller
 
 
 @lru_cache()

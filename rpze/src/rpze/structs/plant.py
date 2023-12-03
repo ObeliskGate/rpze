@@ -6,9 +6,9 @@ import random
 import typing
 from enum import IntEnum
 
-import structs.obj_base as ob
-from basic import asm
-from structs.obj_base import ObjNode
+from . import obj_base as ob
+from ..basic import asm
+from .obj_base import ObjNode
 
 
 class PlantType(IntEnum):

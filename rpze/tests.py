@@ -1,14 +1,13 @@
 # -*- coding: utf_8 -*- 
 import msvcrt as vc
-import os
 import time
 
-import structs.game_board as gb
-import structs.plant as plt
-import structs.zombie as zmb
-from flow.flow import FlowFactory, TickRunnerResult
-from flow.utils import until_precise_digger, delay
-from rp_extend import Controller
+import src.rpze.structs.game_board as gb
+import src.rpze.structs.plant as plt
+import src.rpze.structs.zombie as zmb
+from src.rpze.rp_extend import Controller
+from src.rpze.flow.flow import FlowFactory, TickRunnerResult
+from src.rpze.flow.utils import until_precise_digger, delay
 
 
 def basic_test(controller: Controller):

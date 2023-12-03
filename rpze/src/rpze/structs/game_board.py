@@ -3,13 +3,13 @@
 游戏主界面相关的函数和类
 """
 
-import structs.obj_base as ob
-from structs.griditem import GriditemList, Griditem, GriditemType
-from structs.plant import PlantList, Plant, PlantType
-from structs.projectile import ProjectileList
-from rp_extend import Controller
-from structs.zombie import ZombieList, ZombieType
-import basic.asm as asm
+from . import obj_base as ob
+from .griditem import GriditemList, Griditem, GriditemType
+from .plant import PlantList, Plant, PlantType
+from .projectile import ProjectileList
+from ..basic import asm
+from ..rp_extend import Controller
+from .zombie import ZombieList, ZombieType
 
 
 class GameBoard(ob.ObjBase):

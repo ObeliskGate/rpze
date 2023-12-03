@@ -8,13 +8,13 @@ from collections.abc import Callable
 from random import randint
 from typing import TypeAlias, Self
 
-from flow.flow import FlowFactory, TickRunnerResult, FlowManager
-from flow.utils import until, plant_abbr_to_type, zombie_abbr_to_type
-from rp_extend import Controller, HookPosition
-from structs.game_board import GameBoard, get_board
-from structs.griditem import Griditem
-from structs.obj_base import parse_grid_str
-from structs.plant import PlantType, Plant
+from .flow import FlowFactory, TickRunnerResult, FlowManager
+from .utils import until, plant_abbr_to_type, zombie_abbr_to_type
+from ..rp_extend import Controller, HookPosition
+from ..structs.game_board import GameBoard, get_board
+from ..structs.griditem import Griditem
+from ..structs.obj_base import parse_grid_str
+from ..structs.plant import PlantType, Plant
 
 PlaceZombieOp = namedtuple("PlaceZombieOp", ["type_", "time", "row", "col"])
 """

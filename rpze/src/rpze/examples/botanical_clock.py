@@ -4,9 +4,9 @@
 """
 from random import randint
 
-from flow.iztest import IzTest
-from flow.utils import until_plant_die, until_plant_last_shoot, repeat, place, until
-from rp_extend import Controller
+from ..flow.iztest import IzTest
+from ..flow.utils import until_plant_die, until_plant_last_shoot, repeat, place, until
+from ..rp_extend import Controller
 
 
 def botanical_clock(ctler: Controller):

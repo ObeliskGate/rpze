@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*- 
 from functools import lru_cache
-from rp_extend import Controller
+from ..rp_extend import Controller
 import keystone as ks
 
 
