@@ -27,7 +27,7 @@ CondFunc: TypeAlias = Callable[["FlowManager"], bool]
 FlowCoroutine: TypeAlias = Coroutine[CondFunc, None, TickRunnerResult | None]
 """Flow返回的协程对象"""
 Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
-"""yield CondFunc函数的async def函数"""
+"""await AwaitableCondFunc函数的async def函数"""
 TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult]
 """帧运行函数"""
 PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
@@ -35,38 +35,77 @@ PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
 
 
 class AwaitableCondFunc(CondFunc, Awaitable):
+    """
+    包装CondFunc为Awaitable对象.
+
+    Attributes:
+        func: 内层CondFunc函数
+    """
 
     def __init__(self, func: CondFunc):
         self.func: CondFunc = func
 
     def __call__(self, fm: FlowManager) -> bool:
+        """
+        调用内层func. 确保AwaitableCondFunc自己也为CondFunc函数.
+        """
         return self.func(fm)
 
     def __await__(self):
+        """
+        让AwaitableCondFunc对象可以await.
+
+        Returns:
+            生成器对象. 唯一一个生成结果为self.func.
+        """
         def _generator(t):
             yield t
         return _generator(self.func)
 
     def __and__(self, other: CondFunc) -> Self:
-        def _cond_func(fm: FlowManager) -> bool:
-            return self.func(fm) and other(fm)
-        return AwaitableCondFunc(_cond_func)
+        """
+        重载&运算符, 使得对象可以用&运算符, 像逻辑和运算一样连接
+
+        Args:
+            other: 另一个CondFunc对象
+
+        Returns:
+            一个新的AwaitableCondFunc对象. 该对象的func为self.func and other.func
+        """
+        return AwaitableCondFunc(lambda fm: self.func(fm) and other(fm))
 
     def __or__(self, other: CondFunc) -> Self:
-        def _cond_func(fm: FlowManager) -> bool:
-            return self.func(fm) or other(fm)
-        return AwaitableCondFunc(_cond_func)
+        """
+        重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
+
+        Args:
+            other: 另一个CondFunc对象
+        Returns:
+            一个新的AwaitableCondFunc对象. 该对象的func为self.func or other.func
+        """
+        return AwaitableCondFunc(lambda fm: self.func(fm) or other(fm))
 
     def __invert__(self) -> Self:
-        def _cond_func(fm: FlowManager) -> bool:
-            return not self.func(fm)
-        return AwaitableCondFunc(_cond_func)
+        """
+        重载~运算符, 使得对象可以用~运算符, 像逻辑非运算一样.
+
+        Returns:
+            一个新的AwaitableCondFunc对象. 该对象的func为not self.func
+        """
+        return AwaitableCondFunc(lambda fm: not self.func(fm))
 
     def after(self, delay_time: int) -> Self:
-        def _cond_func(fm: FlowManager, event_time=[None]) -> bool:
+        """
+        生成一个 在满足原条件后过delay_time帧返回True 的对象.
+        Args:
+            delay_time: 延迟时间
+        Returns:
+            一个新的AwaitableCondFunc对象.
+        """
+        def _cond_func(fm: FlowManager, event_time: list[int | None] = [None]) -> bool:
             if self.func(fm) and event_time[0] is None:
                 event_time[0] = fm.time
-            if event_time[0] is not None and event_time[0] <= fm.time - delay_time:
+            if event_time[0] is not None and event_time[0] + delay_time >= fm.time:
                 return True
             return False
         return AwaitableCondFunc(_cond_func)
@@ -225,7 +264,7 @@ class FlowFactory:
 
     def connect(self, cond: CondFunc, priority: int = 0, only_once: bool = False) \
             -> Callable[[Callable[[Self], TickRunnerResult | None]],
-            Callable[[Self], TickRunnerResult | None]]:
+                        Callable[[Self], TickRunnerResult | None]]:
         """
         把tick_runner绑定到cond上的方法, 与FlowManager.add使用方法相同
 

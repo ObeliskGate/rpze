@@ -2,8 +2,7 @@
 """
 简化flow编写的工具函数
 """
-from collections.abc import Callable
-from typing import Any, overload
+from typing import overload
 
 from .flow import FlowManager, AwaitableCondFunc, CondFunc
 from ..structs.game_board import GameBoard, get_board
@@ -22,8 +21,8 @@ def until(time: int) -> AwaitableCondFunc:
     Args:
         time: 到time时返回True
     Examples:
-        >>> def flow(_):
-        ...     yield until(100)
+        >>> async def flow(_):
+        ...     await until(100)
         ...     ...  # do something
         为一个 在time >= 100时执行do something的flow
     """
@@ -56,22 +55,21 @@ def delay(time: int) -> AwaitableCondFunc:
     Raises:
         ValueError: time <= 0时候抛出.
     Examples:
-        >>> gb: GameBoard = ...
-        >>> def flow(fm: FlowManager):
+        >>> async def flow(fm: FlowManager):
         ...     ...  # do something
-        ...     gb.iz_place_zombie(0, 5, ZombieType.pole_vaulting)
-        ...     yield delay(50, fm)
-        ...     gb.iz_place_zombie(0, 5, ZombieType.pole_vaulting)
+        ...     place("cg 1-6")
+        ...     await delay(50, fm)
+        ...     place("cg 2-6")
         ...     ...  # do other thing
-        为连放双撑杆
+        为相隔50cs连放双撑杆
     """
     if time <= 0:
         raise ValueError(f"time must be positive, not {time}")
 
-    def _cond_func(fm: FlowManager, args: list[int | None] = [None]) -> bool:
-        if args[0] is None:  # args[0]为start_time
-            args[0] = fm.time
-        if fm.time >= args[0] + time - 1:
+    def _cond_func(fm: FlowManager, start_time: list[int | None] = [None]) -> bool:
+        if start_time[0] is None:
+            start_time[0] = fm.time
+        if fm.time >= start_time[0] + time - 1:
             return True
         return False
     return AwaitableCondFunc(_cond_func)
@@ -84,15 +82,14 @@ def until_precise_digger(magnetshroom: Plant) -> AwaitableCondFunc:
     Args:
         magnetshroom: 要判断cd的磁铁
     Examples:
-        >>> gb: GameBoard = ...
         >>> magnet: Plant = ...
-        >>> def flow(_):
+        >>> async def flow(_):
         ...     ...  # do something
-        ...     gb.iz_place_zombie(0, 5, ZombieType.digger)
-        ...     yield until_precise_digger(magnetshroom)
-        ...     gb.iz_place_zombie(1, 5, ZombieType.digger)
+        ...     place("kg 1-6")
+        ...     await until_precise_digger(magnetshroom)
+        ...     place("kg 2-6")
         ...     ...  # do other thing
-        为2-6精确矿
+        为2-1精确矿
     """
     return AwaitableCondFunc(lambda _: magnetshroom.status_cd == 1500 - 913)
 
@@ -114,7 +111,7 @@ def until_plant_last_shoot(plant: Plant) -> AwaitableCondFunc:
     Args:
         plant: 要判断的植物
     """
-    def _cond_func(fm: FlowManager, is_shooting_flag=[False], try_to_shoot_time=[None]):  # 表示"上一轮是否是攻击的"
+    def _cond_func(fm: FlowManager, is_shooting_flag=[False], try_to_shoot_time=[None]):
         if plant.generate_cd == 1:  # 下一帧开打
             try_to_shoot_time[0] = fm.time + 1
         if try_to_shoot_time[0] == fm.time and plant.launch_cd != 0:  # 在攻击时

@@ -4,12 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rpze"
-version = "0.0.1"
+version = "0.0.1a1"
 dependencies = [
     "keystone-engine>=0.9.2", 
     "pywin32"
 ]
 requires-python = ">=3.11"
+license = {text = "GNU General Public License v3 (GPLv3)"}
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Operating System :: Microsoft :: Windows",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: Chinese (Simplified)"
+]
 
 [tool.setuptools.package-data]
 "*" = ["*.pyd", "*.pyi", "rp_dll.dll", "rp_injector.exe"] 

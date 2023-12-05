@@ -115,7 +115,7 @@ class IzTest:
         plant_type_lists: 两个5 * 5列表, 分别表示第一轮, 第二轮种植的植物. 空白值由None(而非PlantType.none)填充.
         place_zombie_list: 一个列表, 表示所有僵尸操作, 用PlaceZombieOp表示.
         repeat_time: 重复次数.
-        mj_init_phase: mj初始相位, -1表示随机.
+        mj_init_phase: mj初始相位. None表示随机
         target_plants_pos: 目标植物的位置列表. 元素为(row, col)
         target_brains_pos: 目标脑子的位置列表. 元素为row
         game_board: 游戏GameBoard对象.
@@ -138,7 +138,7 @@ class IzTest:
         self.plant_type_lists: tuple[PlantTypeList, PlantTypeList] = ([], [])
         self.place_zombie_list: list[PlaceZombieOp] = []
         self.repeat_time: int = 1000
-        self.mj_init_phase: int = randint(0, 459)
+        self.mj_init_phase: int | None = None
         self.target_plants_pos: list[tuple[int, int]] = []
         self.target_brains_pos: list[int] = []
         self.game_board: GameBoard = get_board(controller)
@@ -202,7 +202,7 @@ class IzTest:
             self.repeat_time, mj_init_phase = map(int, lines[0].strip().split())
             if mj_init_phase < -1 or mj_init_phase >= 460:
                 raise ValueError(f"mj_init_phase must be in [-1, 459], not {mj_init_phase}")
-            self.mj_init_phase = mj_init_phase if mj_init_phase != -1 else randint(0, 459)
+            self.mj_init_phase = mj_init_phase if mj_init_phase != -1 else None
             self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
             if self.target_plants_pos == [] and self.target_brains_pos == []:
                 self.enable_default_check_end = False
@@ -272,7 +272,7 @@ class IzTest:
                         if (row, col) in self.target_plants_pos:
                             self._target_plants.append(plant)
 
-            board.mj_clock = self.mj_init_phase
+            board.mj_clock = self.mj_init_phase if self.mj_init_phase else randint(0, 459)
 
             for i in range(5):
                 brain = self.game_board.new_iz_brain(i)

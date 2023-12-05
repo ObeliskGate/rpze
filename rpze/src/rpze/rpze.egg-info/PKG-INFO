@@ -1,6 +1,0 @@
-Metadata-Version: 2.1
-Name: rpze
-Version: 0.0.1
-Requires-Python: >=3.11
-Requires-Dist: keystone-engine>=0.9.2
-Requires-Dist: pywin32
