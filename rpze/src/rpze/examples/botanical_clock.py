@@ -42,7 +42,7 @@ def botanical_clock(ctler: Controller):
     row_one_fail_count = 0
     row_five_fail_count = 0
 
-    @iz_test.set_end_callback()
+    @iz_test.on_game_end()
     def end_callback(result: bool):
         if not result:
             nonlocal row_five_fail_count

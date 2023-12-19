@@ -86,7 +86,6 @@ class ProjectileList(ob.obj_list(Projectile)):
                 mov edi, {0x46EB20};
                 mov esi, {self._controller.result_address};
                 xor edx, edx;
-                xor edx, edx;
                 mov [esi], edx;
                 LIterate:
                     mov edx, {p_board};

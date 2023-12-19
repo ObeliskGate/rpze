@@ -4,7 +4,7 @@
 """
 from typing import overload
 
-from .flow import FlowManager, AwaitableCondFunc, CondFunc
+from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool
 from ..structs.game_board import GameBoard, get_board
 from ..structs.obj_base import parse_grid_str
 from ..structs.plant import Plant, PlantType
@@ -66,10 +66,10 @@ def delay(time: int) -> AwaitableCondFunc:
     if time <= 0:
         raise ValueError(f"time must be positive, not {time}")
 
-    def _cond_func(fm: FlowManager, start_time: list[int | None] = [None]) -> bool:
-        if start_time[0] is None:
-            start_time[0] = fm.time
-        if fm.time >= start_time[0] + time - 1:
+    def _cond_func(fm: FlowManager, v=VariablePool(start_time=None)) -> bool:
+        if v.start_time is None:
+            v.start_time = fm.time
+        if v.start_time + time - 1 <= fm.time:  # 所有这类函数下一cs开始执行. -1
             return True
         return False
     return AwaitableCondFunc(_cond_func)
@@ -111,15 +111,16 @@ def until_plant_last_shoot(plant: Plant) -> AwaitableCondFunc:
     Args:
         plant: 要判断的植物
     """
-    def _cond_func(fm: FlowManager, is_shooting_flag=[False], try_to_shoot_time=[None]):
+    def _cond_func(fm: FlowManager,
+                   v=VariablePool(try_to_shoot_time=None, is_shooting_flag=False)):
         if plant.generate_cd == 1:  # 下一帧开打
-            try_to_shoot_time[0] = fm.time + 1
-        if try_to_shoot_time[0] == fm.time and plant.launch_cd != 0:  # 在攻击时
-            is_shooting_flag[0] = True
+            v.try_to_shoot_time = fm.time + 1
+        if v.try_to_shoot_time == fm.time and plant.launch_cd != 0:  # 在攻击时
+            v.is_shooting_flag = True
             return False
-        if try_to_shoot_time[0] == fm.time and plant.launch_cd == 0:  # 不在攻击时
-            t = is_shooting_flag[0]
-            is_shooting_flag[0] = False
+        if v.try_to_shoot_time == fm.time and plant.launch_cd == 0:  # 不在攻击时
+            t = v.is_shooting_flag
+            v.is_shooting_flag = False
             return t  # 上一轮是攻击的 且 这一轮不攻击 返回True
         return False
     return AwaitableCondFunc(_cond_func)

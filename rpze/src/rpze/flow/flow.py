@@ -34,6 +34,22 @@ PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
 """带权重的帧运行函数"""
 
 
+class VariablePool:
+    """
+    用于表示"伴随状态"默认参数的变量池
+    """
+    def __init__(self, *args, **kwargs):
+        self._args_list = list(args)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+    def __getitem__(self, item):
+        return self._args_list[item]
+
+    def __setitem__(self, key, value):
+        self._args_list[key] = value
+
+
 class AwaitableCondFunc(CondFunc, Awaitable):
     """
     包装CondFunc为Awaitable对象.
@@ -96,16 +112,16 @@ class AwaitableCondFunc(CondFunc, Awaitable):
 
     def after(self, delay_time: int) -> Self:
         """
-        生成一个 在满足原条件后过delay_time帧返回True 的对象.
+        生成一个 在满足原条件后过delay_time帧返回True的对象.
         Args:
             delay_time: 延迟时间
         Returns:
             一个新的AwaitableCondFunc对象.
         """
-        def _cond_func(fm: FlowManager, event_time: list[int | None] = [None]) -> bool:
-            if self.func(fm) and event_time[0] is None:
-                event_time[0] = fm.time
-            if event_time[0] is not None and event_time[0] + delay_time >= fm.time:
+        def _cond_func(fm: FlowManager, p=VariablePool(event_time=None)) -> bool:
+            if p.event_time is None and self.func(fm):
+                p.event_time = fm.time
+            if p.event_time is not None and p.event_time + delay_time <= fm.time:
                 return True
             return False
         return AwaitableCondFunc(_cond_func)

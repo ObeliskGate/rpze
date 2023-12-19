@@ -1,10 +1,14 @@
-# -*- coding: utf_8 -*- 
+# -*- coding: utf_8 -*-
+from typing import overload
+
 import win32gui as win_g
 import win32process as win_p
 import os
 import subprocess
 
+from . import asm
 from ..rp_extend import Controller
+from ..structs.game_board import GameBoard, get_board
 
 
 def find_window(window_name: str) -> int:
@@ -66,3 +70,65 @@ def inject(pids: list[int]) -> list[Controller]:
     finally:
         os.chdir(current_dir)
     return [Controller(pid) for pid in pids]
+
+
+class InjectedGame:
+    @overload
+    def __init__(self, process_id: int): ...
+
+    @overload
+    def __init__(self, game_path: str): ...
+
+    @overload
+    def __init__(self, controller: Controller): ...
+
+    def __init__(self, arg):
+        if isinstance(arg, int):
+            self.controller: Controller = Controller(arg)
+        elif isinstance(arg, str):
+            self.controller: Controller = inject(open_game(arg))[0]
+        else:
+            self.controller: Controller = arg
+
+    def __enter__(self):
+        return self
+
+    def enter_game(self, game_mode: int) -> GameBoard:
+        """
+        进入游戏, 返回GameBoard对象
+
+        Args:
+            game_mode: 游戏模式
+        Returns:
+            GameBoard对象
+        Raises:
+            RuntimeError: 若不在载入界面使用此函数则抛出
+        """
+        code = f"""
+            push esi;
+            mov esi, {0x6a9ec0};
+            mov eax, [esi + 0x7fc];
+            test eax, eax
+            jnz LError;
+            mov ecx, esi;
+            mov edx, {0x452cb0}; // LawnApp::LoadingCompleted(ecx = LawnApp* this)
+            call edx;
+            mov edx, {0x44f9e0}; // LawnApp::KillGameSelector(esi = LawnApp* this)
+            call edx;
+            pop esi;
+            ret;
+
+            LError:
+                xor esi, esi;
+                mov [{self.controller.result_address}], esi;
+                pop esi;
+                ret;
+            """
+        asm.run(code, self.controller)
+        if self.controller.result_i32 == 0:
+            raise RuntimeError("please use this function at loading screen")
+        return get_board(self.controller)
+
+    def __exit__(self):
+        self.controller.end()
+        return self

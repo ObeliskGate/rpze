@@ -266,7 +266,7 @@ class PlantList(ob.obj_list(Plant)):
             mov edi, {0x4679b0};
             mov esi, {self._controller.result_address};
             xor edx, edx;
-            mov [esi], edx;
+            mov [esi], edx;  // mov [esi], 0 is invalid
             LIterate:
                 mov edx, {p_board};
                 call ebx;  // Board::IteratePlant

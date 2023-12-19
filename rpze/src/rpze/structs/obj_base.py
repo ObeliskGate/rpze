@@ -23,8 +23,8 @@ def parse_grid_str(grid_str: str, minus_one: bool = True) -> tuple[int, int]:
     Returns:
         (row, col)元组
     """
-    return (int(grid_str.split('-')[0]) - 1, int(grid_str.split('-')[1]) - 1) if minus_one else \
-        (int(grid_str.split('-')[0]), int(grid_str.split('-')[1]))
+    return (int(grid_str.split('-')[0]) - 1, int(grid_str.split('-')[1]) - 1) if minus_one \
+        else (int(grid_str.split('-')[0]), int(grid_str.split('-')[1]))
 
 
 class ObjBase(abc.ABC):
@@ -225,7 +225,7 @@ class ObjId(ObjBase):
 
     rank: int = property_u16(2, "对象序列号")
 
-    def __eq__(self, val: typing.Self | tuple[int, int]) -> bool:
+    def __eq__(self, val: typing.Self) -> bool:
         """
         ObjId比较相等 与其他ObjId比较或与(index, rank)比较
 
@@ -333,8 +333,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
             对应切片的列表, 不保证其中任何成员存活
         """
 
-    def __getitem__(self, index):
-        ...
+    def __getitem__(self, index): ...
 
     def __invert__(self) -> c_abc.Iterator[T]:
         """
@@ -353,7 +352,8 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """与__invert__()相同"""
         return self.__invert__()
 
-    def find(self, index: int | ObjId | tuple[int, int]) -> T | None:
+    @typing.overload
+    def find(self, index: int | ObjId) -> T | None:
         """
         通过index查找对象
 
@@ -370,9 +370,24 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         Example:
             >>> self.find(-1)
             当前最后一个对象(len(self) - 1)未回收时返回, 否则返回None
-            >>> self.find((1, 1))
+        """
+
+    @typing.overload
+    def find(self, idx: int, rank: int) -> T | None:
+        """
+        通过(index, rank)组查找对象
+
+        Args:
+            idx: 整数索引
+            rank: 序列号
+        Returns:
+            存在未回收的对应对象返回, 否则返回None.
+        Example:
+            >>> self.find(1, 1)
             若idx == 1的对象的rank==1, 返回该对象, 否则返回None
         """
+
+    def find(self, *args): ...
 
     def reset_stack(self) -> typing.Self:
         """
@@ -388,7 +403,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
     @abc.abstractmethod
     def free_all(self) -> typing.Self:  # DataArrayFreeAll会泄露动画对象.
         """
-        析构所有对象.
+        删除存活的所有对象.
 
         Returns:
             返回自己
@@ -443,24 +458,24 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
         def at(self, index: int) -> T:
             return node_cls(self._array_base_ptr + node_cls.OBJ_SIZE * index, self._controller)
 
-        def find(self, index) -> T | None:
-            if isinstance(index, int):
-                try:
-                    target = self[index]
-                except IndexError:
-                    return None
-                return target if target.id.rank != 0 else None
-            if isinstance(index, ObjId):
-                target = self.at(index.index)
-                return target if target.id == index else None
+        def find(self, *args) -> T | None:
+            if len(args) == 1:
+                index = args[0]
+                if isinstance(index, int):
+                    try:
+                        target = self[index]
+                    except IndexError:
+                        return None
+                    return target if target.id.rank != 0 else None
+                if isinstance(index, ObjId):
+                    target = self.at(index.index)
+                    return target if target.id == index else None
+                raise TypeError("index must be int or ObjId")
             try: 
-                idx, rank = index
-            except TypeError as te:
-                raise TypeError("object can only be found by int, ObjId instance "
-                                "or an unpack-able object like (index, rank), "
-                                f"not {type(index).__name__} instance") from te
+                idx, rank = args
             except ValueError as ve:
-                raise ValueError("unpack-able index should have two elements (index, rank)") from ve
+                raise ValueError(f"this function should have one or two arguments, "
+                                 f"not {len(args)} arguments") from ve
             target = self.at(idx)
             return target if target.id.rank == rank else None
 
