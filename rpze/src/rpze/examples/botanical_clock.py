@@ -11,16 +11,16 @@ from ..rp_extend import Controller
 
 def botanical_clock(ctler: Controller):
     iz_test = IzTest(ctler).init_by_str('''
-                    1000 -1
-                    1-2 5-2
-                    zh_j5
-                    cptoh
-                    dsbhh
-                    3lyp_
-                    hhwz1
-                    lz 
-                    0  
-                    2-6''')
+        1000 -1
+        1-2 5-2
+        zh_j5
+        cptoh
+        dsbhh
+        3lyp_
+        hhwz1
+        lz 
+        0  
+        2-6''')
 
     @iz_test.flow_factory.add_flow()
     async def place_zombie(_):

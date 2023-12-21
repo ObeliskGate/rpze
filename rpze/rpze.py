@@ -3,29 +3,26 @@ import src.rpze.basic.inject as inject
 from src.rpze.flow.iztest import IzTest
 from src.rpze.flow.utils import until, place, delay
 
-if __name__ == "__main__":
-    pids = inject.open_game(r"C:\space\pvz\Plants vs. Zombies 1.0.0.1051 EN\PlantsVsZombies.exe")
-    ctler = inject.inject(pids)[0]
-    input("press enter to start test")
-    t = IzTest(ctler).init_by_str("""
-    1000 -1
-    2-0 5-0
-    ..5..
-    cdl_h
-    .....
-    ..ohp
-    hsbjt
-    tt
-    0
-    4-6""")
+with inject.InjectedGame(r"C:\space\pvz\Plants vs. Zombies 1.0.0.1051 EN\PlantsVsZombies.exe") as game:
+    game.enter_level(70)
+    t = IzTest(game.controller).init_by_str("""
+        1000 -1
+        2-0 5-0
+        ..5..
+        cdl_h
+        .....
+        ..ohp
+        hsbjt
+        tt
+        0
+        4-6""")
 
     @t.flow_factory.add_flow()
     async def place_zombie(_):
         plist = t.game_board.plant_list
         await until(lambda _: plist["4-4"].hp < 300)
         place("tt 2-6")
-        await until(lambda _: plist["4-4"].hp <= 4).after(150)
-        # await delay(450)
+        await delay(450)
         place("cg 5-6")
 
     row_five_fail_count = 0

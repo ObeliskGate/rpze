@@ -112,7 +112,7 @@ void Memory::startControl()
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
 	openHook(HookPosition::MAIN_LOOP);
-	__until(phaseCode() == PhaseCode::WAIT);
+	__until(isBlocked());
 	next();
 }
 

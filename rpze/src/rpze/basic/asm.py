@@ -30,11 +30,6 @@ def decode(code: str) -> bytes:
         code: x86 intel格式汇编字符串
     Returns:
         解码后的字节码
-    Raises:
-        RuntimeError: 汇编码错误
     """
-    try:
-        asm, _ = __keystone_assembler.asm(code, as_bytes=True)
-        return asm
-    except ks.KsError as e:
-        raise RuntimeError(f"asm error, {e}") from e
+    asm, _ = __keystone_assembler.asm(code, as_bytes=True)
+    return asm

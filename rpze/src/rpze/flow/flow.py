@@ -34,11 +34,17 @@ PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
 """带权重的帧运行函数"""
 
 
-class VariablePool:
+class VariablePool:  # thanks Reisen
     """
-    用于表示"伴随状态"默认参数的变量池
+    用于表示CondFunc中用于"伴随状态"的默认参数的变量池.
+    具体属性由构造函数而定
     """
     def __init__(self, *args, **kwargs):
+        """
+        Args:
+            *args: 匿名变量. 使用下标运算访问.
+            **kwargs: 属性. 属性名=初始值
+        """
         self._args_list = list(args)
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -181,13 +187,13 @@ class FlowManager:
         运行时添加的TickRunner会被放在最后执行. 即, 不支持加优先级, 但确保本帧执行.
 
         Examples:
-            >>> flow_manager = FlowManager()
+            >>> flow_manager: FlowManager = ...
             >>> @flow_manager.add()
             ... def tr(fm: FlowManager) -> TickRunnerResult:
             ...     ...
             为装饰器形式使用
 
-            >>> flow_manager = FlowManager()
+            >>> flow_manager: FlowManager = ...
             >>> def tr(fm: FlowManager) -> TickRunnerResult:
             ...     ...
             >>> flow_manager.add()(tr)
