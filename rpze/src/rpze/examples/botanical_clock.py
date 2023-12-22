@@ -9,7 +9,7 @@ from ..flow.utils import until_plant_die, until_plant_last_shoot, repeat, place,
 from ..rp_extend import Controller
 
 
-def botanical_clock(ctler: Controller):
+def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
     iz_test = IzTest(ctler).init_by_str('''
         1000 -1
         1-2 5-2

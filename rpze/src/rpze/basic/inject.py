@@ -97,6 +97,8 @@ class InjectedGame:
         """
         进入游戏, 返回GameBoard对象
 
+        请切记这个函数会毁坏你原有的关卡存档!
+
         Args:
             level_num: 关卡对应数字
         Returns:
@@ -135,7 +137,7 @@ class InjectedGame:
             call edx;
             
             LPreNewGame:
-            push 1;
+            push 0;
             push {level_num};
             mov edx, {0x44f560}; // LawnApp::PreNewGame
             call edx;
@@ -148,6 +150,8 @@ class InjectedGame:
         ctler.start()
         ctler.before()
         asm.run(code, ctler)
+        ctler.next_frame()
+        ctler.before()
         ctler.next_frame()
         ctler.before()
         ctler.end()

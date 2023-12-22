@@ -320,6 +320,8 @@ class IzTest:
             ctler.next_frame()
         for _ in range(self.repeat_time):
             _flow_manager = self.flow_factory.build_manager()
+            ctler.before()
+            ctler.next_frame()
             while not self._last_test_ended:
                 ctler.before()
                 _flow_manager.run()

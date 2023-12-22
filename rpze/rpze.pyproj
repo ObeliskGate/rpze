@@ -35,6 +35,7 @@
     <Compile Include="src\rpze\basic\inject.py" />
     <Compile Include="src\rpze\examples\botanical_clock.py" />
     <Compile Include="src\rpze\examples\iztools_example.py" />
+    <Compile Include="src\rpze\examples\pole_jumping_test.py" />
     <Compile Include="src\rpze\flow\flow.py" />
     <Compile Include="src\rpze\flow\iztest.py" />
     <Compile Include="src\rpze\flow\utils.py" />
