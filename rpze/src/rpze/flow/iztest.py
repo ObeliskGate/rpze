@@ -255,7 +255,8 @@ class IzTest:
         @self.flow_factory.connect(until(0), only_once=True)
         def _init(_):
             # 清掉所有_ObjList的栈
-            (board := self.game_board).plant_list.free_all().reset_stack()
+            (board := self.game_board).process_delete_queue()
+            board.plant_list.free_all().reset_stack()
             board.zombie_list.free_all().reset_stack()
             board.projectile_list.free_all().reset_stack()
             board.griditem_list.free_all().reset_stack()

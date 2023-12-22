@@ -2,6 +2,7 @@
 """
 游戏主界面相关的函数和类
 """
+from typing import Self
 
 from . import obj_base as ob
 from .griditem import GriditemList, Griditem, GriditemType
@@ -292,6 +293,23 @@ class GameBoard(ob.ObjBase):
         ret.x = float(self.grid_to_pixel_x(0, 0) - 40)
         ret.y = float(self.grid_to_pixel_y(row, 0) + 40)
         return ret
+    
+    def process_delete_queue(self) -> Self:
+        """
+        删除所有标记为回收的游戏对象
+
+        Returns:
+            返回自己
+        """
+        code = f"""
+            push esi;
+            mov esi, {self.base_ptr};
+            mov edx, 0x41BAD0;  // Board::ProcessDeleteQueue
+            call edx;
+            pop esi;
+            ret;"""
+        asm.run(code, self._controller)
+        return self
 
 
 __game_board_cache = None  # 重复构造对象会导致多次decode字节码, 故缓存.

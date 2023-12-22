@@ -11,7 +11,7 @@ from ..rp_extend import Controller
 
 def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
     iz_test = IzTest(ctler).init_by_str('''
-        1000 -1
+        10000 -1
         1-2 5-2
         zh_j5
         cptoh
@@ -45,8 +45,7 @@ def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
     @iz_test.on_game_end()
     def end_callback(result: bool):
         if not result:
-            nonlocal row_five_fail_count
-            nonlocal row_one_fail_count
+            nonlocal row_five_fail_count, row_one_fail_count
             plant_list = iz_test.game_board.plant_list
             if plant_list["1-2"] is not None:
                 row_one_fail_count += 1

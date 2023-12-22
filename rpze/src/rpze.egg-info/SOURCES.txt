@@ -13,6 +13,7 @@ src/rpze/bin/rp_dll.dll
 src/rpze/bin/rp_injector.exe
 src/rpze/examples/botanical_clock.py
 src/rpze/examples/iztools_example.py
+src/rpze/examples/pole_jumping_test.py
 src/rpze/flow/flow.py
 src/rpze/flow/iztest.py
 src/rpze/flow/utils.py

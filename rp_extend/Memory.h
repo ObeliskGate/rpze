@@ -205,7 +205,7 @@ inline std::optional<T> Memory::readMemory(const std::vector<uint32_t>& offsets)
 		return _readRemoteMemory<T>(offsets);
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p.has_value()) return {};
-	return *static_cast<volatile T*>(p.value());
+	return *static_cast<volatile T*>(*p);
 }
 
 template<typename T>
