@@ -72,7 +72,7 @@ class ObjBase(abc.ABC):
 
     def __str__(self) -> str:
         return (f"<{type(self).__name__} object at [0x{self.base_ptr:x}] "
-                f"of pid {self._controller.pid}>")
+                f"of process id {self._controller.pid}>")
 
     def __repr__(self) -> str:
         return (f"{type(self).__name__}(base_ptr=0x{self.base_ptr:x}, "
@@ -225,7 +225,7 @@ class ObjId(ObjBase):
 
     rank: int = property_u16(2, "对象序列号")
 
-    def __eq__(self, val: typing.Self) -> bool:
+    def __eq__(self, val: typing.Self | tuple[int, int]) -> bool:
         """
         ObjId比较相等 与其他ObjId比较或与(index, rank)比较
 
@@ -286,15 +286,21 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     OBJ_SIZE = 28
 
-    obj_num: int = property_i32(16, "当前对象数量")
+    max_length: int = property_i32(4, "最大时对象数")
 
     next_index: int = property_i32(12, "下一个对象的索引")
 
+    obj_num: int = property_i32(16, "当前对象数量")
+
     next_rank: int = property_i32(20, "下一个对象的序列号")
 
-    max_length: int = property_i32(4, "最大时对象数")
-
     def __len__(self) -> int:
+        """
+        返回最大时对象数, 与max_length相同
+
+        Returns:
+            最大时对象数
+        """
         return self._controller.read_i32([self.base_ptr + 4])
 
     def at(self, index: int) -> T:
@@ -304,7 +310,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         Args:
             index: 非负索引, 不做任何检查
         Returns:
-            T: 对应下标的元素, 不确保存活
+            对应下标的元素, 不确保存活
         """
 
     @typing.overload
@@ -315,7 +321,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         Args:
             index: 整数索引, 即支持负数索引
         Returns:
-            T: 对应下标的元素, 不确保存活
+            对应下标的元素, 不确保存活
         Raises:
             IndexError: 若index超出范围抛出
         """
@@ -342,9 +348,10 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         Returns:
             迭代器, 仅迭代存活对象
         Examples:
-            >>> for objects in ~self:
+            >>> l: _ObjList = ...
+            >>> for objects in ~l:
             ...     ...  # do something
-            迭代所有未回收的对象
+            迭代l中所有未回收的对象
         """
 
     @property
@@ -358,15 +365,14 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         通过index查找对象
 
         用int查找时, 未回收对象返回T.
-        用ObjId或者(index, rank)查找时, 在对应index位置对象rank相同时返回T.
+        用ObjId查找时, 在对应index位置对象rank相同时返回T.
 
         Args:
             index: 整数索引, ObjId对象或(index, rank)可解包对象
         Returns:
             存在未回收的对应对象返回, 否则返回None.
         Raises:
-            TypeError: index不是int, ObjId或可解包对象
-            ValueError: 可解包对象不是两个元素
+            TypeError: index不是int和ObjId
         Example:
             >>> self.find(-1)
             当前最后一个对象(len(self) - 1)未回收时返回, 否则返回None
@@ -394,6 +400,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         清栈
 
         在所有对象都被回收时调用. 让本对象之后申请对象从0开始申请
+
         Returns:
             返回自己
         Raises:
@@ -459,25 +466,26 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
             return node_cls(self._array_base_ptr + node_cls.OBJ_SIZE * index, self._controller)
 
         def find(self, *args) -> T | None:
-            if len(args) == 1:
-                index = args[0]
-                if isinstance(index, int):
-                    try:
-                        target = self[index]
-                    except IndexError:
-                        return None
-                    return target if target.id.rank != 0 else None
-                if isinstance(index, ObjId):
-                    target = self.at(index.index)
-                    return target if target.id == index else None
-                raise TypeError("index must be int or ObjId")
-            try: 
-                idx, rank = args
-            except ValueError as ve:
-                raise ValueError(f"this function should have one or two arguments, "
-                                 f"not {len(args)} arguments") from ve
-            target = self.at(idx)
-            return target if target.id.rank == rank else None
+            match len(args):
+                case 1:
+                    index = args[0]
+                    if isinstance(index, int):
+                        try:
+                            target = self[index]
+                        except IndexError:
+                            return None
+                        return target if target.id.rank != 0 else None
+                    if isinstance(index, ObjId):
+                        target = self[index.index]
+                        return target if target.id == index else None
+                    raise TypeError("index must be int or ObjId instance")
+                case 2:
+                    idx, rank = args
+                    target = self[idx]
+                    return target if target.id.rank == rank else None
+                case other:
+                    raise ValueError("the function should have one or two parameters, "
+                                     f"not {other} parameters")
 
         def __getitem__(self, index: int | slice):
             if isinstance(index, int):
@@ -487,7 +495,7 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
                 return self.at(i)
             if isinstance(index, slice):
                 start, stop, step = index.indices(len(self))
-                return [self.at(i) for i in range(start, stop, step)]
+                return [self[i] for i in range(start, stop, step)]
             raise TypeError("index must be int or slice")
 
         def __invert__(self):

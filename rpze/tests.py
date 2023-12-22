@@ -112,7 +112,7 @@ def flow_test(ctler):
                 ff = FlowFactory()
 
                 @ff.add_flow()  # vscode说这些函数都没用过...
-                def place_digger_flow(fm):
+                def place_digger_flow(_):
                     for i in range(5):
                         yield until_precise_digger(magnet)
                         board.iz_new_plant(i, 1, plt.PlantType.split_pea)

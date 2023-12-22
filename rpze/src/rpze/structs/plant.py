@@ -222,7 +222,7 @@ class Plant(ObjNode):
 
 
 class PlantList(ob.obj_list(Plant)):
-    def get_by_pos(self, row: int, col: int) -> Plant | None:
+    def get_by_grid(self, row: int, col: int) -> Plant | None:
         """
         通过row, col找到对应植物
         
@@ -240,7 +240,7 @@ class PlantList(ob.obj_list(Plant)):
         return None
 
     @typing.overload
-    def __getitem__(self, grid_str: str) -> Plant:
+    def __getitem__(self, grid_str: str) -> Plant | None:
         """
         通过grid_str坐标获取植物
 
@@ -252,8 +252,7 @@ class PlantList(ob.obj_list(Plant)):
 
     def __getitem__(self, item):
         if isinstance(item, str):
-            row, col = ob.parse_grid_str(item)
-            return self.get_by_pos(row, col)
+            return self.get_by_grid(*ob.parse_grid_str(item))
         return super().__getitem__(item)
 
     def free_all(self) -> typing.Self:

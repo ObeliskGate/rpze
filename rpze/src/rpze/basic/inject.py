@@ -1,29 +1,11 @@
 # -*- coding: utf_8 -*-
-from time import sleep
-from typing import overload
-
-import win32gui as win_g
-import win32process as win_p
 import os
 import subprocess
+from typing import overload
 
 from . import asm
 from ..rp_extend import Controller
 from ..structs.game_board import GameBoard, get_board
-
-
-def find_window(window_name: str) -> int:
-    """
-    找到名称为str的窗口主进程pid
-    
-    Args:
-        window_name: 窗口名字符串
-    Returns:
-        window_name主进程的process id
-    """
-    handle = win_g.FindWindow(None, window_name)
-    _, pid = win_p.GetWindowThreadProcessId(handle)
-    return pid
 
 
 def open_game(game_path: str, num: int = 1) -> list[int]:
@@ -61,15 +43,9 @@ def inject(pids: list[int]) -> list[Controller]:
     os.chdir(os.path.dirname(__file__))
     dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
     s = f'..\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '
-    for i in pids:
-        s += str(i)
-        s += ' '
-    try:
-        os.system(s)
-    except RuntimeError as re:
-        raise re
-    finally:
-        os.chdir(current_dir)
+    s += ' '.join([str(i) for i in pids])
+    os.system(s)
+    os.chdir(current_dir)
     return [Controller(pid) for pid in pids]
 
 
@@ -109,7 +85,7 @@ class InjectedGame:
         elif isinstance(arg, Controller):
             self.controller: Controller = arg
         else:
-            raise TypeError("the parameter shall be int, str or Controller")
+            raise TypeError("the parameter should be int, str or Controller instance")
 
     def __enter__(self):
         return self
@@ -128,10 +104,11 @@ class InjectedGame:
         Raises:
             RuntimeError: 若不在载入界面, 主界面或小游戏选项卡界面使用此函数则抛出
         """
+        ctler = self.controller
         code = f"""
             push esi;
             mov esi, [{0x6a9ec0}];
-            mov eax, [esi + 0x7fc];
+            mov eax, [esi + {0x7fc}];
             test eax, eax;
             jz LCompleteLoading;
             cmp eax, 1;
@@ -139,7 +116,7 @@ class InjectedGame:
             cmp eax, 7;
             je LDeleteChallengeScreen;     
             LError:
-            mov [{self.controller.result_address}], eax;
+            mov [{ctler.result_address}], eax;
             pop esi;
             ret;
             
@@ -163,10 +140,9 @@ class InjectedGame:
             mov edx, {0x44f560}; // LawnApp::PreNewGame
             call edx;
             xor eax, eax;
-            mov [{self.controller.result_address}], eax;
+            mov [{ctler.result_address}], eax;
             pop esi;
             ret;"""  # copied from avz
-        ctler = self.controller
         while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
             continue
         ctler.start()
@@ -176,6 +152,7 @@ class InjectedGame:
         ctler.before()
         ctler.end()
         if self.controller.result_i32:
-            raise RuntimeError("please use this function at loading screen, "
-                               "selector screen or challenge selector screen")
+            raise RuntimeError("this function should be used at loading screen, "
+                               "main selector screen or challenge selector screen, "
+                               f"while the current screen num is {self.controller.result_i32}")
         return get_board(ctler)

@@ -20,24 +20,10 @@ with inject.InjectedGame(r"C:\space\pvz\Plants vs. Zombies 1.0.0.1051 EN\PlantsV
     @t.flow_factory.add_flow()
     async def place_zombie(_):
         plist = t.game_board.plant_list
-        await until(lambda _: plist["4-4"].hp < 300)
+        p1 = plist["4-4"]
+        await until(lambda _: p1.hp < 300)
         place("tt 2-6")
-        await delay(450)
+        await delay(550)
         place("cg 5-6")
 
-    row_five_fail_count = 0
-    row_one_fail_count = 0
-
-    @t.on_game_end()
-    def end_callback(result: bool):
-        if not result:
-            global row_five_fail_count
-            global row_one_fail_count
-            plist = t.game_board.plant_list
-            if plist["5-3"] is not None:
-                row_five_fail_count += 1
-            if plist["2-1"] is not None:
-                row_one_fail_count += 1
-
-    t.start_test(jump_frame=False)
-    print(row_one_fail_count, row_five_fail_count)
+    t.start_test(jump_frame=True)

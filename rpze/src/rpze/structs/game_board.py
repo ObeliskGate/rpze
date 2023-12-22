@@ -145,8 +145,6 @@ class GameBoard(ob.ObjBase):
         if not (p_c := self._p_challenge):
             raise ValueError("Challenge object doesn't exist!")
         ret_idx = self.zombie_list.next_index
-        if p_c != (t := self._controller.read_u32([self.base_ptr + 0x160])):
-            print(p_c, t)
         code = f'''
             mov eax, {row};
             push {col};
