@@ -54,6 +54,15 @@ class GameBoard(ob.ObjBase):
     def mj_clock(self, value: int):
         self._controller.write_i32(value, [0x6a9ec0, 0x838])
 
+    @property
+    def frame_duration(self) -> int:
+        """帧时长, 以ms为单位"""
+        return self._controller.read_i32([0x6a9ec0, 0x454])
+
+    @frame_duration.setter
+    def frame_duration(self, value: int):
+        self._controller.write_i32(value, [0x6a9ec0, 0x454])
+
     def iz_setup_plant(self, plant: Plant):
         """
         对植物进行IZ模式调整, 如纸板化, 土豆出土

@@ -56,7 +56,7 @@ class VariablePool:  # thanks Reisen
         self._args_list[key] = value
 
 
-class AwaitableCondFunc(CondFunc, Awaitable):
+class AwaitableCondFunc(Callable, Awaitable):
     """
     包装CondFunc为Awaitable对象.
 

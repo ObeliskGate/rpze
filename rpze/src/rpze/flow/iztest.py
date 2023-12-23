@@ -299,13 +299,16 @@ class IzTest:
 
         return self
 
-    def start_test(self, jump_frame: bool = True, print_interval: int = 10) -> tuple[int, float]:
+    def start_test(self, jump_frame: bool = False,
+                   print_interval: int = 10,
+                   speed_rate: float = 1.0) -> tuple[int, float]:
         """
         开始测试
 
         Args:
             jump_frame: True则开启跳帧测试.
             print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
+            speed_rate: 速度倍率. 仅当jump_frame = False时有效.
         Returns:
             (成功次数, 使用时间)元组
         """
@@ -315,10 +318,13 @@ class IzTest:
         ctler.open_hook(HookPosition.CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
         self._set_flow_factory()
         ctler.start()
+        ctler.before()
         if jump_frame:
-            ctler.before()
             ctler.start_jump_frame()
-            ctler.next_frame()
+        else:
+            self.game_board.frame_duration = int(10 / speed_rate)
+        ctler.next_frame()
+            
         for _ in range(self.repeat_time):
             _flow_manager = self.flow_factory.build_manager()
             ctler.before()
@@ -333,9 +339,12 @@ class IzTest:
                       f"success rate: {self._success_count / self._test_time:.2%}, "
                       f"using time: {(t := time.time()) - last_time:.2f}s.")
                 last_time = t
-
+        
+        ctler.before()
         if jump_frame:
             ctler.end_jump_frame()
+        else:
+            self.game_board.frame_duration = 10
         ctler.close_hook(HookPosition.CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
         ctler.end()
         return self._success_count, (time.time() - start_time)

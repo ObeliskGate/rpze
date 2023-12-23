@@ -44,7 +44,6 @@ Memory::Memory(DWORD pid)
 
 std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<uint32_t>& offsets)
 {
-	if (offsets.size() > LENGTH) return {};
 	memoryNum() = size;
 	CopyMemory(getOffsets(), offsets.data(), sizeof(uint32_t) * offsets.size());
 	getOffsets()[offsets.size()] = OFFSET_END;
@@ -57,9 +56,8 @@ std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<u
 
 bool Memory::_writeMemory(const void* pVal, BYTE size, const std::vector<uint32_t>& offsets)
 {
-	if (offsets.size() > LENGTH) return false;
 	memoryNum() = size;
-	memcpy(getWrittenVal(), pVal, size);
+	CopyMemory(getWrittenVal(), pVal, size);
 	CopyMemory(getOffsets(), offsets.data(), sizeof(uint32_t) * offsets.size());
 	getOffsets()[offsets.size()] = OFFSET_END;
 

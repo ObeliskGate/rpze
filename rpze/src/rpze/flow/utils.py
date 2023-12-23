@@ -55,10 +55,10 @@ def delay(time: int) -> AwaitableCondFunc:
     Raises:
         ValueError: time <= 0时候抛出.
     Examples:
-        >>> async def flow(fm: FlowManager):
+        >>> async def flow(_):
         ...     ...  # do something
         ...     place("cg 1-6")
-        ...     await delay(50, fm)
+        ...     await delay(50)
         ...     place("cg 2-6")
         ...     ...  # do other thing
         为相隔50cs连放双撑杆
@@ -82,11 +82,11 @@ def until_precise_digger(magnetshroom: Plant) -> AwaitableCondFunc:
     Args:
         magnetshroom: 要判断cd的磁铁
     Examples:
-        >>> magnet: Plant = ...
         >>> async def flow(_):
+        ...     magnet: Plant = ...
         ...     ...  # do something
         ...     place("kg 1-6")
-        ...     await until_precise_digger(magnetshroom)
+        ...     await until_precise_digger(magnet)
         ...     place("kg 2-6")
         ...     ...  # do other thing
         为2-1精确矿

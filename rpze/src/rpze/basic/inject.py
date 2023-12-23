@@ -44,8 +44,12 @@ def inject(pids: list[int]) -> list[Controller]:
     dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
     s = f'..\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '
     s += ' '.join([str(i) for i in pids])
-    os.system(s)
-    os.chdir(current_dir)
+    try:
+        os.system(s)
+    except Exception as e:
+        raise e
+    finally:
+        os.chdir(current_dir)
     return [Controller(pid) for pid in pids]
 
 

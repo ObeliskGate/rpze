@@ -47,6 +47,7 @@ std::optional<void*> SharedMemory::getReadWritePtr() const
 		if (!ptr) return {};
 		ptr += getOffsets()[i];
 	}
+
 	if (!ptr || ptr == OFFSET_END) return {}; // 后半个是为了解决[0]==OFFSET_END的问题
 	return reinterpret_cast<void*>(ptr);
 }
@@ -87,16 +88,15 @@ bool SharedMemory::readMemory()
 
 bool SharedMemory::writeMemory()
 {
-	bool b = false;
+	bool b;
 	do {
 		auto p = getReadWritePtr();
 		if (!p.has_value())
 		{
 			b = false;
-			break;	
-
+			break;
 		}
-		memcpy(p.value(), const_cast<const void*>(getWrittenVal()), memoryNum());
+		memcpy(*p, const_cast<const void*>(getWrittenVal()), memoryNum());
 		b = true;
 	} while (false);
 	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
