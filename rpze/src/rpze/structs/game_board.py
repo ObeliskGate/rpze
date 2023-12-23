@@ -10,7 +10,7 @@ from .plant import PlantList, Plant, PlantType
 from .projectile import ProjectileList
 from ..basic import asm
 from ..rp_extend import Controller
-from .zombie import ZombieList, ZombieType
+from .zombie import ZombieList, ZombieType, Zombie
 
 
 class GameBoard(ob.ObjBase):
@@ -139,7 +139,7 @@ class GameBoard(ob.ObjBase):
         asm.run(code, self._controller)
         return self.plant_list.find(next_idx)
     
-    def iz_place_zombie(self, row: int, col: int, type_: ZombieType):
+    def iz_place_zombie(self, row: int, col: int, type_: ZombieType) -> Zombie:
         """
         向指定位置放置僵尸.
 
@@ -224,7 +224,7 @@ class GameBoard(ob.ObjBase):
         """
         return self.pixel_to_row(x, y), self.pixel_to_col(x, y)
 
-    def grid_to_pixel_x(self, col: int, row: int = 0):
+    def grid_to_pixel_x(self, col: int, row: int = 0) -> int:
         """
         将行列转换为x坐标
 

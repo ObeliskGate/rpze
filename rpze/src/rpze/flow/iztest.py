@@ -170,7 +170,7 @@ class IzTest:
             reset_generate_cd: 攻击间隔处理 in iztools
             iztools_str: iztools输入字符串
         Returns:
-            self
+            返回自己
         Raises:
             ValueError: 输入字符串格式错误时抛出
         Examples:
@@ -251,7 +251,12 @@ class IzTest:
         return TickRunnerResult.BREAK_RUN
 
     def _set_flow_factory(self) -> Self:
-        """设置flow_factory"""
+        """
+        设置flow_factory
+
+        Returns:
+            返回自己
+        """
         @self.flow_factory.connect(until(0), only_once=True)
         def _init(_):
             # 清掉所有_ObjList的栈
@@ -260,7 +265,6 @@ class IzTest:
             board.zombie_list.free_all().reset_stack()
             board.projectile_list.free_all().reset_stack()
             board.griditem_list.free_all().reset_stack()
-
             for plant_list in self.plant_type_lists:
                 for row, line in enumerate(plant_list):
                     for col, type_ in enumerate(line):
@@ -272,7 +276,6 @@ class IzTest:
                             plant.randomize_generate_cd()
                         if (row, col) in self.target_plants_pos:
                             self._target_plants.append(plant)
-
             board.mj_clock = self.mj_init_phase if self.mj_init_phase else randint(0, 459)
 
             for i in range(5):
@@ -295,7 +298,6 @@ class IzTest:
                     if self.game_board.zombie_list.obj_num == 0:
                         return self.end(False)
                 return TickRunnerResult.NEXT
-
         return self
 
     def start_test(self, jump_frame: bool = False,

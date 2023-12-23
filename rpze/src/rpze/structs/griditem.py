@@ -48,6 +48,18 @@ class Griditem(ob.ObjNode):
     def __str__(self):
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
 
+    def die(self):
+        """
+        令自己死亡
+        """
+        code = f"""
+            push esi;
+            mov esi, {self.base_ptr};
+            mov edx, {0x44D000}
+            call edx; // Griditem::GriditemDie
+            ret;"""
+        asm.run(code, self._controller)
+
 
 class GriditemList(ob.obj_list(Griditem)):
     def alloc_item(self) -> Griditem:
@@ -67,18 +79,6 @@ class GriditemList(ob.obj_list(Griditem)):
             ret;"""
         asm.run(code, self._controller)
         return Griditem(self._controller.result_u32, self._controller)
-
-    def die(self):
-        """
-        令自己死亡
-        """
-        code = f"""
-            push esi;
-            mov esi, {self.base_ptr};
-            mov edx, {0x44D000}
-            call edx; // Griditem::GriditemDie
-            ret;"""
-        asm.run(code, self._controller)
 
     def free_all(self) -> Self:
         p_board = self._controller.get_p_board()[1]

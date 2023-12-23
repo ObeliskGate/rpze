@@ -4,7 +4,7 @@
 """
 from typing import overload
 
-from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool
+from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool, FlowCoroutine
 from ..structs.game_board import GameBoard, get_board
 from ..structs.obj_base import parse_grid_str
 from ..structs.plant import Plant, PlantType
@@ -69,7 +69,7 @@ def delay(time: int) -> AwaitableCondFunc:
     def _cond_func(fm: FlowManager, v=VariablePool(start_time=None)) -> bool:
         if v.start_time is None:
             v.start_time = fm.time
-        if v.start_time + time - 1 <= fm.time:  # 所有这类函数下一cs开始执行. -1
+        if v.start_time + time - 1 <= fm.time:  # 所有CondFunc函数下一cs开始执行.
             return True
         return False
     return AwaitableCondFunc(_cond_func)
@@ -91,7 +91,7 @@ def until_precise_digger(magnetshroom: Plant) -> AwaitableCondFunc:
         ...     ...  # do other thing
         为2-1精确矿
     """
-    return AwaitableCondFunc(lambda _: magnetshroom.status_cd == 1500 - 913)
+    return AwaitableCondFunc(lambda _: magnetshroom.status_cd <= 1500 - 913)
 
 
 def until_plant_die(plant: Plant) -> AwaitableCondFunc:
@@ -242,11 +242,10 @@ async def repeat(place_str: str,
         interval: 放僵尸间隔时间
         board: 要放置的board. 为None时使用get_board()
     Examples:
-        >>> gb: GameBoard = ...
         >>> async def flow(_):
         ...    ...  # do something
-        ...    await repeat("cg 1-6")
-        为在1-6连放双撑杆
+        ...    await repeat("cg 1-6", time=3)
+        为1-6三撑杆
     """
     place(place_str, board)
     for _ in range(time - 1):

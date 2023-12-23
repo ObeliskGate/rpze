@@ -101,7 +101,7 @@ class InjectedGame:
         """
         进入游戏, 返回GameBoard对象
 
-        请切记这个函数会毁坏你原有的关卡存档!
+        **请切记这个函数会毁坏你原有的关卡存档!**
 
         Args:
             level_num: 关卡对应数字

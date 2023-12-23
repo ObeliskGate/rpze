@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import heapq
-from collections.abc import Callable, Awaitable, Coroutine
+from collections.abc import Callable, Awaitable, Coroutine, Generator
 from enum import Enum, auto
 from itertools import count
 from typing import TypeAlias, Self
@@ -56,6 +56,10 @@ class VariablePool:  # thanks Reisen
         self._args_list[key] = value
 
 
+def _await_generator(t):
+    yield t
+
+
 class AwaitableCondFunc(Callable, Awaitable):
     """
     包装CondFunc为Awaitable对象.
@@ -67,24 +71,20 @@ class AwaitableCondFunc(Callable, Awaitable):
     def __init__(self, func: CondFunc):
         self.func: CondFunc = func
 
-        def _generator(t):
-            yield t
-        self._generator = _generator
-
     def __call__(self, fm: FlowManager) -> bool:
         """
         调用内层func. 确保AwaitableCondFunc自己也为CondFunc函数.
         """
         return self.func(fm)
 
-    def __await__(self):
+    def __await__(self) -> Generator[CondFunc, None, None]:
         """
         让AwaitableCondFunc对象可以await.
 
         Returns:
             生成器对象. 唯一一个生成结果为self.func.
         """
-        return self._generator(self.func)
+        return _await_generator(self.func)
 
     def __and__(self, other: CondFunc) -> Self:
         """

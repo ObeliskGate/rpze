@@ -11,7 +11,7 @@ from ..rp_extend import Controller
 
 def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
     iz_test = IzTest(ctler).init_by_str('''
-        10000 -1
+        1000 -1
         1-2 5-2
         zh_j5
         cptoh
