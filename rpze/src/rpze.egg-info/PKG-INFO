@@ -1,7 +1,8 @@
 Metadata-Version: 2.1
 Name: rpze
-Version: 0.0.1a1
-License: GNU General Public License v3 (GPLv3)
+Version: 0.0.1a3
+Author: ObeliskGate
+Project-URL: Repository, https://github.com/ObeliskGate/rpze.git
 Classifier: Development Status :: 3 - Alpha
 Classifier: Operating System :: Microsoft :: Windows
 Classifier: License :: OSI Approved :: GNU General Public License v3 (GPLv3)

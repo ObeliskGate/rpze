@@ -20,15 +20,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			{
 				mainHook(0, SharedMemory::getInstance());
 			});
-
-			// InsertHook::addReplace(reinterpret_cast<void*>(0x524a70), 7, 
-			// 	[](const Registers& registers, void* rawPtr) -> std::optional<int32_t> // Zombie::PickRandomSpeed
-			// 	{
-			// 		auto pZombie = registers.eax();
-			// 		eaxFunc(pZombie, rawPtr);
-			// 		return 0;
-			// 	});
-			 InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
+			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
 			 	[](const Registers&) // Board::Board
 			 	{
 			 		SharedMemory::getInstance()->isBoardPtrValid() = false;

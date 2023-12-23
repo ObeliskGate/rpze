@@ -8,7 +8,7 @@ from ..rp_extend import Controller
 
 def default_test(ctler: Controller):  # iztools 默认例子, 兼容性体现
     iz_test = IzTest(ctler).init_by_str('''
-                 1000 -1
+                 10000 -1
                  3-0 4-0 5-0 3-3
                  .....
                  .....
@@ -18,4 +18,4 @@ def default_test(ctler: Controller):  # iztools 默认例子, 兼容性体现
                  cg   cg   xg   ww
                  0    1    300  700
                  4-6  4-6  4-6  4-6''')
-    print(iz_test.start_test())
+    print(iz_test.start_test(True))

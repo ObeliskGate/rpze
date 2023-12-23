@@ -26,7 +26,7 @@ def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
     async def place_zombie(_):
         plist = iz_test.game_board.plant_list
         flower = plist["2-5"]
-        await until(lambda _: flower.hp <= 4)  # 请不要把plist["2-5"]定义在lambda内! 非常影响性能!
+        await until(lambda _: flower.hp <= 4)  # 请不要把plist["2-5"]写在lambda内! 非常影响性能!
         place("cg 2-6")  # 2-5花死前一瞬放撑杆
         star = plist["1-5"]
         await until_plant_last_shoot(star).after(151 - 96)
@@ -52,5 +52,5 @@ def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
             if plant_list["5-2"] is not None:
                 row_five_fail_count += 1
 
-    iz_test.start_test(jump_frame=False, speed_rate=5)
+    iz_test.start_test(jump_frame=True, speed_rate=5)
     print(row_one_fail_count, row_five_fail_count)

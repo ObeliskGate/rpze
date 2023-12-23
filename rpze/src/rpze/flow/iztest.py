@@ -281,9 +281,8 @@ class IzTest:
                     self._target_brains.append(brain)
 
         for op in self.place_zombie_list:
-
             @self.flow_factory.connect(until(op.time), only_once=True)
-            def _place_zombie(_, __op=op):  # 不用默认参数则closure会绑定到循环最后一个op
+            def _place_zombie(_, __op=op):
                 self.game_board.iz_place_zombie(__op.row, __op.col, __op.type_)
 
         if self.enable_default_check_end:

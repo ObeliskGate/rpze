@@ -77,7 +77,7 @@ class GameBoard(ob.ObjBase):
         code = f"""
             mov eax, {p_c};
             push {plant.base_ptr};
-            mov ecx, 0x42A530; // Challenge::IZombieSetupPlant
+            mov ecx, {0x42A530}; // Challenge::IZombieSetupPlant
             call ecx;
             ret;"""
         asm.run(code, self._controller)
@@ -101,7 +101,7 @@ class GameBoard(ob.ObjBase):
             push {row};
             push {col};
             mov eax, {self.base_ptr};
-            mov edx, 0x40CE20;  // Board::NewPlant
+            mov edx,{0x40CE20};  // Board::NewPlant
             call edx;
             mov [{self._controller.result_address}], eax;
             ret;'''
@@ -131,7 +131,7 @@ class GameBoard(ob.ObjBase):
             push {col};
             push {int(type_)};
             mov edi, {p_c};
-            mov ecx, 0x42a660; // Challenge::IZombiePlacePlantInSquare
+            mov ecx, {0x42a660}; // Challenge::IZombiePlacePlantInSquare
             call ecx;  
             pop edi;
             pop ebx;
@@ -160,7 +160,7 @@ class GameBoard(ob.ObjBase):
             push {col};
             push {int(type_)};
             mov ecx, {p_c};
-            mov edx, 0x42a0f0;
+            mov edx, {0x42a0f0};  // Challenge::IZombiePlaceZombie
             call edx;
             ret;'''
         asm.run(code, self._controller)
@@ -313,7 +313,7 @@ class GameBoard(ob.ObjBase):
         code = f"""
             push esi;
             mov esi, {self.base_ptr};
-            mov edx, 0x41BAD0;  // Board::ProcessDeleteQueue
+            mov edx, {0x41BAD0};  // Board::ProcessDeleteQueue
             call edx;
             pop esi;
             ret;"""

@@ -81,6 +81,7 @@ bool SharedMemory::readMemory()
 		}
 		memcpy(const_cast<void*>(getReadResult()), *p, memoryNum());
 		b = true;
+		// std::cout << *p << ' ' << *(int*)*p << ' ' << *static_cast<volatile uint64_t*>(getReadResult()) << std::endl;
 	} while (false);
 	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
 	return b;

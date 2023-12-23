@@ -42,7 +42,7 @@ def until(cond_func: CondFunc) -> AwaitableCondFunc:
 
 def until(arg):
     if isinstance(arg, int):
-        return AwaitableCondFunc(lambda fr: fr.time >= arg)
+        return AwaitableCondFunc(lambda fm: fm.time >= arg)
     return AwaitableCondFunc(arg)
 
 
@@ -223,10 +223,10 @@ def place(place_str: str, board: GameBoard | None = None) -> Zombie | Plant | No
         board = get_board()
     type_str, pos_str = place_str.split(" ")
     row, col = parse_grid_str(pos_str)
-    if (type_ := plant_abbr_to_type.get(type_str)) is not None:
-        return board.iz_new_plant(row, col, type_)
     if (type_ := zombie_abbr_to_type.get(type_str)) is not None:
         return board.iz_place_zombie(row, col, type_)
+    if (type_ := plant_abbr_to_type.get(type_str)) is not None:
+        return board.iz_new_plant(row, col, type_)
     raise ValueError(f"invalid type_str: {type_str}")
 
 

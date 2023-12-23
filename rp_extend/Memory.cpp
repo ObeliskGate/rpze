@@ -47,8 +47,14 @@ std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<u
 	memoryNum() = size;
 	CopyMemory(getOffsets(), offsets.data(), sizeof(uint32_t) * offsets.size());
 	getOffsets()[offsets.size()] = OFFSET_END;
+	auto c = getCurrentPhaseCode();
+	// std::cout << static_cast<int>(c) << std::endl;
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);//等待执行完成
+	// if (offsets.size() == 1)
+	// {
+	// 	std::cout << offsets[0] << ' ' << *static_cast<volatile int*>(getReadResult()) << std::endl;
+	// }
 	if (executeResult() == ExecuteResult::SUCCESS) return getReadResult();
 	if (executeResult() == ExecuteResult::FAIL) return {};
 	throw std::exception("unexpected behavior of _readMemory");

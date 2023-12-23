@@ -99,7 +99,7 @@ void mainHook(const DWORD isInGame, const SharedMemory* pSharedMemory)
 	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED || 
 		pSharedMemory->hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode = &pSharedMemory->phaseCode();
-	RunState* pRunState = &pSharedMemory->runState();
+	volatile RunState* pRunState = &pSharedMemory->runState();
 	if (isInGame)
 	{
 		if (pSharedMemory->phaseCode() != PhaseCode::JUMP_FRAME) return;

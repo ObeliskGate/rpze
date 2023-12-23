@@ -54,7 +54,7 @@ public:
 	inline volatile RunState& jumpingRunState() const { return getRef<RunState>(16); }
 
 	// 读写内存时 要读写的内存的位数, 最大为8
-	inline uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
+	inline volatile uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
 
 
 # undef max  // sb macro
@@ -67,10 +67,10 @@ public:
 	inline void* getWrittenVal() const { return getPtr() + 64; }
 
 	// 占位8个字节, 读写内存时 指向读取内存结果的指针
-	inline volatile void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
+	inline void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
 	
 	// 获得全局状态
-	inline HookState& globalState() const { return getRef<HookState>(80); }
+	inline volatile HookState& globalState() const { return getRef<HookState>(80); }
 
 	// 读写结果
 	inline volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(84); }
@@ -120,7 +120,7 @@ public:
 	// 结束跳帧, 若不在跳帧返回false
 	bool endJumpFrame();
 
-	inline bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING; }
+	inline bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING || *pCurrentPhaseCode == PhaseCode::CONTINUE; }
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>
@@ -206,6 +206,7 @@ inline std::optional<T> Memory::readMemory(const std::vector<uint32_t>& offsets)
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p.has_value()) return {};
 	return *static_cast<volatile T*>(*p);
+
 }
 
 template<typename T>

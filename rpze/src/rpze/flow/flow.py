@@ -67,6 +67,10 @@ class AwaitableCondFunc(Callable, Awaitable):
     def __init__(self, func: CondFunc):
         self.func: CondFunc = func
 
+        def _generator(t):
+            yield t
+        self._generator = _generator
+
     def __call__(self, fm: FlowManager) -> bool:
         """
         调用内层func. 确保AwaitableCondFunc自己也为CondFunc函数.
@@ -80,9 +84,7 @@ class AwaitableCondFunc(Callable, Awaitable):
         Returns:
             生成器对象. 唯一一个生成结果为self.func.
         """
-        def _generator(t):
-            yield t
-        return _generator(self.func)
+        return self._generator(self.func)
 
     def __and__(self, other: CondFunc) -> Self:
         """
@@ -152,24 +154,24 @@ class FlowManager:
             = [[lambda _: True, i(self)] for i in flows]
 
         def __flow_tick_runner(self_: FlowManager) -> TickRunnerResult:
-            if not self_._flow_coro_list:
+            if not (fcl := self_._flow_coro_list):
                 return TickRunnerResult.DONE
             pop_list = []
-            for idx, (cond_func, flow) in enumerate(self_._flow_coro_list):
+            for idx, (cond_func, flow) in enumerate(fcl):
                 if cond_func(self_):
                     try:
-                        self_._flow_coro_list[idx][0] = flow.send(None)
+                        fcl[idx][0] = flow.send(None)
                     except StopIteration as se:  # StopIteration.value为返回值
                         pop_list.append(idx)  # 早该换成链表了
                         if se.value is None:
                             continue
                         for i in pop_list[::-1]:
-                            self_._flow_coro_list.pop(i)
+                            fcl.pop(i)
                         return se.value
                 else:
                     continue
             for i in pop_list[::-1]:
-                self_._flow_coro_list.pop(i)
+                fcl.pop(i)
             return TickRunnerResult.NEXT
 
         _counter = count()
@@ -235,9 +237,9 @@ class FlowManager:
         Returns:
             所有tick_runner都执行完毕时返回DONE, 内部有人打断时返回BREAK_RUN, 否则返回NEXT.
         """
-        pop_list = []
-        if (trs := self.tick_runners) is None:
+        if not (trs := self.tick_runners):
             return TickRunnerResult.DONE
+        pop_list = []
         for idx, func in enumerate(trs):
             if (ret := func(self)) is TickRunnerResult.DONE:
                 pop_list.append(idx)  # 早该换成链表了

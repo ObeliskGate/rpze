@@ -38,8 +38,8 @@ public:
 
 	template <typename T>
 	inline bool write_memory(T&& val, const std::vector<uint32_t>& offsets) 
-	{ return mem.writeMemory(val, offsets); }
-
+	{ return mem.writeMemory(std::forward<T>(val), offsets); }
+	
 	inline bool run_code(const char* codes, int num) { return mem.runCode(codes, num); }
 
 	inline void end() { mem.endControl(); }

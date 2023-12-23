@@ -476,12 +476,15 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
                             return None
                         return target if target.id.rank != 0 else None
                     if isinstance(index, ObjId):
-                        target = self[index.index]
+                        target = self.at(index.index)
                         return target if target.id == index else None
                     raise TypeError("index must be int or ObjId instance")
                 case 2:
                     idx, rank = args
-                    target = self[idx]
+                    try:
+                        target = self[idx]
+                    except IndexError:
+                        return None
                     return target if target.id.rank == rank else None
                 case other:
                     raise ValueError("the function should have one or two parameters, "
@@ -496,7 +499,7 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
             if isinstance(index, slice):
                 start, stop, step = index.indices(len(self))
                 return [self[i] for i in range(start, stop, step)]
-            raise TypeError("index must be int or slice")
+            raise TypeError(f"index must be int or slice, not {type(index).__name__} instance")
 
         def __invert__(self):
             if self._iterate_func_asm is None:
@@ -505,7 +508,7 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
 
         def reset_stack(self):
             if self.obj_num:
-                raise RuntimeError("cannot reset stack when there are still objects alive")
+                raise RuntimeError(f"cannot reset stack when there are still {self.obj_num} objects alive")
             next_idx = self.next_index
             self.next_index = 0
             length = self.max_length

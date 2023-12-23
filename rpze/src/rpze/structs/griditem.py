@@ -75,7 +75,7 @@ class GriditemList(ob.obj_list(Griditem)):
         code = f"""
             push esi;
             mov esi, {self.base_ptr};
-            mov edx, 0x44D000
+            mov edx, {0x44D000}
             call edx; // Griditem::GriditemDie
             ret;"""
         asm.run(code, self._controller)
