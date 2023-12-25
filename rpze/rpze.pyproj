@@ -34,11 +34,13 @@
     <Compile Include="src\rpze\basic\asm.py" />
     <Compile Include="src\rpze\basic\inject.py" />
     <Compile Include="src\rpze\examples\botanical_clock.py" />
+    <Compile Include="src\rpze\examples\end_callback_example.py" />
     <Compile Include="src\rpze\examples\iztools_example.py" />
     <Compile Include="src\rpze\examples\pole_jumping_test.py" />
     <Compile Include="src\rpze\flow\flow.py" />
     <Compile Include="src\rpze\flow\iztest.py" />
     <Compile Include="src\rpze\flow\utils.py" />
+    <Compile Include="src\rpze\flow\__init__.py" />
     <Compile Include="src\rpze\structs\game_board.py" />
     <Compile Include="src\rpze\structs\griditem.py" />
     <Compile Include="src\rpze\structs\obj_base.py" />

@@ -124,7 +124,9 @@ class IzTest:
         handle_generate_cd: 是否处理植物的generate_cd, 即, iztools"开启攻击间隔处理"为True
         enable_default_check_end: 是否启用默认的判断输赢功能, 即, 需要手动设置判断时为False
         start_check_end_time: 开始判断输赢的时间, 默认为放下最后一个僵尸的时间.
-        end_callback: 测试结束时的回调函数, 参数为是否成功.
+        end_callback: 一次测试结束时的回调函数, 参数为是否成功.
+        check_end_test_callback: 判断是否结束测试的回调函数. 默认为None, 表示按照repeat_time次数重复测试.
+            参数为当前测试次数和成功次数, 返回None表示不结束, 返回float表示计算概率. 默认为永远返回None.
     """
     def __init__(self, controller: Controller):
         """
@@ -137,7 +139,7 @@ class IzTest:
         """
         self.plant_type_lists: tuple[PlantTypeList, PlantTypeList] = ([], [])
         self.place_zombie_list: list[PlaceZombieOp] = []
-        self.repeat_time: int = 1000
+        self.repeat_time: int = 0
         self.mj_init_phase: int | None = None
         self.target_plants_pos: list[tuple[int, int]] = []
         self.target_brains_pos: list[int] = []
@@ -148,6 +150,7 @@ class IzTest:
         self.enable_default_check_end: bool = True
         self.start_check_end_time: int = 0
         self.end_callback: Callable[[bool], None] = lambda _: None
+        self.check_end_test_callback: Callable[[int, int], float | None] | None = None
 
         # 运行时候会时刻改变的量. protected, 不建议修改
         self._last_test_ended: bool = False
@@ -156,12 +159,13 @@ class IzTest:
         self._success_count: int = 0
         self._test_time: int = 0
 
-    def init_by_str(self, iztools_str: str, reset_generate_cd: bool = False) -> Self:
+    def init_by_str(self, iztools_str: str, reset_generate_cd: bool = True) -> Self:
         """
         通过iztools字符串初始化iztest对象
 
         与iztools的输入格式不完全相同:
             - 允许首尾空行以及每行首尾空格.
+            - 支持“测试次数”输入-1表示自定义结束行为. 不自定义结束行为默认为无限次
             - 支持第二行空行表示无目标: 若此行为空, 则不启用内置的判断输赢功能.
             - 支持不输入8 9 10行表示不放置僵尸: 若此行为空, 则不启用内置的判断输赢功能.
             - (暂且)不支持通过书写顺序调整僵尸编号.
@@ -190,29 +194,36 @@ class IzTest:
         """
         self.handle_generate_cd = reset_generate_cd
         lines = iztools_str.strip().splitlines(False)
-        try:
-            if len(lines) == 7:
-                self.place_zombie_list = []
-                self.enable_default_check_end = False
-            elif len(lines) == 10:
-                self.place_zombie_list = parse_zombie_place_list('\n'.join(lines[7:10]))
-                self.start_check_end_time = max(op.time for op in self.place_zombie_list)
-            else:
-                raise ValueError(f"iztools_str must have 7 or 10 lines, not {len(lines)} lines")
-            self.repeat_time, mj_init_phase = map(int, lines[0].strip().split())
-            if mj_init_phase < -1 or mj_init_phase >= 460:
-                raise ValueError(f"mj_init_phase must be in [-1, 459], not {mj_init_phase}")
-            self.mj_init_phase = mj_init_phase if mj_init_phase != -1 else None
-            self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
-            if self.target_plants_pos == [] and self.target_brains_pos == []:
-                self.enable_default_check_end = False
-            self.plant_type_lists = parse_plant_type_list('\n'.join(lines[2:7]))
-            for target_pos in self.target_plants_pos:
-                if (self.plant_type_lists[0][target_pos[0]][target_pos[1]] is None
-                        and self.plant_type_lists[1][target_pos[0]][target_pos[1]] is None):
-                    raise ValueError(f"target plant at {target_pos} is None")
-        except IndexError:
+
+        if len(lines) == 7:
+            self.place_zombie_list = []
+            self.enable_default_check_end = False
+        elif len(lines) == 10:
+            self.place_zombie_list = parse_zombie_place_list('\n'.join(lines[7:10]))
+            self.start_check_end_time = max(op.time for op in self.place_zombie_list)
+        else:
             raise ValueError(f"iztools_str must have 7 or 10 lines, not {len(lines)} lines")
+
+        repeat_time, mj_init_phase = map(int, lines[0].strip().split())
+        if mj_init_phase < -1 or mj_init_phase >= 460:
+            raise ValueError(f"mj_init_phase must be in [-1, 459], not {mj_init_phase}")
+        self.mj_init_phase = mj_init_phase if mj_init_phase != -1 else None
+        if repeat_time < -1 or repeat_time == 0:
+            raise ValueError(f"repeat_time must be positive or -1, not {repeat_time}")
+        if repeat_time != -1:
+            self.repeat_time = repeat_time
+        else:
+            self.check_end_test_callback = lambda _, __: None
+
+        self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
+        if self.target_plants_pos == [] and self.target_brains_pos == []:
+            self.enable_default_check_end = False
+
+        self.plant_type_lists = parse_plant_type_list('\n'.join(lines[2:7]))
+        for target_pos in self.target_plants_pos:
+            if (self.plant_type_lists[0][target_pos[0]][target_pos[1]] is None
+                    and self.plant_type_lists[1][target_pos[0]][target_pos[1]] is None):
+                raise ValueError(f"target plant at {target_pos} is None")
         return self
 
     def on_game_end(self) -> Callable[[Callable[[bool], None]], Callable[[bool], None]]:
@@ -225,7 +236,7 @@ class IzTest:
             添加用装饰器
         """
 
-        def _decorator(func: Callable[[bool], None]) -> Callable[[bool], None]:
+        def _decorator(func):
             self.end_callback = func
             return func
         return _decorator
@@ -248,7 +259,19 @@ class IzTest:
         self._target_plants = []
         self._target_brains = []
 
-        return TickRunnerResult.BREAK_RUN
+        return TickRunnerResult.BREAK_DONE
+
+    def if_end_test(self) -> Callable[[Callable[[int, int], float | None]], Callable[[int, int], float | None]]:
+        """
+        装饰器, 设置判断是否结束测试的回调函数
+
+        Returns:
+            添加用装饰器
+        """
+        def _decorator(func):
+            self.check_end_test_callback = func
+            return func
+        return _decorator
 
     def _set_flow_factory(self) -> Self:
         """
@@ -297,12 +320,11 @@ class IzTest:
                         return self.end(True)  # all iterable对象所有元素为True时候True
                     if self.game_board.zombie_list.obj_num == 0:
                         return self.end(False)
-                return TickRunnerResult.NEXT
         return self
 
     def start_test(self, jump_frame: bool = False,
                    print_interval: int = 10,
-                   speed_rate: float = 1.0) -> tuple[int, float]:
+                   speed_rate: float = 1.0) -> tuple[float, float]:
         """
         开始测试
 
@@ -311,7 +333,7 @@ class IzTest:
             print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
             speed_rate: 速度倍率. 仅当jump_frame = False时有效.
         Returns:
-            (成功次数, 使用时间)元组
+            (测试概率, 使用时间)元组
         """
         start_time = time.time()
         last_time = start_time
@@ -325,8 +347,9 @@ class IzTest:
         else:
             self.game_board.frame_duration = int(10 / speed_rate)
         ctler.next_frame()
-            
-        for _ in range(self.repeat_time):
+
+        def __one_test():
+            nonlocal last_time
             _flow_manager = self.flow_factory.build_manager()
             ctler.before()
             ctler.next_frame()
@@ -340,6 +363,14 @@ class IzTest:
                       f"success rate: {self._success_count / self._test_time:.2%}, "
                       f"using time: {(t := time.time()) - last_time:.2f}s.")
                 last_time = t
+
+        if self.check_end_test_callback:
+            while (result := self.check_end_test_callback(self._test_time, self._success_count)) is None:
+                __one_test()
+        else:
+            for _ in range(self.repeat_time):
+                __one_test()
+            result = self._success_count / self.repeat_time
         
         ctler.before()
         if jump_frame:
@@ -348,4 +379,4 @@ class IzTest:
             self.game_board.frame_duration = 10
         ctler.close_hook(HookPosition.CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
         ctler.end()
-        return self._success_count, (time.time() - start_time)
+        return result, (time.time() - start_time)

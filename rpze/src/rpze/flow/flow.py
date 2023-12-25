@@ -16,10 +16,10 @@ class TickRunnerResult(Enum):
     """TickRunner的返回值"""
     DONE = auto(),
     """本tick runner以后再也不执行时返回"""
-    NEXT = auto(),
-    """本tick runner以后还会执行时返回"""
-    BREAK_RUN = auto()  # 不用异常打断. StopIteration形式的返回值和type hint系统匹配程度太差.
-    """需要打断本次run时返回"""
+    BREAK_DONE = auto()  # 不用异常打断. StopIteration形式的返回值和type hint系统匹配程度太差.
+    """需要打断本次运行并且以后不再运行本TickRunner时返回"""
+    BREAK_ONCE = auto()
+    """需要打断本次运行但以后还会运行本TickRunner时返回"""
 
 
 CondFunc: TypeAlias = Callable[["FlowManager"], bool]
@@ -28,8 +28,8 @@ FlowCoroutine: TypeAlias = Coroutine[CondFunc, None, TickRunnerResult | None]
 """Flow返回的协程对象"""
 Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
 """await AwaitableCondFunc函数的async def函数"""
-TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult]
-"""帧运行函数"""
+TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult | None]
+"""帧运行函数, 无返回值表示继续执行, 返回TickRunnerResult表示特殊行为"""
 PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
 """带权重的帧运行函数"""
 
@@ -162,7 +162,7 @@ class FlowManager:
                     try:
                         fcl[idx][0] = flow.send(None)
                     except StopIteration as se:  # StopIteration.value为返回值
-                        pop_list.append(idx)  # 早该换成链表了
+                        pop_list.append(idx)
                         if se.value is None:
                             continue
                         for i in pop_list[::-1]:
@@ -172,7 +172,6 @@ class FlowManager:
                     continue
             for i in pop_list[::-1]:
                 fcl.pop(i)
-            return TickRunnerResult.NEXT
 
         _counter = count()
         tick_runner_heap = [(-priority, next(_counter), it) for priority, it in tick_runners]
@@ -207,8 +206,7 @@ class FlowManager:
         return _decorator
 
     def connect(self, cond: CondFunc, only_once: bool = False) \
-            -> Callable[[Callable[[Self], TickRunnerResult | None]],
-                        Callable[[Self], TickRunnerResult | None]]:
+            -> Callable[[TickRunner], TickRunner]:
         """
         运行时把tick_runner绑定到cond上的方法, 与add使用方法相同
         
@@ -218,14 +216,13 @@ class FlowManager:
             cond: 执行func的条件函数. 返回None时按照only_once判断; 返回TickRunnerResult时直接返回.
             only_once: 为True时 只要有一次满足cond则返回
         """
-        def _decorator(tr: Callable[[Self], None]) -> Callable[[Self], None]:
+        def _decorator(tr: TickRunner) -> TickRunner:
             def __decorated_tick_runner(fm: FlowManager):
                 if cond(fm):
                     ret = tr(fm)
                     if ret is None:
-                        return TickRunnerResult.DONE if only_once else TickRunnerResult.NEXT
+                        return TickRunnerResult.DONE if only_once else None
                     return ret
-                return TickRunnerResult.NEXT
             self.add()(__decorated_tick_runner)
             return tr
         return _decorator
@@ -235,22 +232,31 @@ class FlowManager:
         运行一次内部所有函数
 
         Returns:
-            所有tick_runner都执行完毕时返回DONE, 内部有人打断时返回BREAK_RUN, 否则返回NEXT.
+            所有tick_runner都执行完毕时返回DONE, 内部有人打断时返回BREAK_ONCE, 否则返回空.
         """
         if not (trs := self.tick_runners):
             return TickRunnerResult.DONE
         pop_list = []
+
+        def end(_type):
+            self.time += 1
+            for it in pop_list[::-1]:
+                trs.pop(it)
+            return _type
+
         for idx, func in enumerate(trs):
-            if (ret := func(self)) is TickRunnerResult.DONE:
-                pop_list.append(idx)  # 早该换成链表了
-            elif ret is TickRunnerResult.BREAK_RUN:
-                for i in pop_list[::-1]:
-                    self.tick_runners.pop(i)
-                return TickRunnerResult.BREAK_RUN
-        self.time += 1
-        for i in pop_list[::-1]:
-            trs.pop(i)
-        return TickRunnerResult.NEXT
+            ret: TickRunnerResult | None = func(self)
+            match ret:
+                case None:
+                    continue
+                case TickRunnerResult.DONE:
+                    pop_list.append(idx)  # 早该换成链表了
+                case TickRunnerResult.BREAK_DONE:
+                    pop_list.append(idx)
+                    return end(TickRunnerResult.BREAK_ONCE)
+                case TickRunnerResult.BREAK_ONCE:
+                    return end(TickRunnerResult.BREAK_ONCE)
+        return end(None)
 
 
 class FlowFactory:
@@ -302,9 +308,8 @@ class FlowFactory:
                 if cond(fm):
                     ret = tr(fm)
                     if ret is None:
-                        return TickRunnerResult.DONE if only_once else TickRunnerResult.NEXT
+                        return TickRunnerResult.DONE if only_once else None
                     return ret
-                return TickRunnerResult.NEXT
             self.add_tick_runner(priority)(__decorated_tick_runner)
             return tr
         return _decorator
