@@ -20,12 +20,11 @@ def end_test(ctler: Controller):
                  2-6''')
 
     @iz_test.if_end_test()
-    def end_test_callback(test_time: int, success_time: int):
+    def end_test_callback(n, ns):  # n: 总次数, ns: 成功次数
         z = 1.96
-        diff = z / (success_time + z * z) * ((test_time - success_time) * success_time / test_time + z * z / 4) ** 0.5 \
-            if test_time != 0 else 1
-        if abs(diff) > 0.01:
+        diff = z / (ns + z * z) * ((n - ns) * ns / n + z * z / 4) ** 0.5
+        if diff > 0.01:
             return None
-        return (success_time + z * z / 2) / (test_time + z * z)
+        return (ns + z * z / 2) / (n + z * z)
 
-    print(iz_test.start_test(True))
+    print(iz_test.start_test(True, print_interval=50))

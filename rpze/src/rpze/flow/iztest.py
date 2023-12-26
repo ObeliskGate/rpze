@@ -121,14 +121,17 @@ class IzTest:
         game_board: 游戏GameBoard对象.
         controller: 测试使用的Controller对象.
         flow_factory: 生成测试逻辑的FlowFactory对象.
-        handle_generate_cd: 是否处理植物的generate_cd, 即, iztools"开启攻击间隔处理"为True
+        reset_generate_cd: 是否重置植物的generate_cd, 即, iztools"开启攻击间隔处理"为True
         enable_default_check_end: 是否启用默认的判断输赢功能, 即, 需要手动设置判断时为False
-        start_check_end_time: 开始判断输赢的时间, 默认为放下最后一个僵尸的时间.
-        end_callback: 一次测试结束时的回调函数, 参数为是否成功.
-        check_end_test_callback: 判断是否结束测试的回调函数. 默认为None, 表示按照repeat_time次数重复测试.
-            参数为当前测试次数和成功次数, 返回None表示不结束, 返回float表示计算概率. 默认为永远返回None.
+        start_check_end_time: 开始判断一次测试是否输赢的时间, 默认为放下最后一个僵尸的时间.
+        end_callback: 一次测试结束时的回调函数, 参数为是否成功bool.
+        check_test_end_callback: 判断是否结束测试的回调函数. 默认为None, 表示按照repeat_time次数重复测试.
+            参数为(当前测试次数, 成功次数), 返回None表示不结束, 返回float表示计算概率. 默认为永远返回None.
+        target_plants: 目标植物列表. 仅在测试时有效, 不建议修改.
+        target_brains: 目标脑子列表. 不建议修改.
+
     """
-    def __init__(self, controller: Controller):
+    def __init__(self, controller: Controller, reset_generate_cd: bool = True):
         """
         构造IzTest对象
 
@@ -136,6 +139,7 @@ class IzTest:
 
         Args:
             controller: 测试使用的Controller对象.
+            reset_generate_cd: 攻击间隔处理 in iztools
         """
         self.plant_type_lists: tuple[PlantTypeList, PlantTypeList] = ([], [])
         self.place_zombie_list: list[PlaceZombieOp] = []
@@ -146,32 +150,31 @@ class IzTest:
         self.game_board: GameBoard = get_board(controller)
         self.controller: Controller = controller
         self.flow_factory: FlowFactory = FlowFactory()
-        self.handle_generate_cd: bool = True
+        self.reset_generate_cd: bool = reset_generate_cd
         self.enable_default_check_end: bool = True
         self.start_check_end_time: int = 0
         self.end_callback: Callable[[bool], None] = lambda _: None
-        self.check_end_test_callback: Callable[[int, int], float | None] | None = None
+        self.check_test_end_callback: Callable[[int, int], float | None] | None = None
 
-        # 运行时候会时刻改变的量. protected, 不建议修改
-        self._last_test_ended: bool = False
-        self._target_plants: list[Plant] = []
-        self._target_brains: list[Griditem] = []
-        self._success_count: int = 0
-        self._test_time: int = 0
+        # 运行时候会时刻改变的量. 不建议修改
+        self.target_plants: list[Plant] = []
+        self.target_brains: list[Griditem] = []
+        self._last_test_ended: bool = False  # 用于判断是否结束一次测试
+        self._success_count: int = 0  # 成功次数
+        self._test_time: int = 0  # 测试次数
 
-    def init_by_str(self, iztools_str: str, reset_generate_cd: bool = True) -> Self:
+    def init_by_str(self, iztools_str: str) -> Self:
         """
         通过iztools字符串初始化iztest对象
 
         与iztools的输入格式不完全相同:
             - 允许首尾空行以及每行首尾空格.
-            - 支持“测试次数”输入-1表示自定义结束行为. 不自定义结束行为默认为无限次
+            - 支持“测试次数”输入-1表示自定义结束行为, 结束行为默认为测试无限次, 需要if_end_test()手动设置.
             - 支持第二行空行表示无目标: 若此行为空, 则不启用内置的判断输赢功能.
             - 支持不输入8 9 10行表示不放置僵尸: 若此行为空, 则不启用内置的判断输赢功能.
             - (暂且)不支持通过书写顺序调整僵尸编号.
 
         Args:
-            reset_generate_cd: 攻击间隔处理 in iztools
             iztools_str: iztools输入字符串
         Returns:
             返回自己
@@ -192,7 +195,6 @@ class IzTest:
             ...     4-6  4-6  4-6  4-6''')
             如上为iztools默认例子的输入方式.
         """
-        self.handle_generate_cd = reset_generate_cd
         lines = iztools_str.strip().splitlines(False)
 
         if len(lines) == 7:
@@ -213,7 +215,7 @@ class IzTest:
         if repeat_time != -1:
             self.repeat_time = repeat_time
         else:
-            self.check_end_test_callback = lambda _, __: None
+            self.check_test_end_callback = lambda _, __: None
 
         self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
         if self.target_plants_pos == [] and self.target_brains_pos == []:
@@ -221,8 +223,8 @@ class IzTest:
 
         self.plant_type_lists = parse_plant_type_list('\n'.join(lines[2:7]))
         for target_pos in self.target_plants_pos:
-            if (self.plant_type_lists[0][target_pos[0]][target_pos[1]] is None
-                    and self.plant_type_lists[1][target_pos[0]][target_pos[1]] is None):
+            if (self.plant_type_lists[0][target_pos[0]][target_pos[1]] is None and
+                    self.plant_type_lists[1][target_pos[0]][target_pos[1]] is None):
                 raise ValueError(f"target plant at {target_pos} is None")
         return self
 
@@ -256,8 +258,8 @@ class IzTest:
             self._success_count += 1
         self._test_time += 1
 
-        self._target_plants = []
-        self._target_brains = []
+        self.target_plants = []
+        self.target_brains = []
 
         return TickRunnerResult.BREAK_DONE
 
@@ -269,7 +271,7 @@ class IzTest:
             添加用装饰器
         """
         def _decorator(func):
-            self.check_end_test_callback = func
+            self.check_test_end_callback = func
             return func
         return _decorator
 
@@ -295,16 +297,16 @@ class IzTest:
                             continue
                         plant = board.iz_new_plant(row, col, type_)
                         assert plant is not None
-                        if self.handle_generate_cd:
+                        if self.reset_generate_cd:
                             plant.randomize_generate_cd()
                         if (row, col) in self.target_plants_pos:
-                            self._target_plants.append(plant)
+                            self.target_plants.append(plant)
             board.mj_clock = self.mj_init_phase if self.mj_init_phase else randint(0, 459)
 
             for i in range(5):
                 brain = self.game_board.new_iz_brain(i)
                 if i in self.target_brains_pos:
-                    self._target_brains.append(brain)
+                    self.target_brains.append(brain)
 
         for op in self.place_zombie_list:
             @self.flow_factory.connect(until(op.time), only_once=True)
@@ -315,8 +317,8 @@ class IzTest:
             @self.flow_factory.add_tick_runner()
             def _check_end(fm: FlowManager) -> TickRunnerResult:
                 if fm.time >= self.start_check_end_time:
-                    if all(plant.is_dead for plant in self._target_plants) \
-                            and all(brain.id.rank == 0 for brain in self._target_brains):
+                    if all(plant.is_dead for plant in self.target_plants) \
+                            and all(brain.id.rank == 0 for brain in self.target_brains):
                         return self.end(True)  # all iterable对象所有元素为True时候True
                     if self.game_board.zombie_list.obj_num == 0:
                         return self.end(False)
@@ -364,8 +366,9 @@ class IzTest:
                       f"using time: {(t := time.time()) - last_time:.2f}s.")
                 last_time = t
 
-        if self.check_end_test_callback:
-            while (result := self.check_end_test_callback(self._test_time, self._success_count)) is None:
+        if __callback := self.check_test_end_callback:
+            __one_test()  # no do while!
+            while (result := __callback(self._test_time, self._success_count)) is None:
                 __one_test()
         else:
             for _ in range(self.repeat_time):
