@@ -125,8 +125,8 @@ class IzTest:
         enable_default_check_end: 是否启用默认的判断输赢功能, 即, 需要手动设置判断时为False
         start_check_end_time: 开始判断一次测试是否输赢的时间, 默认为放下最后一个僵尸的时间.
         end_callback: 一次测试结束时的回调函数, 参数为是否成功bool.
-        check_test_end_callback: 判断是否结束测试的回调函数. 默认为None, 表示按照repeat_time次数重复测试.
-            参数为(当前测试次数, 成功次数), 返回None表示不结束, 返回float表示计算概率. 默认为永远返回None.
+        check_tests_end_callback: 判断是否结束测试的回调函数. 默认为None, 表示按照repeat_time次数重复测试.
+            参数为(当前测试次数, 成功次数), 返回None表示不结束, 返回float表示计算概率.
         target_plants: 目标植物列表. 仅在测试时有效, 不建议修改.
         target_brains: 目标脑子列表. 不建议修改.
 
@@ -154,7 +154,7 @@ class IzTest:
         self.enable_default_check_end: bool = True
         self.start_check_end_time: int = 0
         self.end_callback: Callable[[bool], None] = lambda _: None
-        self.check_test_end_callback: Callable[[int, int], float | None] | None = None
+        self.check_tests_end_callback: Callable[[int, int], float | None] | None = None
 
         # 运行时候会时刻改变的量. 不建议修改
         self.target_plants: list[Plant] = []
@@ -169,7 +169,7 @@ class IzTest:
 
         与iztools的输入格式不完全相同:
             - 允许首尾空行以及每行首尾空格.
-            - 支持“测试次数”输入-1表示自定义结束行为, 结束行为默认为测试无限次, 需要if_end_test()手动设置.
+            - 支持“测试次数”输入-1表示自定义结束行为, 结束行为默认为测试无限次, 需要self.check_tests_end()手动设置.
             - 支持第二行空行表示无目标: 若此行为空, 则不启用内置的判断输赢功能.
             - 支持不输入8 9 10行表示不放置僵尸: 若此行为空, 则不启用内置的判断输赢功能.
             - (暂且)不支持通过书写顺序调整僵尸编号.
@@ -215,7 +215,7 @@ class IzTest:
         if repeat_time != -1:
             self.repeat_time = repeat_time
         else:
-            self.check_test_end_callback = lambda _, __: None
+            self.check_tests_end_callback = lambda _, __: None
 
         self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
         if self.target_plants_pos == [] and self.target_brains_pos == []:
@@ -263,7 +263,7 @@ class IzTest:
 
         return TickRunnerResult.BREAK_DONE
 
-    def if_end_test(self) -> Callable[[Callable[[int, int], float | None]], Callable[[int, int], float | None]]:
+    def check_tests_end(self) -> Callable[[Callable[[int, int], float | None]], Callable[[int, int], float | None]]:
         """
         装饰器, 设置判断是否结束测试的回调函数
 
@@ -271,7 +271,7 @@ class IzTest:
             添加用装饰器
         """
         def _decorator(func):
-            self.check_test_end_callback = func
+            self.check_tests_end_callback = func
             return func
         return _decorator
 
@@ -285,7 +285,7 @@ class IzTest:
         @self.flow_factory.connect(until(0), only_once=True)
         def _init(_):
             # 清掉所有_ObjList的栈
-            (board := self.game_board).process_delete_queue()
+            board = self.game_board
             board.plant_list.free_all().reset_stack()
             board.zombie_list.free_all().reset_stack()
             board.projectile_list.free_all().reset_stack()
@@ -296,12 +296,12 @@ class IzTest:
                         if type_ is None:
                             continue
                         plant = board.iz_new_plant(row, col, type_)
-                        assert plant is not None
+                        # assert plant is not None
                         if self.reset_generate_cd:
                             plant.randomize_generate_cd()
                         if (row, col) in self.target_plants_pos:
                             self.target_plants.append(plant)
-            board.mj_clock = self.mj_init_phase if self.mj_init_phase else randint(0, 459)
+            board.mj_clock = randint(0, 459) if self.mj_init_phase is None else self.mj_init_phase
 
             for i in range(5):
                 brain = self.game_board.new_iz_brain(i)
@@ -315,10 +315,10 @@ class IzTest:
 
         if self.enable_default_check_end:
             @self.flow_factory.add_tick_runner()
-            def _check_end(fm: FlowManager) -> TickRunnerResult:
+            def _check_end(fm: FlowManager):
                 if fm.time >= self.start_check_end_time:
-                    if all(plant.is_dead for plant in self.target_plants) \
-                            and all(brain.id.rank == 0 for brain in self.target_brains):
+                    if (all(plant.is_dead for plant in self.target_plants) and
+                            all(brain.id.rank == 0 for brain in self.target_brains)):
                         return self.end(True)  # all iterable对象所有元素为True时候True
                     if self.game_board.zombie_list.obj_num == 0:
                         return self.end(False)
@@ -366,7 +366,7 @@ class IzTest:
                       f"using time: {(t := time.time()) - last_time:.2f}s.")
                 last_time = t
 
-        if __callback := self.check_test_end_callback:
+        if __callback := self.check_tests_end_callback:
             __one_test()  # no do while!
             while (result := __callback(self._test_time, self._success_count)) is None:
                 __one_test()

@@ -19,7 +19,7 @@ def end_test(ctler: Controller):
                  0
                  2-6''')
 
-    @iz_test.if_end_test()
+    @iz_test.check_tests_end()
     def end_test_callback(n, ns):  # n: 总次数, ns: 成功次数
         z = 1.96
         diff = z / (ns + z * z) * ((n - ns) * ns / n + z * z / 4) ** 0.5

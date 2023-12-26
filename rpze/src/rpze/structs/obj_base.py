@@ -244,8 +244,8 @@ class ObjId(ObjBase):
         try:
             index, rank = val
         except TypeError as te:
-            raise TypeError("ObjId can only compare with another ObjId "
-                            "or an unpack-able object like (index, rank), "
+            raise TypeError("ObjId can only compare with another ObjId or"
+                            "an unpack-able object like (index, rank), "
                             f"not {type(val).__name__} instance") from te
         except ValueError as ve:
             raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
@@ -274,10 +274,10 @@ class ObjNode(ObjBase, abc.ABC):
     """返回pvz中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
 
-T = typing.TypeVar("T", bound=ObjNode)
+_T = typing.TypeVar("_T", bound=ObjNode)
 
 
-class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
+class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
     """
     游戏中管理各类对象内存的数组, 即函数表中DataArray对象
 
@@ -303,7 +303,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
         return self._controller.read_i32([self.base_ptr + 4])
 
-    def at(self, index: int) -> T:
+    def at(self, index: int) -> _T:
         """
         返回index对应下标的元素
 
@@ -314,7 +314,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
 
     @typing.overload
-    def __getitem__(self, index: int) -> T:
+    def __getitem__(self, index: int) -> _T:
         """
         返回index对应下标的元素
 
@@ -327,7 +327,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
 
     @typing.overload
-    def __getitem__(self, index: slice) -> list[T]:
+    def __getitem__(self, index: slice) -> list[_T]:
         """
         返回slice切片对应的列表
 
@@ -341,26 +341,26 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
 
     def __getitem__(self, index): ...
 
-    def __invert__(self) -> c_abc.Iterator[T]:
+    def __invert__(self) -> c_abc.Iterator[_T]:
         """
         迭代所有未回收对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
         
         Returns:
             迭代器, 仅迭代存活对象
         Examples:
-            >>> l: _ObjList = ...
+            >>> l: ObjList = ...
             >>> for objects in ~l:
             ...     ...  # do something
             迭代l中所有未回收的对象
         """
 
     @property
-    def alive_iterator(self) -> c_abc.Iterator[T]:
+    def alive_iterator(self) -> c_abc.Iterator[_T]:
         """与__invert__()相同"""
         return self.__invert__()
 
     @typing.overload
-    def find(self, index: int | ObjId) -> T | None:
+    def find(self, index: int | ObjId) -> _T | None:
         """
         通过index查找对象
 
@@ -379,7 +379,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
 
     @typing.overload
-    def find(self, idx: int, rank: int) -> T | None:
+    def find(self, idx: int, rank: int) -> _T | None:
         """
         通过(index, rank)组查找对象
 
@@ -417,7 +417,7 @@ class _ObjList(ObjBase, c_abc.Sequence[T], abc.ABC):
         """
 
 
-def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjList[T]]:
+def obj_list(node_cls: type[_T], iterator_p_board_reg: str = "edx") -> type[ObjList[_T]]:
     """
     根据node_cls构造对应的NodeClsObject的父类
     
@@ -429,13 +429,13 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
         管理node_cls对象的数组的父类
     """
 
-    class _ObjIterator(c_abc.Iterator[T]):
+    class _ObjIterator(c_abc.Iterator[_T]):
         def __init__(self, ctler: Controller, _iterate_func_asm):
             self._current_ptr = 0
             self._controller = ctler
             self._iterate_func_asm = _iterate_func_asm
 
-        def __next__(self) -> T:
+        def __next__(self) -> _T:
             self._controller.result_u64 = self._current_ptr
             self._controller.run_code(self._iterate_func_asm, len(self._iterate_func_asm))
             if (self._controller.result_u64 >> 32) == 0:
@@ -446,7 +446,7 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
         def __iter__(self):
             return self
 
-    class _ObjListImplement(_ObjList[T], abc.ABC):
+    class _ObjListImplement(ObjList[_T], abc.ABC):
         def __init__(self, base_ptr: int, ctler: Controller):
             super().__init__(base_ptr, ctler)
             self._array_base_ptr = ctler.read_u32([base_ptr])
@@ -462,10 +462,10 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
                 ret;"""  # 可恶的reg优化
             self._iterate_func_asm = None
 
-        def at(self, index: int) -> T:
+        def at(self, index: int) -> _T:
             return node_cls(self._array_base_ptr + node_cls.OBJ_SIZE * index, self._controller)
 
-        def find(self, *args) -> T | None:
+        def find(self, *args) -> _T | None:
             match len(args):
                 case 1:
                     index = args[0]
@@ -487,7 +487,7 @@ def obj_list(node_cls: type[T], iterator_p_board_reg: str = "edx") -> type[_ObjL
                         return None
                     return target if target.id.rank == rank else None
                 case other:
-                    raise ValueError("the function should have one or two parameters, "
+                    raise ValueError("the function should have 1 or 2 parameters, "
                                      f"not {other} parameters")
 
         def __getitem__(self, index: int | slice):

@@ -39,5 +39,5 @@ def pole_jumping_test(ctler: Controller, row=8):  # izs对这种记录性多行�
             tmp_time = [None] * 5
             return t.end(True)
 
-    t.start_test(False, 100)
+    t.start_test(True, 100)
     print(sum(times) / len(times), len(times))

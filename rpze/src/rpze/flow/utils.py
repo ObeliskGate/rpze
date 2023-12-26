@@ -4,7 +4,7 @@
 """
 from typing import overload
 
-from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool, FlowCoroutine
+from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool
 from ..structs.game_board import GameBoard, get_board
 from ..structs.obj_base import parse_grid_str
 from ..structs.plant import Plant, PlantType
