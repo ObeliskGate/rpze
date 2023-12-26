@@ -150,8 +150,7 @@ class FlowManager:
             flows: flow列表
             flow_priority: flows执行优先级
         """
-        self._flow_coro_list: list[list[CondFunc, FlowCoroutine]] \
-            = [[lambda _: True, i(self)] for i in flows]
+        self._flow_coro_list: list[list[CondFunc, FlowCoroutine]] = [[lambda _: True, i(self)] for i in flows]
 
         def __flow_tick_runner(self_: FlowManager) -> TickRunnerResult:
             if not (fcl := self_._flow_coro_list):
@@ -168,8 +167,6 @@ class FlowManager:
                         for i in pop_list[::-1]:
                             fcl.pop(i)
                         return se.value
-                else:
-                    continue
             for i in pop_list[::-1]:
                 fcl.pop(i)
 

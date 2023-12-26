@@ -27,23 +27,23 @@ class Griditem(ob.ObjNode):
 
     ITERATOR_FUNC_ADDRESS = 0x41CAD0
 
-    type_: GriditemType = ob.property_int_enum(0x8, GriditemType, "场地物品类型")
+    type_ = ob.property_int_enum(0x8, GriditemType, "场地物品类型")
 
-    row: int = ob.property_i32(0x14, "所在行")
+    row = ob.property_i32(0x14, "所在行")
 
-    col: int = ob.property_i32(0x10, "所在列")
+    col = ob.property_i32(0x10, "所在列")
 
-    brain_hp: int = ob.property_i32(0x18, """
+    brain_hp = ob.property_i32(0x18, """
         脑子血量, 墓碑冒出的量, 弹坑消失倒计时, 钉钯消失倒计时
         
         对于ize中脑子, 初始为70, 每次被啃时-= 1(区别于植物血量 -= 4)
         """)
 
-    layer: int = ob.property_i32(0x1c, "图层")
+    layer = ob.property_i32(0x1c, "图层")
 
-    x: float = ob.property_f32(0x24, "x坐标")
+    x = ob.property_f32(0x24, "x坐标")
 
-    y: float = ob.property_f32(0x28, "y坐标")
+    y = ob.property_f32(0x28, "y坐标")
 
     def __str__(self):
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
@@ -92,7 +92,7 @@ class GriditemList(ob.obj_list(Griditem)):
                 xor edx, edx;
                 mov [esi], edx;
                 LIterate:
-                    mov edx, {p_board};
+                    mov {Griditem.ITERATOR_P_BOARD_REG}, {p_board};
                     call ebx;  // Board::IterateGriditem
                     test al, al;
                     jz LFreeAll;

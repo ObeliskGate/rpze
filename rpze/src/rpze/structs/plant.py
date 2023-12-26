@@ -113,42 +113,42 @@ class Plant(ObjNode):
 
     OBJ_SIZE = 0x14c
 
-    x: int = ob.property_i32(0x8, "x")
+    x = ob.property_i32(0x8, "x")
 
-    y: int = ob.property_i32(0xc, "y")
+    y = ob.property_i32(0xc, "y")
 
-    visible: bool = ob.property_bool(0x18, "可见时为True")
+    visible = ob.property_bool(0x18, "可见时为True")
 
-    row: int = ob.property_i32(0x1c, "所在行数, 起点为0")
+    row = ob.property_i32(0x1c, "所在行数, 起点为0")
 
-    type_: PlantType = ob.property_int_enum(0x24, PlantType, "植物类型")
+    type_ = ob.property_int_enum(0x24, PlantType, "植物类型")
 
-    col: int = ob.property_i32(0x28, "所在列数, 起点为0")
+    col = ob.property_i32(0x28, "int: 所在列数, 起点为0")
 
-    status: PlantStatus = ob.property_int_enum(0x3c, PlantStatus, "植物状态")
+    status = ob.property_int_enum(0x3c, PlantStatus, "植物状态")
 
-    hp: int = ob.property_i32(0x40, "当前血量")
+    hp = ob.property_i32(0x40, "当前血量")
 
-    status_cd: int = ob.property_i32(0x54, """
+    status_cd = ob.property_i32(0x54, """
         属性倒计时, 如磁铁cd
                                      
         地刺攻击倒计时也在这儿:
             地刺的判断和generate_cd无关. 在范围内有僵尸时使status_cd = 100, == 75时打出攻击
         """)
 
-    generate_cd: int = ob.property_i32(0x58, """
+    generate_cd = ob.property_i32(0x58, """
         子弹生成 / 物品生产倒计时
                                        
         初值为max_boot_delay - 14到max_boot_delay
         """)
 
-    max_boot_delay: int = ob.property_i32(0x5c, """
+    max_boot_delay = ob.property_i32(0x5c, """
         generate_cd的最大值
                                           
         对大多数植物为150，对投手为300，曾为200
         """)
 
-    launch_cd: int = ob.property_i32(0x90, """
+    launch_cd = ob.property_i32(0x90, """
         从准备发射到发射子弹的倒计时
                                      
         **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
@@ -176,9 +176,9 @@ class Plant(ObjNode):
             在generate_cd == 0时再改改动一次launch_cd = 26
         """)
 
-    can_attack: bool = ob.property_bool(0x48, "能攻击时为True")
+    can_attack = ob.property_bool(0x48, "能攻击时为True")
 
-    is_dead: bool = ob.property_bool(0x141, "死亡时为True")
+    is_dead = ob.property_bool(0x141, "死亡时为True")
     
     @property
     def target_zombie_id(self) -> ob.ObjId:
@@ -234,9 +234,42 @@ class PlantList(ob.obj_list(Plant)):
         Returns:
             对应位置编号最小的植物, 找不到返回None
         """
-        for plant in ~self:
-            if plant.row == row and plant.col == col:
-                return plant
+        p_board = self._controller.get_p_board()[1]  # 常用函数汇编提速喵
+        code = f"""
+            push esi;
+            push edi;
+            push ebx;
+            mov esi, {self._controller.result_address};
+            xor eax, eax;
+            mov [esi], eax;
+            mov edi, {p_board};
+            mov ebx, {Plant.ITERATOR_FUNC_ADDRESS};
+
+            LIterate:
+                mov {Plant.ITERATOR_P_BOARD_REG}, edi;
+                call ebx;  // Board::IteratePlant
+                test al, al;
+                jz LNoResult;
+                mov eax, [esi];  // eax = Plant*
+                cmp dword ptr [eax + {Plant.row.offset}], {row};
+                jne LIterate;
+                cmp dword ptr [eax + {Plant.col.offset}], {col};
+                jne LIterate;
+                pop ebx;
+                pop edi;
+                pop esi;
+                ret;
+
+            LNoResult:
+                xor eax, eax;
+                mov [esi], eax;
+                pop ebx;
+                pop edi;
+                pop esi;
+                ret;"""
+        asm.run(code, self._controller)
+        if (result := self._controller.result_u32) != 0:
+            return Plant(result, self._controller)
         return None
 
     @typing.overload
@@ -267,7 +300,7 @@ class PlantList(ob.obj_list(Plant)):
             xor edx, edx;
             mov [esi], edx;  // mov [esi], 0 is invalid
             LIterate:
-                mov edx, {p_board};
+                mov {Plant.ITERATOR_P_BOARD_REG}, {p_board};
                 call ebx;  // Board::IteratePlant
                 test al, al;
                 jz LFreeAll;

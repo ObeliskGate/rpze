@@ -41,22 +41,21 @@ class Projectile(ob.ObjNode):
     
     OBJ_SIZE = 0x94
     
-    int_x: int = ob.property_i32(0x8, "图像整数x坐标")
+    int_x = ob.property_i32(0x8, "图像整数x坐标")
     
-    int_y: int = ob.property_i32(0xc, "图像整数y坐标")
+    int_y = ob.property_i32(0xc, "图像整数y坐标")
     
-    x: float = ob.property_f32(0x30, "浮点x坐标")
+    x = ob.property_f32(0x30, "浮点x坐标")
     
-    y: float = ob.property_f32(0x34, "浮点y坐标")
+    y = ob.property_f32(0x34, "浮点y坐标")
     
-    dx: float = ob.property_f32(0x3c, "x速度")
+    dx = ob.property_f32(0x3c, "x速度")
     
-    dy: float = ob.property_f32(0x40, "y速度")
+    dy = ob.property_f32(0x40, "y速度")
     
-    type_: ProjectileType = ob.property_int_enum(0x5c, ProjectileType, "子弹类型")
+    type_ = ob.property_int_enum(0x5c, ProjectileType, "子弹类型")
     
-    motion_type: ProjectileMotionType = ob.property_int_enum(
-        0x58, ProjectileMotionType, "子弹运动类型")
+    motion_type = ob.property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")
     
     @property
     def target_zombie_id(self) -> ob.ObjId:
@@ -88,7 +87,7 @@ class ProjectileList(ob.obj_list(Projectile)):
                 xor edx, edx;
                 mov [esi], edx;
                 LIterate:
-                    mov edx, {p_board};
+                    mov {Projectile.ITERATOR_P_BOARD_REG}, {p_board};
                     call ebx;  // Board::IterateProjectile
                     test al, al;
                     jz LFreeAll;

@@ -46,10 +46,9 @@ class ObjBase(abc.ABC):
         Raises:
             ValueError: base_ptr为空时抛出
         """
-        super().__init__()
         if base_ptr == 0:
             raise ValueError(f"base_ptr of an {type(self).__name__} object cannot be 0")
-        
+        super().__init__()
         self.base_ptr = base_ptr
         self._controller = ctler
 
@@ -79,6 +78,19 @@ class ObjBase(abc.ABC):
                 f"ctler=Controller({self._controller.pid}))")
 
 
+class OffsetProperty(property):
+    """
+    ObjBase对象在pvz内的属性
+
+    Attributes:
+        offset: 属性在游戏中的偏移
+    """
+    def __init__(self, fget, fset, fdel, doc, offset):
+        super().__init__(fget, fset, fdel, None)
+        self.__doc__ = doc
+        self.offset = offset
+
+
 # property factories 用于生成ObjBase对象在pvz内的属性
 def property_bool(offset: int, doc: str | None = None):
     def _get(self: ObjBase) -> bool:
@@ -87,7 +99,7 @@ def property_bool(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: bool):
         self._controller.write_bool(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "bool: " + doc, offset)
 
 
 def property_i8(offset: int, doc: str | None = None):
@@ -97,7 +109,7 @@ def property_i8(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: int):
         self._controller.write_i8(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_i16(offset: int, doc: str | None = None):
@@ -107,7 +119,7 @@ def property_i16(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: int):
         self._controller.write_i16(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_i32(offset: int, doc: str | None = None):
@@ -117,7 +129,7 @@ def property_i32(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: int):
         self._controller.write_i32(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_i64(offset: int, doc: str | None = None):
@@ -127,7 +139,7 @@ def property_i64(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: int):
         self._controller.write_i64(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_u8(offset: int, doc: str | None = None):
@@ -137,7 +149,7 @@ def property_u8(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: int):
         self._controller.write_u8(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_u16(offset: int, doc: str | None = None):
@@ -147,7 +159,7 @@ def property_u16(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: int):
         self._controller.write_u16(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_u32(offset: int, doc: str | None = None):
@@ -157,7 +169,7 @@ def property_u32(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: int):
         self._controller.write_u32(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_u64(offset: int, doc: str | None = None):
@@ -167,7 +179,7 @@ def property_u64(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: int):
         self._controller.write_u64(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_f32(offset: int, doc: str | None = None):
@@ -177,7 +189,7 @@ def property_f32(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: float):
         self._controller.write_f32(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
 def property_f64(offset: int, doc: str | None = None):
@@ -187,7 +199,7 @@ def property_f64(offset: int, doc: str | None = None):
     def _set(self: ObjBase, value: float):
         self._controller.write_f64(value, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
 def property_int_enum(offset: int, cls: type[IntEnum], doc: str | None = None):
@@ -197,7 +209,7 @@ def property_int_enum(offset: int, cls: type[IntEnum], doc: str | None = None):
     def _set(self: ObjBase, value: cls):
         self._controller.write_i32(int(value), [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 
 
 def property_obj(offset: int, cls: type[ObjBase], doc: str | None = None):
@@ -209,7 +221,7 @@ def property_obj(offset: int, cls: type[ObjBase], doc: str | None = None):
             raise ValueError("cannot assign an object from another controller")
         self._controller.write_i32(value.base_ptr, [self.base_ptr + offset])
 
-    return property(_get, _set, None, doc)
+    return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 
 
 class ObjId(ObjBase):
@@ -221,9 +233,9 @@ class ObjId(ObjBase):
 
     OBJ_SIZE = 4
 
-    index: int = property_u16(0, "对象索引")
+    index = property_u16(0, "对象索引")
 
-    rank: int = property_u16(2, "对象序列号")
+    rank = property_u16(2, "对象序列号")
 
     def __eq__(self, val: typing.Self | tuple[int, int]) -> bool:
         """
@@ -273,6 +285,9 @@ class ObjNode(ObjBase, abc.ABC):
     ITERATOR_FUNC_ADDRESS: int = NotImplemented
     """返回pvz中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
+    ITERATOR_P_BOARD_REG: str = "edx"
+    """迭代对象函数用于存储Board指针的寄存器, reanimation和粒子系统为eax, 其他为edx"""
+
 
 _T = typing.TypeVar("_T", bound=ObjNode)
 
@@ -286,13 +301,13 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
 
     OBJ_SIZE = 28
 
-    max_length: int = property_i32(4, "最大时对象数")
+    max_length = property_i32(4, "最大时对象数")
 
-    next_index: int = property_i32(12, "下一个对象的索引")
+    next_index = property_i32(12, "下一个对象的索引")
 
-    obj_num: int = property_i32(16, "当前对象数量")
+    obj_num = property_i32(16, "当前对象数量")
 
-    next_rank: int = property_i32(20, "下一个对象的序列号")
+    next_rank = property_i32(20, "下一个对象的序列号")
 
     def __len__(self) -> int:
         """
@@ -417,14 +432,12 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         """
 
 
-def obj_list(node_cls: type[_T], iterator_p_board_reg: str = "edx") -> type[ObjList[_T]]:
+def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
     """
     根据node_cls构造对应的NodeClsObject的父类
     
     Args:
         node_cls: ObjNode的子类
-        iterator_p_board_reg:
-            用于存储Board指针的寄存器, reanimation和粒子系统为eax, 其他为edx
     Returns:
         管理node_cls对象的数组的父类
     """
@@ -454,7 +467,7 @@ def obj_list(node_cls: type[_T], iterator_p_board_reg: str = "edx") -> type[ObjL
             self._code = f"""
                 push esi;
                 mov esi, {self._controller.result_address};
-                mov {iterator_p_board_reg}, {p_board};
+                mov {node_cls.ITERATOR_P_BOARD_REG}, {p_board};
                 mov ecx, {node_cls.ITERATOR_FUNC_ADDRESS};
                 call ecx;
                 mov [esi + 4], al;

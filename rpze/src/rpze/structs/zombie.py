@@ -137,77 +137,74 @@ class Zombie(ob.ObjNode):
 
     OBJ_SIZE = 0x15c
 
-    int_x: int = ob.property_i32(0x8, "整数x坐标")
+    int_x = ob.property_i32(0x8, "整数x坐标")
 
-    int_y: int = ob.property_i32(0xc, "整数y坐标")
+    int_y = ob.property_i32(0xc, "整数y坐标")
 
-    row: int = ob.property_i32(0x1c, "所在行数")
+    row = ob.property_i32(0x1c, "所在行数")
 
-    type_: ZombieType = ob.property_int_enum(0x24, ZombieType, "僵尸种类")
+    type_ = ob.property_int_enum(0x24, ZombieType, "僵尸种类")
 
-    status: ZombieStatus = ob.property_int_enum(0x28, ZombieStatus, "僵尸状态")
+    status = ob.property_int_enum(0x28, ZombieStatus, "僵尸状态")
 
-    x: float = ob.property_f32(0x2c, "浮点x坐标")
+    x = ob.property_f32(0x2c, "浮点x坐标")
 
-    y: float = ob.property_f32(0x30, "浮点y坐标")
+    y = ob.property_f32(0x30, "浮点y坐标")
 
-    dx: float = ob.property_f32(0x34, "x方向速度")
+    dx = ob.property_f32(0x34, "x方向速度")
 
-    is_eating: bool = ob.property_bool(0x51, "在啃食时为True")
+    is_eating = ob.property_bool(0x51, "在啃食时为True")
 
-    flash_cd: int = ob.property_i32(0x54, """
+    flash_cd = ob.property_i32(0x54, """
     发亮倒计时
                                     
     - 刚生成僵尸时为0, 受击变为25
     - 在flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
     """)
 
-    time_since_spawn: int = ob.property_i32(0x60, "出生时间")
+    time_since_spawn = ob.property_i32(0x60, "出生时间")
 
-    action: ZombieAction = ob.property_int_enum(0x64, ZombieAction, "僵尸行为")
+    action = ob.property_int_enum(0x64, ZombieAction, "僵尸行为")
 
-    hp: int = ob.property_i32(0xc8, "本体血量")
+    hp = ob.property_i32(0xc8, "本体血量")
 
-    max_hp: int = ob.property_u32(0xcc, "本体血量上限")
+    max_hp = ob.property_u32(0xcc, "本体血量上限")
 
-    accessories_type_1: ZombieAccessoriesType1 = ob.property_int_enum(
-        0xc4, ZombieAccessoriesType1, "一类饰品类型")
+    accessories_type_1 = ob.property_int_enum(0xc4, ZombieAccessoriesType1, "一类饰品类型")
 
-    accessories_hp_1: int = ob.property_i32(0xd0, "一类饰品血量")
+    accessories_hp_1 = ob.property_i32(0xd0, "一类饰品血量")
 
-    accessories_max_hp_1: int = ob.property_i32(0xd4, "一类饰品血量上限")
+    accessories_max_hp_1 = ob.property_i32(0xd4, "一类饰品血量上限")
 
-    accessories_type_2: ZombieAccessoriesType2 = ob.property_int_enum(
-        0xd8, ZombieAccessoriesType2, "二类饰品")
+    accessories_type_2 = ob.property_int_enum(0xd8, ZombieAccessoriesType2, "二类饰品")
 
-    accessories_hp_2: int = ob.property_i32(0xdc, "二类饰品血量")
+    accessories_hp_2 = ob.property_i32(0xdc, "二类饰品血量")
 
-    accessories_max_hp_2: int = ob.property_i32(0xe0, "二类饰品血量上限")
+    accessories_max_hp_2 = ob.property_i32(0xe0, "二类饰品血量上限")
 
-    hit_box_x: int = ob.property_i32(0x8c, "中弹判定横坐标")
+    hit_box_x = ob.property_i32(0x8c, "中弹判定横坐标")
 
-    hit_box_y: int = ob.property_i32(0x90, "中弹判定纵坐标")
+    hit_box_y = ob.property_i32(0x90, "中弹判定纵坐标")
 
-    hit_width: int = ob.property_i32(0x94, "中弹判定宽度")
+    hit_width = ob.property_i32(0x94, "中弹判定宽度")
 
-    hit_height: int = ob.property_i32(0x98, "中弹判定高度")
+    hit_height = ob.property_i32(0x98, "中弹判定高度")
 
-    attack_box_x: int = ob.property_i32(0x9c, "攻击判定横坐标")
+    attack_box_x = ob.property_i32(0x9c, "攻击判定横坐标")
 
-    attack_box_y: int = ob.property_i32(0xa0, "攻击判定纵坐标")
+    attack_box_y = ob.property_i32(0xa0, "攻击判定纵坐标")
 
-    attack_width: int = ob.property_i32(0xa4, "攻击判定宽度")
+    attack_width = ob.property_i32(0xa4, "攻击判定宽度")
 
-    attack_height: int = ob.property_i32(0xa8, "攻击判定高度")
+    attack_height = ob.property_i32(0xa8, "攻击判定高度")
 
-    slow_cd: int = ob.property_i32(0xac, "减速倒计时")
+    slow_cd = ob.property_i32(0xac, "减速倒计时")
 
-    butter_cd: int = ob.property_i32(0xb0, "黄油固定倒计时")
+    butter_cd = ob.property_i32(0xb0, "黄油固定倒计时")
 
-    is_dead: bool = ob.property_bool(0xec, '''
-        是否"彻底"死亡, 即濒死时此条为False''')
+    is_dead = ob.property_bool(0xec, '是否"彻底"死亡, 即濒死时此条为False')
 
-    is_not_dying: bool = ob.property_bool(0xba, "不在濒死状态时为True")
+    is_not_dying = ob.property_bool(0xba, "不在濒死状态时为True")
 
     @property
     def master_id(self) -> ob.ObjId:  # 似乎所有ObjNode subclass都用Property而不是Attribute更好看
@@ -247,7 +244,7 @@ class ZombieList(ob.obj_list(Zombie)):
             xor edx, edx;
             mov [esi], edx;
             LIterate:
-                mov edx, {p_board};
+                mov {Zombie.ITERATOR_P_BOARD_REG}, {p_board};
                 call ebx;  // Board::IterateZombie
                 test al, al;
                 jz LFreeAll;

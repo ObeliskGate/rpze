@@ -34,14 +34,14 @@ class GameBoard(ob.ObjBase):
         self.projectile_list: ProjectileList = ProjectileList(base_ptr + 0xc8, controller)
         self.griditem_list: GriditemList = GriditemList(base_ptr + 0x11c, controller)
 
-    _p_challenge: int = ob.property_u32(0x160, "Challenge对象指针")
+    _p_challenge = ob.property_u32(0x160, "Challenge对象指针")
 
-    is_dance_mode: bool = ob.property_bool(0x5765, "在dance秘籍时中为True")
+    is_dance_mode = ob.property_bool(0x5765, "在dance秘籍时中为True")
 
-    sun_num: int = ob.property_i32(0x5560, "阳光数量")
+    sun_num = ob.property_i32(0x5560, "阳光数量")
 
     @property
-    def game_time(self):
+    def game_time(self) -> int:
         """游戏时间(包括选卡停留的时间)"""
         return self._controller.get_time()
 
