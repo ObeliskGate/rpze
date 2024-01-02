@@ -50,7 +50,6 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 				*reinterpret_cast<int32_t*>(pLawnApp + 0x838) += 1;  // mjClock++
 				__asm
 				{
-					push esi
 					mov esi, pBoard
 					mov edx, 0x41BAD0  // Board::ProcessDeleteQueue
 					call edx
@@ -65,7 +64,6 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 					mov eax, esi
 					mov edx, 0x4524F0  // LawnApp::CheckForGameEnd
 					call edx
-					pop esi
 				}
 				mainHook(1, pSharedMemory);
 			}

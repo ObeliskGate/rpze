@@ -14,8 +14,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <EnableNativeCodeDebugging>True</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
-    <InterpreterId>
-    </InterpreterId>
+    <InterpreterId>CondaEnv|CondaEnv|rpdev</InterpreterId>
     <SuppressConfigureTestFrameworkPrompt>true</SuppressConfigureTestFrameworkPrompt>
     <CommandLineArguments>
     </CommandLineArguments>
@@ -51,7 +50,7 @@
     <Compile Include="tests.py" />
   </ItemGroup>
   <ItemGroup>
-    <InterpreterReference Include="Global|PythonCore|3.11" />
+    <InterpreterReference Include="CondaEnv|CondaEnv|rpdev" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="src\" />
