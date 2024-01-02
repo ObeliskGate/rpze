@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>10ba62db-8c74-41df-8da3-2ecdb7f50c79</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>rpze.py</StartupFile>
+    <StartupFile>main.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -29,9 +29,10 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="rpze.py" />
+    <Compile Include="main.py" />
     <Compile Include="src\rpze\basic\asm.py" />
     <Compile Include="src\rpze\basic\inject.py" />
+    <Compile Include="src\rpze\basic\__init__.py" />
     <Compile Include="src\rpze\examples\botanical_clock.py" />
     <Compile Include="src\rpze\examples\end_callback_example.py" />
     <Compile Include="src\rpze\examples\iztools_example.py" />
@@ -46,6 +47,7 @@
     <Compile Include="src\rpze\structs\plant.py" />
     <Compile Include="src\rpze\structs\projectile.py" />
     <Compile Include="src\rpze\structs\zombie.py" />
+    <Compile Include="src\rpze\structs\__init__.py" />
     <Compile Include="src\rpze\__init__.py" />
     <Compile Include="tests.py" />
   </ItemGroup>
