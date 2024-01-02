@@ -8,7 +8,7 @@ version = "0.0.1a6"
 dependencies = [
     "keystone-engine>=0.9.2"
 ]
-requires-python = ">=3.11"
+requires-python = "==3.11"
 authors = [ {name = "ObeliskGate"} ]
 classifiers = [
     "Development Status :: 3 - Alpha",
