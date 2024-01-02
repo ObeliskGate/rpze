@@ -50,6 +50,7 @@
     <Compile Include="tests.py" />
   </ItemGroup>
   <ItemGroup>
+    <InterpreterReference Include="CondaEnv|CondaEnv|312" />
     <InterpreterReference Include="CondaEnv|CondaEnv|rpdev" />
   </ItemGroup>
   <ItemGroup>
