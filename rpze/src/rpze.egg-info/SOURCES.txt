@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 src/rpze/__init__.py
 src/rpze/rp_extend.pyd
@@ -7,6 +8,7 @@ src/rpze.egg-info/SOURCES.txt
 src/rpze.egg-info/dependency_links.txt
 src/rpze.egg-info/requires.txt
 src/rpze.egg-info/top_level.txt
+src/rpze/basic/__init__.py
 src/rpze/basic/asm.py
 src/rpze/basic/inject.py
 src/rpze/bin/rp_dll.dll
@@ -19,6 +21,7 @@ src/rpze/flow/__init__.py
 src/rpze/flow/flow.py
 src/rpze/flow/iztest.py
 src/rpze/flow/utils.py
+src/rpze/structs/__init__.py
 src/rpze/structs/game_board.py
 src/rpze/structs/griditem.py
 src/rpze/structs/obj_base.py

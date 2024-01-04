@@ -367,3 +367,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# package metadata
+rpze.egg-info/
