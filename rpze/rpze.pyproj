@@ -14,7 +14,7 @@
     <LaunchProvider>Standard Python launcher</LaunchProvider>
     <EnableNativeCodeDebugging>True</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
-    <InterpreterId>CondaEnv|CondaEnv|rpdev</InterpreterId>
+    <InterpreterId>CondaEnv|CondaEnv|312</InterpreterId>
     <SuppressConfigureTestFrameworkPrompt>true</SuppressConfigureTestFrameworkPrompt>
     <CommandLineArguments>
     </CommandLineArguments>
