@@ -9,7 +9,7 @@ from random import randint
 from typing import TypeAlias, Self
 
 from .flow import FlowFactory, TickRunnerResult, FlowManager
-from .utils import until, plant_abbr_to_type, zombie_abbr_to_type
+from .utils import until, plant_abbr_to_type, zombie_abbr_to_type, randomize_generate_cd
 from ..rp_extend import Controller, HookPosition
 from ..structs.game_board import GameBoard, get_board
 from ..structs.griditem import Griditem
@@ -128,7 +128,7 @@ class IzTest:
         check_tests_end_callback: 判断是否结束测试的回调函数. 默认为None, 表示按照repeat_time次数重复测试.
             参数为(当前测试次数, 成功次数), 返回None表示不结束, 返回float表示计算概率.
         target_plants: 目标植物列表. 仅在测试时有效, 不建议修改.
-        target_brains: 目标脑子列表. 不建议修改.
+        target_brains: 目标脑子列表. 仅在测试时有效, 不建议修改.
 
     """
     def __init__(self, controller: Controller, reset_generate_cd: bool = True):
@@ -298,7 +298,7 @@ class IzTest:
                         plant = board.iz_new_plant(row, col, type_)
                         # assert plant is not None
                         if self.reset_generate_cd:
-                            plant.randomize_generate_cd()
+                            randomize_generate_cd(plant)
                         if (row, col) in self.target_plants_pos:
                             self.target_plants.append(plant)
             board.mj_clock = randint(0, 459) if self.mj_init_phase is None else self.mj_init_phase

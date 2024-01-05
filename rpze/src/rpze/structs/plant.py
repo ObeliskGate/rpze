@@ -2,13 +2,12 @@
 """
 植物相关的枚举和类
 """
-import random
 import typing
 from enum import IntEnum
 
 from . import obj_base as ob
-from ..basic import asm
 from .obj_base import ObjNode
+from ..basic import asm
 
 
 class PlantType(IntEnum):
@@ -197,27 +196,6 @@ class Plant(ObjNode):
             call edx;
             ret;"""
         asm.run(code, self._controller)
-
-    def randomize_generate_cd(self) -> typing.Self:
-        """
-        令自己的generate_cd按照"放置充分长时间"后的结果随机化.
-        **仅对can_attack == True植物有效**
-
-        具体来说. 其generate_cd概率分布图像为一个梯形:
-        上底为max_boot_delay - 14, 下底为max_boot_delay.
-
-        Returns:
-            返回自己
-        """
-        if not self.can_attack:
-            return self
-        # 拆成[0, max_boot_delay - 14)和[max_boot_delay - 14, max_boot_delay]两个区间
-        # 注意可以取0...
-        # h * (max_boot_delay - 14) + (h + 0) * 15 / 2 = 1解这个方程, h为梯形的高
-        h = 1 / ((max_ := self.max_boot_delay) - 6.5)
-        distribute = ([h] * (max_ - 14)).extend([h / 15 * i for i in range(14, -1, -1)])
-        self.generate_cd = random.choices(population=range(max_ + 1), weights=distribute)[0]
-        return self
 
 
 class PlantList(ob.obj_list(Plant)):

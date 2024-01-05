@@ -2,6 +2,7 @@
 """
 简化flow编写的工具函数
 """
+import random
 from typing import overload
 
 from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool
@@ -91,7 +92,7 @@ def until_precise_digger(magnetshroom: Plant) -> AwaitableCondFunc:
         ...     ...  # do other thing
         为2-1精确矿
     """
-    return AwaitableCondFunc(lambda _: magnetshroom.status_cd <= 1500 - 913)
+    return AwaitableCondFunc(lambda _: magnetshroom.status_cd <= 587)  # 1500 - 913
 
 
 def until_plant_die(plant: Plant) -> AwaitableCondFunc:
@@ -126,7 +127,7 @@ def until_plant_last_shoot(plant: Plant) -> AwaitableCondFunc:
     return AwaitableCondFunc(_cond_func)
 
 
-# ize utils
+# ize data utils
 ize_plant_types: set[PlantType] = {
     PlantType.pea_shooter,
     PlantType.sunflower,
@@ -201,6 +202,7 @@ zombie_abbr_to_type: dict[str, ZombieType] = {
 """僵尸缩写到僵尸类型的字典"""
 
 
+# operate utils
 def place(place_str: str, board: GameBoard | None = None) -> Zombie | Plant | None:
     """
     用字符串放置植物
@@ -230,7 +232,6 @@ def place(place_str: str, board: GameBoard | None = None) -> Zombie | Plant | No
     raise ValueError(f"invalid type_str: {type_str}")
 
 
-# flow generator utils
 async def repeat(place_str: str,
                  time: int = 2, interval: int = 20, board: GameBoard | None = None):
     """
@@ -251,3 +252,27 @@ async def repeat(place_str: str,
     for _ in range(time - 1):
         await delay(interval)
         place(place_str, board)
+
+
+# plant utils
+def randomize_generate_cd(plant: Plant) -> Plant:
+    """
+    令植物的generate_cd按照"放置充分长时间"后的结果随机化
+
+    **仅对can_attack == True植物有效**; 但特判地刺, 地刺王无效.
+
+    具体来说, 其generate_cd概率分布图像为一个梯形:
+    上底为max_boot_delay - 14, 下底为max_boot_delay.
+
+    Returns:
+        返回传入的植物
+    """
+    if (not plant.can_attack) or plant.type_ in {PlantType.spikeweed, PlantType.spikerock}:
+        return plant
+    # 拆成[1, max_ - 14)和[max_ - 14, max_ + 1)两个区间
+    # 不可以取0, 可以取max_, max_ - 14和前面概率相等为h
+    # h * (max_ - 15) + (h + 0) * 16 / 2 = 1解这个方程, h为梯形的高
+    h = 1 / ((max_ := plant.max_boot_delay) - 7)
+    distribution = [h] * (max_ - 15) + [h / 15 * i for i in range(15, 0, -1)]
+    plant.generate_cd = random.choices(population=range(1, max_ + 1), weights=distribution)[0]
+    return plant
