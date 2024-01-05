@@ -92,7 +92,7 @@ class OffsetProperty(property):
 
 
 # property factories 用于生成ObjBase对象在pvz内的属性
-def property_bool(offset: int, doc: str | None = None):
+def property_bool(offset: int, doc: str):
     def _get(self: ObjBase) -> bool:
         return self._controller.read_bool([self.base_ptr + offset])
 
@@ -102,7 +102,7 @@ def property_bool(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "bool: " + doc, offset)
 
 
-def property_i8(offset: int, doc: str | None = None):
+def property_i8(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
         return self._controller.read_i8([self.base_ptr + offset])
 
@@ -112,7 +112,7 @@ def property_i8(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i16(offset: int, doc: str | None = None):
+def property_i16(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
         return self._controller.read_i16([self.base_ptr + offset])
 
@@ -122,7 +122,7 @@ def property_i16(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i32(offset: int, doc: str | None = None):
+def property_i32(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
         return self._controller.read_i32([self.base_ptr + offset])
 
@@ -132,7 +132,7 @@ def property_i32(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i64(offset: int, doc: str | None = None):
+def property_i64(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
         return self._controller.read_i64([self.base_ptr + offset])
 
@@ -142,7 +142,7 @@ def property_i64(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u8(offset: int, doc: str | None = None):
+def property_u8(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
         return self._controller.read_u8([self.base_ptr + offset])
 
@@ -152,7 +152,7 @@ def property_u8(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u16(offset: int, doc: str | None = None):
+def property_u16(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
         return self._controller.read_u16([self.base_ptr + offset])
 
@@ -162,7 +162,7 @@ def property_u16(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u32(offset: int, doc: str | None = None):
+def property_u32(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
         return self._controller.read_u32([self.base_ptr + offset])
 
@@ -172,7 +172,7 @@ def property_u32(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u64(offset: int, doc: str | None = None):
+def property_u64(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
         return self._controller.read_u64([self.base_ptr + offset])
 
@@ -182,7 +182,7 @@ def property_u64(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_f32(offset: int, doc: str | None = None):
+def property_f32(offset: int, doc: str):
     def _get(self: ObjBase) -> float:
         return self._controller.read_f32([self.base_ptr + offset])
 
@@ -192,7 +192,7 @@ def property_f32(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
-def property_f64(offset: int, doc: str | None = None):
+def property_f64(offset: int, doc: str):
     def _get(self: ObjBase) -> float:
         return self._controller.read_f64([self.base_ptr + offset])
 
@@ -202,7 +202,7 @@ def property_f64(offset: int, doc: str | None = None):
     return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
-def property_int_enum(offset: int, cls: type[IntEnum], doc: str | None = None):
+def property_int_enum(offset: int, cls: type[IntEnum], doc: str):
     def _get(self: ObjBase) -> cls:
         return cls(self._controller.read_i32([self.base_ptr + offset]))
 
@@ -212,7 +212,7 @@ def property_int_enum(offset: int, cls: type[IntEnum], doc: str | None = None):
     return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 
 
-def property_obj(offset: int, cls: type[ObjBase], doc: str | None = None):
+def property_obj(offset: int, cls: type[ObjBase], doc: str):
     def _get(self: ObjBase) -> cls:
         return cls(self._controller.read_i32([self.base_ptr + offset]), self._controller)
 

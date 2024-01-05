@@ -18,7 +18,7 @@ rpze是一个用于ize测试的框架, 旨在保持一定性能、高精度、�
 - 使用普及度最高的Python编写, 尽可能做到低上手难度
 - 稳定性大幅领先几乎所有远程工具, 并且实现100%精度
 - 作为普通Python包发布, 无须C++繁琐的配置环境
-- 兼容过去的iztools工具以及各类简写, 纯上手难度低
+- 兼容过去的iztools工具以及各类简写, 对已有习惯友好
 
 缺点:
 - 跳帧性能不如[AvZ](https://github.com/vector-wlc/AsmVsZombies), [iztools](https://github.com/sqrt07/iztools)等注入框架
