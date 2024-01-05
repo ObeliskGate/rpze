@@ -9,7 +9,7 @@ from random import randint
 from typing import TypeAlias, Self
 
 from .flow import FlowFactory, TickRunnerResult, FlowManager
-from .utils import until, plant_abbr_to_type, zombie_abbr_to_type
+from .utils import until, plant_abbr_to_type, zombie_abbr_to_type, randomize_generate_cd
 from ..rp_extend import Controller, HookPosition
 from ..structs.game_board import GameBoard, get_board
 from ..structs.griditem import Griditem
@@ -43,8 +43,8 @@ def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantType
     Raises:
         ValueError: plant_type_string格式错误时抛出
     """
-    first_list: list[list[PlantType | None]] = [[None for _ in range(5)] for _ in range(5)]
-    second_list: list[list[PlantType | None]] = [[None for _ in range(5)] for _ in range(5)]
+    first_list: list[list[PlantType | None]] = [[None] * 5 for _ in range(5)]
+    second_list: list[list[PlantType | None]] = [[None] * 5 for _ in range(5)]
     lines = plant_type_str.strip().splitlines(False)
     if (t := len(lines)) != 5:
         raise ValueError(f"plant_type_string must have 5 lines, instead of {t} lines")
@@ -54,7 +54,7 @@ def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantType
         if not plus_plant_indices:
             if (t := len(line)) != 5:
                 raise ValueError(f"line {row} must have 5 plants, instead of {t} plants")
-            first_list[row] = [(plant_abbr_to_type[abbr] if abbr != '.' else None) for abbr in line]
+            first_list[row] = [plant_abbr_to_type[abbr] for abbr in line]
         else:
             if plus_plant_indices[0] == -1:
                 raise ValueError(f"line {row} can't start with +")
@@ -63,9 +63,9 @@ def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantType
                 if char == "+":
                     continue
                 if i in plus_plant_indices:
-                    second_list[row][col] = plant_abbr_to_type[char] if char != '.' else None
+                    second_list[row][col] = plant_abbr_to_type[char]
                 else:
-                    first_list[row][col] = plant_abbr_to_type[char] if char != '.' else None
+                    first_list[row][col] = plant_abbr_to_type[char]
                 col += 1
             if col != 5:
                 raise ValueError(f"line {row} must have 5 plants, instead of {t} plants")
@@ -101,7 +101,7 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
         raise ValueError(f"place_zombie_string must have 3 lines, instead of {t} lines")
     types = [zombie_abbr_to_type[abbr] for abbr in lines[0].strip().split()]
     times = [int(time_) for time_ in lines[1].strip().split()]
-    rows, cols = zip(*[parse_grid_str(pos) for pos in lines[2].strip().split()])  # zip(*list)转置
+    rows, cols = zip(*(parse_grid_str(pos) for pos in lines[2].strip().split()))  # zip(*iterable)转置
     if not (len(types) == len(times) == len(rows) == len(cols)):
         raise ValueError("length of types, times, rows and cols must be equal")
     return [PlaceZombieOp(*op) for op in zip(types, times, rows, cols)]
@@ -128,7 +128,7 @@ class IzTest:
         check_tests_end_callback: 判断是否结束测试的回调函数. 默认为None, 表示按照repeat_time次数重复测试.
             参数为(当前测试次数, 成功次数), 返回None表示不结束, 返回float表示计算概率.
         target_plants: 目标植物列表. 仅在测试时有效, 不建议修改.
-        target_brains: 目标脑子列表. 不建议修改.
+        target_brains: 目标脑子列表. 仅在测试时有效, 不建议修改.
 
     """
     def __init__(self, controller: Controller, reset_generate_cd: bool = True):
@@ -162,6 +162,8 @@ class IzTest:
         self._last_test_ended: bool = False  # 用于判断是否结束一次测试
         self._success_count: int = 0  # 成功次数
         self._test_time: int = 0  # 测试次数
+
+        self._flow_factory_set: bool = False  # 用于判断是否设置了flow_factory
 
     def init_by_str(self, iztools_str: str) -> Self:
         """
@@ -275,14 +277,25 @@ class IzTest:
             return func
         return _decorator
 
-    def _set_flow_factory(self) -> Self:
+    def set_flow_factory(self,
+                         place_priority: int = 10,
+                         check_end_priority: int = -10) -> Self:
         """
         设置flow_factory
 
+        Args:
+            place_priority: 初始化及放置僵尸tick runner的优先级, 默认为10
+            check_end_priority: 判断输赢tick runner的优先级, 默认为-10
         Returns:
             返回自己
+        Raises:
+            RuntimeError: 已经设置过flow_factory时抛出
         """
-        @self.flow_factory.connect(until(0), only_once=True)
+        if self._flow_factory_set:
+            raise RuntimeError("cannot set flow factory twice!")
+        self._flow_factory_set = True
+
+        @self.flow_factory.connect(until(0), only_once=True, priority=place_priority)
         def _init(_):
             # 清掉所有_ObjList的栈
             board = self.game_board
@@ -298,7 +311,7 @@ class IzTest:
                         plant = board.iz_new_plant(row, col, type_)
                         # assert plant is not None
                         if self.reset_generate_cd:
-                            plant.randomize_generate_cd()
+                            randomize_generate_cd(plant)
                         if (row, col) in self.target_plants_pos:
                             self.target_plants.append(plant)
             board.mj_clock = randint(0, 459) if self.mj_init_phase is None else self.mj_init_phase
@@ -309,12 +322,14 @@ class IzTest:
                     self.target_brains.append(brain)
 
         for op in self.place_zombie_list:
-            @self.flow_factory.connect(until(op.time), only_once=True)
-            def _place_zombie(_, __op=op):
-                self.game_board.iz_place_zombie(__op.row, __op.col, __op.type_)
+            @self.flow_factory.add_tick_runner(place_priority)
+            def _place_zombie(fm: FlowManager, _op=op):
+                if fm.time == _op.time:
+                    self.game_board.iz_place_zombie(_op.row, _op.col, _op.type_)
+                    return TickRunnerResult.DONE
 
         if self.enable_default_check_end:
-            @self.flow_factory.add_tick_runner()
+            @self.flow_factory.add_tick_runner(priority=check_end_priority)
             def _check_end(fm: FlowManager):
                 if fm.time >= self.start_check_end_time:
                     if (all(plant.is_dead for plant in self.target_plants) and
@@ -325,15 +340,15 @@ class IzTest:
         return self
 
     def start_test(self, jump_frame: bool = False,
-                   print_interval: int = 10,
-                   speed_rate: float = 1.0) -> tuple[float, float]:
+                   speed_rate: float = 1.0,
+                   print_interval: int = 10) -> tuple[float, float]:
         """
         开始测试
 
         Args:
             jump_frame: True则开启跳帧测试.
-            print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
             speed_rate: 速度倍率. 仅当jump_frame = False时有效.
+            print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
         Returns:
             (测试概率, 使用时间)元组
         """
@@ -341,13 +356,14 @@ class IzTest:
         last_time = start_time
         ctler = self.controller
         ctler.open_hook(HookPosition.CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
-        self._set_flow_factory()
+        if not self._flow_factory_set:
+            self.set_flow_factory()
         ctler.start()
         ctler.before()
         if jump_frame:
             ctler.start_jump_frame()
         else:
-            self.game_board.frame_duration = int(10 / speed_rate)
+            self.game_board.frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
         ctler.next_frame()
 
         def __one_test():

@@ -10,7 +10,6 @@ from ..basic import asm
 
 
 class ProjectileType(IntEnum):
-    none = -1,
     pea = 0x0,
     snow_pea = 0x1,
     cabbage = 0x2,

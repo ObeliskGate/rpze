@@ -15,7 +15,7 @@ def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
         1-2 5-2
         zh_j5
         cptoh
-        dsbhh
+        .....
         3lyp_
         hhwz1
         lz 
