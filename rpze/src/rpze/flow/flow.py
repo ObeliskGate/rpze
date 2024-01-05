@@ -150,9 +150,9 @@ class FlowManager:
             flows: flow列表
             flow_priority: flows执行优先级
         """
-        self._flow_coro_list: list[list[CondFunc, FlowCoroutine]] = [[lambda _: True, i(self)] for i in flows]
+        self._flow_coro_list: list[list] = [[lambda _: True, i(self)] for i in flows]
 
-        def __flow_tick_runner(self_: FlowManager) -> TickRunnerResult:
+        def __flow_tick_runner(self_: FlowManager) -> TickRunnerResult | None:
             if not (fcl := self_._flow_coro_list):
                 return TickRunnerResult.DONE
             pop_list = []
@@ -175,7 +175,7 @@ class FlowManager:
         heapq.heapify(tick_runner_heap)
         heapq.heappush(tick_runner_heap, (-flow_priority, next(_counter), __flow_tick_runner))
         # -priority让priority越大优先级别越高
-        self.tick_runners: list[TickRunner | None] = [i[2] for i in tick_runner_heap]
+        self.tick_runners: list[TickRunner] = [i[2] for i in tick_runner_heap]
         self.time = 0
 
     def add(self) -> Callable[[TickRunner], TickRunner]:
@@ -224,7 +224,7 @@ class FlowManager:
             return tr
         return _decorator
 
-    def run(self) -> TickRunnerResult:
+    def run(self) -> TickRunnerResult | None:
         """
         运行一次内部所有函数
 
@@ -290,8 +290,7 @@ class FlowFactory:
         return _decorator
 
     def connect(self, cond: CondFunc, priority: int = 0, only_once: bool = False) \
-            -> Callable[[Callable[[Self], TickRunnerResult | None]],
-                        Callable[[Self], TickRunnerResult | None]]:
+            -> Callable[[TickRunner], TickRunner]:
         """
         把tick_runner绑定到cond上的方法, 与FlowManager.add使用方法相同
 
@@ -300,7 +299,7 @@ class FlowFactory:
             priority: 权重 越大越优先执行
             only_once: 为true时 仅当第一次满足cond时执行
         """
-        def _decorator(tr) -> TickRunner:
+        def _decorator(tr: TickRunner) -> TickRunner:
             def __decorated_tick_runner(fm: FlowManager):
                 if cond(fm):
                     ret = tr(fm)
