@@ -10,6 +10,7 @@ from ..basic import asm
 
 
 class GriditemType(IntEnum):
+    none = 0,
     grave = 0x1,
     crater = 0x2,
     ladder = 0x3,

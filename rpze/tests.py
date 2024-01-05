@@ -129,7 +129,6 @@ def flow_test(ctler):
                     if board.sun_num >= 9990:
                         board.sun_num = 9990
                         return TickRunnerResult.DONE
-                    return TickRunnerResult.NEXT
 
                 flow_manager = ff.build_manager()
         if flow_manager is not None:

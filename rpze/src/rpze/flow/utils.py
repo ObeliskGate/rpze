@@ -163,8 +163,8 @@ ize_zombie_types: set[ZombieType] = {
 }
 """所有ize中出现的僵尸"""
 
-plant_abbr_to_type: dict[str, PlantType] = {
-    ".": PlantType.none,
+plant_abbr_to_type: dict[str, PlantType | None] = {
+    ".": None,
     "1": PlantType.pea_shooter,
     "h": PlantType.sunflower,
     "o": PlantType.wallnut,

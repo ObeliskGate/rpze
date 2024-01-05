@@ -43,8 +43,8 @@ def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantType
     Raises:
         ValueError: plant_type_string格式错误时抛出
     """
-    first_list: list[list[PlantType | None]] = [[None for _ in range(5)] for _ in range(5)]
-    second_list: list[list[PlantType | None]] = [[None for _ in range(5)] for _ in range(5)]
+    first_list: list[list[PlantType | None]] = [[None] * 5 for _ in range(5)]
+    second_list: list[list[PlantType | None]] = [[None] * 5 for _ in range(5)]
     lines = plant_type_str.strip().splitlines(False)
     if (t := len(lines)) != 5:
         raise ValueError(f"plant_type_string must have 5 lines, instead of {t} lines")
@@ -54,7 +54,7 @@ def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantType
         if not plus_plant_indices:
             if (t := len(line)) != 5:
                 raise ValueError(f"line {row} must have 5 plants, instead of {t} plants")
-            first_list[row] = [(plant_abbr_to_type[abbr] if abbr != '.' else None) for abbr in line]
+            first_list[row] = [plant_abbr_to_type[abbr] for abbr in line]
         else:
             if plus_plant_indices[0] == -1:
                 raise ValueError(f"line {row} can't start with +")
@@ -63,9 +63,9 @@ def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantType
                 if char == "+":
                     continue
                 if i in plus_plant_indices:
-                    second_list[row][col] = plant_abbr_to_type[char] if char != '.' else None
+                    second_list[row][col] = plant_abbr_to_type[char]
                 else:
-                    first_list[row][col] = plant_abbr_to_type[char] if char != '.' else None
+                    first_list[row][col] = plant_abbr_to_type[char]
                 col += 1
             if col != 5:
                 raise ValueError(f"line {row} must have 5 plants, instead of {t} plants")
@@ -101,7 +101,7 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
         raise ValueError(f"place_zombie_string must have 3 lines, instead of {t} lines")
     types = [zombie_abbr_to_type[abbr] for abbr in lines[0].strip().split()]
     times = [int(time_) for time_ in lines[1].strip().split()]
-    rows, cols = zip(*[parse_grid_str(pos) for pos in lines[2].strip().split()])  # zip(*list)转置
+    rows, cols = zip(*(parse_grid_str(pos) for pos in lines[2].strip().split()))  # zip(*iterable)转置
     if not (len(types) == len(times) == len(rows) == len(cols)):
         raise ValueError("length of types, times, rows and cols must be equal")
     return [PlaceZombieOp(*op) for op in zip(types, times, rows, cols)]

@@ -12,7 +12,6 @@ from .obj_base import ObjNode
 
 
 class PlantType(IntEnum):
-    none = -1,
     pea_shooter = 0x0,
     sunflower = 0x1,
     cherry_bomb = 0x2,
