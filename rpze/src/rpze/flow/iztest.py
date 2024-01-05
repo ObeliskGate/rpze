@@ -163,6 +163,8 @@ class IzTest:
         self._success_count: int = 0  # 成功次数
         self._test_time: int = 0  # 测试次数
 
+        self._flow_factory_set: bool = False  # 用于判断是否设置了flow_factory
+
     def init_by_str(self, iztools_str: str) -> Self:
         """
         通过iztools字符串初始化iztest对象
@@ -275,14 +277,25 @@ class IzTest:
             return func
         return _decorator
 
-    def _set_flow_factory(self) -> Self:
+    def set_flow_factory(self,
+                         place_priority: int = 10,
+                         check_end_priority: int = -10) -> Self:
         """
         设置flow_factory
 
+        Args:
+            place_priority: 初始化及放置僵尸tick runner的优先级, 默认为10
+            check_end_priority: 判断输赢tick runner的优先级, 默认为-10
         Returns:
             返回自己
+        Raises:
+            RuntimeError: 已经设置过flow_factory时抛出
         """
-        @self.flow_factory.connect(until(0), only_once=True)
+        if self._flow_factory_set:
+            raise RuntimeError("cannot set flow factory twice!")
+        self._flow_factory_set = True
+
+        @self.flow_factory.connect(until(0), only_once=True, priority=place_priority)
         def _init(_):
             # 清掉所有_ObjList的栈
             board = self.game_board
@@ -309,12 +322,14 @@ class IzTest:
                     self.target_brains.append(brain)
 
         for op in self.place_zombie_list:
-            @self.flow_factory.connect(until(op.time), only_once=True)
-            def _place_zombie(_, __op=op):
-                self.game_board.iz_place_zombie(__op.row, __op.col, __op.type_)
+            @self.flow_factory.add_tick_runner(place_priority)
+            def _place_zombie(fm: FlowManager, _op=op):
+                if fm.time == _op.time:
+                    self.game_board.iz_place_zombie(_op.row, _op.col, _op.type_)
+                    return TickRunnerResult.DONE
 
         if self.enable_default_check_end:
-            @self.flow_factory.add_tick_runner()
+            @self.flow_factory.add_tick_runner(priority=check_end_priority)
             def _check_end(fm: FlowManager):
                 if fm.time >= self.start_check_end_time:
                     if (all(plant.is_dead for plant in self.target_plants) and
@@ -325,15 +340,15 @@ class IzTest:
         return self
 
     def start_test(self, jump_frame: bool = False,
-                   print_interval: int = 10,
-                   speed_rate: float = 1.0) -> tuple[float, float]:
+                   speed_rate: float = 1.0,
+                   print_interval: int = 10) -> tuple[float, float]:
         """
         开始测试
 
         Args:
             jump_frame: True则开启跳帧测试.
-            print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
             speed_rate: 速度倍率. 仅当jump_frame = False时有效.
+            print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
         Returns:
             (测试概率, 使用时间)元组
         """
@@ -341,13 +356,14 @@ class IzTest:
         last_time = start_time
         ctler = self.controller
         ctler.open_hook(HookPosition.CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
-        self._set_flow_factory()
+        if not self._flow_factory_set:
+            self.set_flow_factory()
         ctler.start()
         ctler.before()
         if jump_frame:
             ctler.start_jump_frame()
         else:
-            self.game_board.frame_duration = int(10 / speed_rate)
+            self.game_board.frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
         ctler.next_frame()
 
         def __one_test():

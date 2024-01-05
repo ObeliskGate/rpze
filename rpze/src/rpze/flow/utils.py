@@ -20,7 +20,7 @@ def until(time: int) -> AwaitableCondFunc:
     生成一个 判断时间是否到达 的函数
 
     Args:
-        time: 到time时返回True
+        time: 当前时间大于等于time时返回True
     Examples:
         >>> async def flow(_):
         ...     await until(100)
