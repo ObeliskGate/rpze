@@ -158,7 +158,7 @@ bool Memory::writeBytes(const std::string& in, const std::vector<uint32_t>& offs
 		CloseHandle(hPvz);
 		return false;
 	}
-	return _writeMemory(in.data(), in.size(), offsets);
+	return _writeMemory(in.data(), static_cast<uint32_t>(in.size()), offsets);
 }
 
 bool Memory::runCode(const std::string& codes) const

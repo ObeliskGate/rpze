@@ -14,7 +14,7 @@ from typing import TypeAlias, Self
 
 class TickRunnerResult(Enum):
     """TickRunner的返回值"""
-    DONE = auto(),
+    DONE = auto()
     """本tick runner以后再也不执行时返回"""
     BREAK_DONE = auto()  # 不用异常打断. StopIteration形式的返回值和type hint系统匹配程度太差.
     """需要打断本次运行并且以后不再运行本TickRunner时返回"""
@@ -39,6 +39,7 @@ class VariablePool:  # thanks Reisen
     用于表示CondFunc中用于"伴随状态"的默认参数的变量池.
     具体属性由构造函数而定
     """
+
     def __init__(self, *args, **kwargs):
         """
         Args:
@@ -126,12 +127,14 @@ class AwaitableCondFunc(Callable, Awaitable):
         Returns:
             一个新的AwaitableCondFunc对象.
         """
+
         def _cond_func(fm: FlowManager, p=VariablePool(event_time=None)) -> bool:
             if p.event_time is None and self.func(fm):
                 p.event_time = fm.time
             if p.event_time is not None and p.event_time + delay_time <= fm.time:
                 return True
             return False
+
         return AwaitableCondFunc(_cond_func)
 
 
@@ -143,6 +146,7 @@ class FlowManager:
         tick_runners: 所有TickRunner组成的函数, 运行时按顺序执行
         time: 每执行一次do自增1
     """
+
     def __init__(self, tick_runners: list[PriorityTickRunner], flows: list[Flow], flow_priority):
         """
         Args:
@@ -197,9 +201,11 @@ class FlowManager:
             >>> flow_manager.add()(tr)
             为函数形式使用
         """
+
         def _decorator(tr: TickRunner):
             self.tick_runners.append(tr)
             return tr
+
         return _decorator
 
     def connect(self, cond: CondFunc, only_once: bool = False) \
@@ -213,6 +219,7 @@ class FlowManager:
             cond: 执行func的条件函数. 返回None时按照only_once判断; 返回TickRunnerResult时直接返回.
             only_once: 为True时 只要有一次满足cond则返回
         """
+
         def _decorator(tr: TickRunner) -> TickRunner:
             def __decorated_tick_runner(fm: FlowManager):
                 if cond(fm):
@@ -220,8 +227,10 @@ class FlowManager:
                     if ret is None:
                         return TickRunnerResult.DONE if only_once else None
                     return ret
+
             self.add()(__decorated_tick_runner)
             return tr
+
         return _decorator
 
     def run(self) -> TickRunnerResult | None:
@@ -264,6 +273,7 @@ class FlowFactory:
         flow_list: 所有flow组成的flow_list
         tick_runner_list: 所有tick_runner组成的列表
     """
+
     def __init__(self):
         self.flow_list: list[Flow] = []
         self.tick_runner_list: list[PriorityTickRunner] = []
@@ -272,9 +282,11 @@ class FlowFactory:
         """
         添加flow的方法, 与FlowManager.add使用方法相同
         """
+
         def _decorator(f: Flow) -> Flow:
             self.flow_list.append(f)
             return f
+
         return _decorator
 
     def add_tick_runner(self, priority: int = 0) -> Callable[[TickRunner], TickRunner]:
@@ -284,9 +296,11 @@ class FlowFactory:
         Args:
             priority: 权重 越大越优先执行
         """
+
         def _decorator(tr: TickRunner):
             self.tick_runner_list.append((priority, tr))
             return tr
+
         return _decorator
 
     def connect(self, cond: CondFunc, priority: int = 0, only_once: bool = False) \
@@ -299,6 +313,7 @@ class FlowFactory:
             priority: 权重 越大越优先执行
             only_once: 为true时 仅当第一次满足cond时执行
         """
+
         def _decorator(tr: TickRunner) -> TickRunner:
             def __decorated_tick_runner(fm: FlowManager):
                 if cond(fm):
@@ -306,8 +321,10 @@ class FlowFactory:
                     if ret is None:
                         return TickRunnerResult.DONE if only_once else None
                     return ret
+
             self.add_tick_runner(priority)(__decorated_tick_runner)
             return tr
+
         return _decorator
 
     def build_manager(self, flow_priority: int = 0) -> FlowManager:

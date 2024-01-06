@@ -65,7 +65,7 @@ class ObjBase(abc.ABC):
             other : 另一个ObjBase对象
         """
         return self.base_ptr == other.base_ptr and (self._controller == other._controller)
-    
+
     def __ne__(self, other: typing.Self) -> bool:
         return not (self.base_ptr == other.base_ptr and (self._controller == other._controller))
 
@@ -85,6 +85,7 @@ class OffsetProperty(property):
     Attributes:
         offset: 属性在游戏中的偏移
     """
+
     def __init__(self, fget, fset, fdel, doc, offset):
         super().__init__(fget, fset, fdel, None)
         self.__doc__ = doc
@@ -262,7 +263,7 @@ class ObjId(ObjBase):
         except ValueError as ve:
             raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
         return self._controller.read_u32([self.base_ptr]) == ((rank << 16) | index)
-    
+
     def __ne__(self, val: typing.Self | tuple[int, int]) -> bool:
         return not (self.__eq__(val))
 

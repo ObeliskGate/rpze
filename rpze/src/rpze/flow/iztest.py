@@ -131,6 +131,7 @@ class IzTest:
         target_brains: 目标脑子列表. 仅在测试时有效, 不建议修改.
 
     """
+
     def __init__(self, controller: Controller, reset_generate_cd: bool = True):
         """
         构造IzTest对象
@@ -243,6 +244,7 @@ class IzTest:
         def _decorator(func):
             self.end_callback = func
             return func
+
         return _decorator
 
     def end(self, succeeded: bool) -> TickRunnerResult:
@@ -272,9 +274,11 @@ class IzTest:
         Returns:
             添加用装饰器
         """
+
         def _decorator(func):
             self.check_tests_end_callback = func
             return func
+
         return _decorator
 
     def set_flow_factory(self,
@@ -390,7 +394,7 @@ class IzTest:
             for _ in range(self.repeat_time):
                 __one_test()
             result = self._success_count / self.repeat_time
-        
+
         ctler.before()
         if jump_frame:
             ctler.end_jump_frame()

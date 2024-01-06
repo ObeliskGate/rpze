@@ -1,4 +1,7 @@
 # -*- coding: utf_8 -*-
+"""
+注入, 打开游戏相关的函数和类.
+"""
 import os
 import subprocess
 from typing import overload
@@ -54,6 +57,12 @@ def inject(pids: list[int]) -> list[Controller]:
 
 
 class InjectedGame:
+    """
+    描述被注入游戏的类
+
+    Attributes:
+        controller: 被注入游戏的控制器
+    """
     @overload
     def __init__(self, process_id: int):
         """
@@ -127,24 +136,20 @@ class InjectedGame:
             ret;
             
             LDeleteChallengeScreen:
-            mov edx, {0x44fd00}; // LawnApp::KillChallengeScreen(esi = LawnApp* this)
-            call 0x44fd00;
+            call 0x44fd00;  // LawnApp::KillChallengeScreen(esi = LawnApp* this)
             jmp LPreNewGame;
             
             LCompleteLoading:
             mov ecx, esi;
-            mov edx, {0x452cb0}; // LawnApp::LoadingCompleted(ecx = LawnApp* this)
-            call edx;
+            call {0x452cb0}; // LawnApp::LoadingCompleted(ecx = LawnApp* this)
             
             LDeleteGameSelector:
-            mov edx, {0x44f9e0}; // LawnApp::KillGameSelector(esi = LawnApp* this)
-            call edx;
+            call {0x44f9e0}; // LawnApp::KillGameSelector(esi = LawnApp* this)
             
             LPreNewGame:
             push 0;
             push {level_num};
-            mov edx, {0x44f560}; // LawnApp::PreNewGame
-            call 0x44f560;
+            call 0x44f560;  // LawnApp::PreNewGame
             xor eax, eax;
             mov [{ctler.result_address}], eax;
             pop esi;

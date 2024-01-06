@@ -10,7 +10,7 @@ class Controller
 public:
 	explicit Controller(DWORD pid) : mem(pid) {}
 
-	inline DWORD pid() { return mem.getPid(); }
+	inline DWORD pid() const { return mem.getPid(); }
 
 	inline std::optional<int32_t> get_time() const
 	{
@@ -26,7 +26,7 @@ public:
 
 	inline void next_frame() { mem.next(); }
 
-	inline void before() { while (mem.isBlocked()) {} }
+	inline void before() const { while (mem.isBlocked()) {} }
 
 	inline bool start_jump_frame() { return mem.startJumpFrame(); }
 
@@ -46,9 +46,9 @@ public:
 
 	inline void start() { mem.startControl(); }
 
-	inline uint32_t result_address() { return mem.getWrittenAddress(); }
+	inline uint32_t result_address() const { return mem.getWrittenAddress(); }
 
-	inline uint32_t asm_address() { return mem.getAsmAddress(); }
+	inline uint32_t asm_address() const { return mem.getAsmAddress(); }
 
 	template<typename T>
 	T get_result() { static_assert(sizeof(T) <= 8);  return *static_cast<volatile T*>(mem.getReturnResult()); }
@@ -68,10 +68,10 @@ public:
 		*static_cast<volatile T*>(mem.getReturnResult()) = val;
 	}
 
-	std::optional<py::bytes> read_bytes(uint32_t size, const std::vector<uint32_t>& offsets)
+	py::object read_bytes(uint32_t size, const std::vector<uint32_t>& offsets)
 	{
 		auto p = mem.readBytes(size, offsets);
-		if (!p.has_value()) return {};
+		if (!p.has_value()) return py::none();
 		return py::bytes(*p);
 	}
 

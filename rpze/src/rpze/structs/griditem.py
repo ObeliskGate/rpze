@@ -10,13 +10,13 @@ from ..basic import asm
 
 
 class GriditemType(IntEnum):
-    none = 0,
-    grave = 0x1,
-    crater = 0x2,
-    ladder = 0x3,
-    brain_aq = 0x6,
-    vase = 0x7,
-    rake = 0xb,
+    none = 0
+    grave = 0x1
+    crater = 0x2
+    ladder = 0x3
+    brain_aq = 0x6
+    vase = 0x7
+    rake = 0xb
     brain = 0xc
 
 

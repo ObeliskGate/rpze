@@ -1,7 +1,12 @@
-# -*- coding: utf_8 -*- 
+# -*- coding: utf_8 -*-
+"""
+执行编译汇编相关的函数.
+"""
 from functools import lru_cache
-from ..rp_extend import Controller
+
 import keystone as ks
+
+from ..rp_extend import Controller
 
 
 def run(code: str, controller: Controller) -> bool:
@@ -16,7 +21,7 @@ def run(code: str, controller: Controller) -> bool:
     """
     r = decode(code, controller.asm_address)
     return controller.run_code(r)
-    
+
 
 __keystone_assembler = ks.Ks(ks.KS_ARCH_X86, ks.KS_MODE_32)
 

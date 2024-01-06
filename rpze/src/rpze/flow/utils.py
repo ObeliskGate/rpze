@@ -73,6 +73,7 @@ def delay(time: int) -> AwaitableCondFunc:
         if v.start_time + time - 1 <= fm.time:  # 所有CondFunc函数下一cs开始执行.
             return True
         return False
+
     return AwaitableCondFunc(_cond_func)
 
 
@@ -112,6 +113,7 @@ def until_plant_last_shoot(plant: Plant) -> AwaitableCondFunc:
     Args:
         plant: 要判断的植物
     """
+
     def _cond_func(fm: FlowManager,
                    v=VariablePool(try_to_shoot_time=None, is_shooting_flag=False)):
         if plant.generate_cd == 1:  # 下一帧开打
@@ -124,6 +126,7 @@ def until_plant_last_shoot(plant: Plant) -> AwaitableCondFunc:
             v.is_shooting_flag = False
             return t  # 上一轮是攻击的 且 这一轮不攻击 返回True
         return False
+
     return AwaitableCondFunc(_cond_func)
 
 

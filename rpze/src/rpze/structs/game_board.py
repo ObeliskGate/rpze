@@ -105,7 +105,7 @@ class GameBoard(ob.ObjBase):
             ret;'''
         asm.run(code, self._controller)
         return Plant(self._controller.result_u32, self._controller)
-    
+
     def iz_new_plant(self, row: int, col: int, type_: PlantType) -> Plant | None:
         """
         判断植物能否种植在指定格子内, 若能则种植植物并对植物进行我是僵尸关卡的特殊调整.
@@ -135,7 +135,7 @@ class GameBoard(ob.ObjBase):
             ret;"""
         asm.run(code, self._controller)
         return self.plant_list.find(next_idx)
-    
+
     def iz_place_zombie(self, row: int, col: int, type_: ZombieType) -> Zombie:
         """
         向指定位置放置僵尸.
@@ -292,7 +292,7 @@ class GameBoard(ob.ObjBase):
         ret.x = float(self.grid_to_pixel_x(0, 0) - 40)
         ret.y = float(self.grid_to_pixel_y(row, 0) + 40)
         return ret
-    
+
     def process_delete_queue(self) -> Self:
         """
         删除所有标记为回收的游戏对象
