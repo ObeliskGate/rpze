@@ -12,13 +12,6 @@ public:
 
 	inline DWORD pid() const { return mem.getPid(); }
 
-	inline std::optional<int32_t> get_time() const
-	{
-		auto t = mem.gameTime();
-		if (t == INT32_MIN) return {};
-		return t;
-	}
-
 	inline std::tuple<bool, uint32_t> get_p_board() const // 第一位返回true表示无须换新
 	{
 		return mem.getPBoard();

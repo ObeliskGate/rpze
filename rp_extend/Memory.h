@@ -47,8 +47,8 @@ public:
 	// 游戏运行状态
 	volatile RunState& runState() const { return getRef<RunState>(4); }
 
-	// 游戏当前时间
-	volatile int32_t& gameTime() const { return getRef<int32_t>(8); }
+	// // 游戏当前时间
+	// volatile int32_t& gameTime() const { return getRef<int32_t>(8); }
 
 	//  跳帧时怎么运行游戏
 	volatile PhaseCode& jumpingPhaseCode() const { return getRef<PhaseCode>(12); }

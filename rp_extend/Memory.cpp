@@ -118,8 +118,7 @@ std::optional<std::string> Memory::readBytes(uint32_t size, const std::vector<ui
 				basePtr += offsets[i];
 			}
 			if (!basePtr) break;
-			std::string ret;
-			ret.resize(size);
+			std::string ret(size, '\0');
 			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), ret.data(), size, nullptr);
 			CloseHandle(hPvz);
 			return ret;

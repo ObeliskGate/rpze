@@ -39,11 +39,8 @@ class GameBoard(ob.ObjBase):
     is_dance_mode = ob.property_bool(0x5765, "在dance秘籍时中为True")
 
     sun_num = ob.property_i32(0x5560, "阳光数量")
-
-    @property
-    def game_time(self) -> int:
-        """游戏时间(包括选卡停留的时间)"""
-        return self._controller.get_time()
+    
+    game_time = ob.property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
 
     @property
     def mj_clock(self) -> int:
