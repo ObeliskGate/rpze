@@ -48,6 +48,8 @@ public:
 
 	inline uint32_t result_address() { return mem.getWrittenAddress(); }
 
+	inline uint32_t asm_address() { return mem.getAsmAddress(); }
+
 	template<typename T>
 	T get_result() { static_assert(sizeof(T) <= 8);  return *static_cast<volatile T*>(mem.getReturnResult()); }
 

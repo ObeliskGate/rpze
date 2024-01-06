@@ -67,8 +67,7 @@ class Projectile(ob.ObjNode):
         """
         code = f"""
             mov eax, {self.base_ptr};
-            mov edx, {0x46EB20};  // Projectile::Die
-            call edx;
+            call {0x46EB20};  // Projectile::Die
             ret;"""
         asm.run(code, self._controller)
     
@@ -79,26 +78,22 @@ class ProjectileList(ob.obj_list(Projectile)):
         code = f"""
                 push edi;   
                 push esi;
-                push ebx;
-                mov ebx, {Projectile.ITERATOR_FUNC_ADDRESS};
-                mov edi, {0x46EB20};
+                mov edi, {p_board}
                 mov esi, {self._controller.result_address};
                 xor edx, edx;
                 mov [esi], edx;
                 LIterate:
-                    mov {Projectile.ITERATOR_P_BOARD_REG}, {p_board};
-                    call ebx;  // Board::IterateProjectile
+                    mov {Projectile.ITERATOR_P_BOARD_REG}, edi;
+                    call {Projectile.ITERATOR_FUNC_ADDRESS};  // Board::IterateProjectile
                     test al, al;
                     jz LFreeAll;
                     mov eax, [esi]
-                    call edi;  // Projectile::Die
+                    call {0x46EB20};  // Projectile::Die
                     jmp LIterate;
                     
                 LFreeAll:
                     mov edi, {self.base_ptr}
-                    mov edx, {0x41e600};  // DataArray<Zombie>::DataArrayFreeAll
-                    call edx;
-                    pop ebx;
+                    call {0x41e600};  // DataArray<Zombie>::DataArrayFreeAll
                     pop esi;
                     pop edi;
                     ret;"""

@@ -119,7 +119,7 @@ std::optional<std::string> Memory::readBytes(uint32_t size, const std::vector<ui
 			}
 			if (!basePtr) break;
 			std::string ret;
-			ret.reserve(size);
+			ret.resize(size);
 			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), ret.data(), size, nullptr);
 			CloseHandle(hPvz);
 			return ret;
@@ -201,7 +201,7 @@ void Memory::closeHook(HookPosition hook)
 	hookStateArr()[getHookIndex(hook)] = HookState::NOT_CONNECTED;
 }
 
-uint32_t Memory::getWrittenAddress()
+uint32_t Memory::getWrittenAddress() const
 {
 	return remoteMemoryAddress + 88;
 }

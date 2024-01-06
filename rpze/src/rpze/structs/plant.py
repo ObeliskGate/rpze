@@ -192,8 +192,7 @@ class Plant(ObjNode):
         """
         code = f"""
             push {self.base_ptr};
-            mov edx, {0x4679b0};  // Plant::Die
-            call edx;
+            call {0x4679b0};  // Plant::Die
             ret;"""
         asm.run(code, self._controller)
 
@@ -215,16 +214,14 @@ class PlantList(ob.obj_list(Plant)):
         code = f"""
             push esi;
             push edi;
-            push ebx;
             mov esi, {self._controller.result_address};
             xor eax, eax;
             mov [esi], eax;
             mov edi, {p_board};
-            mov ebx, {Plant.ITERATOR_FUNC_ADDRESS};
 
             LIterate:
                 mov {Plant.ITERATOR_P_BOARD_REG}, edi;
-                call ebx;  // Board::IteratePlant
+                call {Plant.ITERATOR_FUNC_ADDRESS};  // Board::IteratePlant
                 test al, al;
                 jz LNoResult;
                 mov eax, [esi];  // eax = Plant*
@@ -232,7 +229,6 @@ class PlantList(ob.obj_list(Plant)):
                 jne LIterate;
                 cmp dword ptr [eax + {Plant.col.offset}], {col};
                 jne LIterate;
-                pop ebx;
                 pop edi;
                 pop esi;
                 ret;
@@ -240,7 +236,6 @@ class PlantList(ob.obj_list(Plant)):
             LNoResult:
                 xor eax, eax;
                 mov [esi], eax;
-                pop ebx;
                 pop edi;
                 pop esi;
                 ret;"""
@@ -270,26 +265,22 @@ class PlantList(ob.obj_list(Plant)):
         code = f"""
             push esi;
             push ebx;
-            push edi;
-            mov ebx, {Plant.ITERATOR_FUNC_ADDRESS};
-            mov edi, {0x4679b0};
+            mov ebx, {p_board};
             mov esi, {self._controller.result_address};
             xor edx, edx;
             mov [esi], edx;  // mov [esi], 0 is invalid
             LIterate:
-                mov {Plant.ITERATOR_P_BOARD_REG}, {p_board};
-                call ebx;  // Board::IteratePlant
+                mov {Plant.ITERATOR_P_BOARD_REG}, ebx;
+                call {Plant.ITERATOR_FUNC_ADDRESS};  // Board::IteratePlant
                 test al, al;
                 jz LFreeAll;
                 push dword ptr [esi];
-                call edi;  // Plant::Die
+                call {0x4679b0};  // Plant::Die
                 jmp LIterate;
                 
             LFreeAll:
                 mov eax, {self.base_ptr};
-                mov edx, {0x41E590}; // DataArray<Plant>::DataArrayFreeAll
-                call edx;
-                pop edi;
+                call {0x41E590}; // DataArray<Plant>::DataArrayFreeAll
                 pop ebx;
                 pop esi;
                 ret;"""

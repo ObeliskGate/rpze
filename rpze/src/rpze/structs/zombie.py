@@ -225,8 +225,7 @@ class Zombie(ob.ObjNode):
         """
         code = f"""
             mov ecx, {self.base_ptr};
-            mov edx, {0x530510}; // Zombie::DieNoLoot
-            call edx;
+            call {0x530510}; // Zombie::DieNoLoot
             ret;"""
         asm.run(code, self._controller)
 
@@ -237,26 +236,22 @@ class ZombieList(ob.obj_list(Zombie)):
         code = f"""
             push edi;
             push esi;
-            push ebx;
-            mov ebx, {Zombie.ITERATOR_FUNC_ADDRESS};
-            mov edi, {0x530510};
+            mov edi, {p_board};
             mov esi, {self._controller.result_address};
             xor edx, edx;
             mov [esi], edx;
             LIterate:
-                mov {Zombie.ITERATOR_P_BOARD_REG}, {p_board};
-                call ebx;  // Board::IterateZombie
+                mov {Zombie.ITERATOR_P_BOARD_REG}, edi;
+                call {Zombie.ITERATOR_FUNC_ADDRESS};  // Board::IterateZombie
                 test al, al;
                 jz LFreeAll;
                 mov ecx, [esi]
-                call edi;  // Zombie::DieNoLoot
+                call {0x530510};  // Zombie::DieNoLoot
                 jmp LIterate;
                 
             LFreeAll:
                 mov edi, {self.base_ptr}
-                mov edx, {0x41e4d0};  // DataArray<Zombie>::DataArrayFreeAll
-                call edx;
-                pop ebx;
+                call {0x41e4d0};  // DataArray<Zombie>::DataArrayFreeAll
                 pop esi;
                 pop edi;
                 ret;"""

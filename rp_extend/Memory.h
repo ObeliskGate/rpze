@@ -147,7 +147,9 @@ public:
 
 	inline bool hookConnected(HookPosition hook) const { return globalState() == HookState::CONNECTED && hookStateArr()[getHookIndex(hook)] == HookState::CONNECTED; }
 
-	uint32_t getWrittenAddress();
+	uint32_t getWrittenAddress() const;
+
+	uint32_t getAsmAddress() const { return remoteMemoryAddress + BUFFER_OFFSET; }
 
 	inline std::tuple<bool, uint32_t> getPBoard() const // 第一位返回0表示无须换新
 	{

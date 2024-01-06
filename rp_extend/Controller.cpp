@@ -55,6 +55,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("write_f64", &Controller::write_memory<double>)
 
 		.def_property_readonly("result_address", &Controller::result_address)
+		.def_property_readonly("asm_address", &Controller::asm_address)
 		.def_property("result_bool", &Controller::get_result<bool>, &Controller::set_result<bool>)
 		.def_property("result_i8", &Controller::get_result<int8_t>, &Controller::set_result<int8_t>)
 		.def_property("result_i16", &Controller::get_result<int16_t>, &Controller::set_result<int16_t>)

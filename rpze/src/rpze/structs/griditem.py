@@ -56,8 +56,7 @@ class Griditem(ob.ObjNode):
         code = f"""
             push esi;
             mov esi, {self.base_ptr};
-            mov edx, {0x44D000}
-            call edx; // Griditem::GriditemDie
+            call {0x44D000}  // Griditem::GriditemDie
             ret;"""
         asm.run(code, self._controller)
 
@@ -73,8 +72,7 @@ class GriditemList(ob.obj_list(Griditem)):
         code = f"""
             push esi;
             mov esi, {self.base_ptr};
-            mov edx, {0x41E1C0};  // DataArray<GridItem>::DataArrayAlloc
-            call edx;
+            call {0x41E1C0};  // DataArray<GridItem>::DataArrayAlloc
             mov [{self._controller.result_address}], eax;
             pop esi;
             ret;"""
@@ -84,31 +82,30 @@ class GriditemList(ob.obj_list(Griditem)):
     def free_all(self) -> Self:
         p_board = self._controller.get_p_board()[1]
         code = f"""
+                push ebx;
                 push edi;
                 push esi;
-                push ebx;
-                mov ebx, {Griditem.ITERATOR_FUNC_ADDRESS};
-                mov edi, {0x44D000};
-                mov esi, {self._controller.result_address};
+                mov edi, {p_board};
+                mov ebx, {self._controller.result_address}
+                mov esi, ebx;
                 xor edx, edx;
                 mov [esi], edx;
                 LIterate:
-                    mov {Griditem.ITERATOR_P_BOARD_REG}, {p_board};
-                    call ebx;  // Board::IterateGriditem
+                    mov {Griditem.ITERATOR_P_BOARD_REG}, edi;
+                    call {Griditem.ITERATOR_FUNC_ADDRESS};  // Board::IterateGriditem
                     test al, al;
                     jz LFreeAll;
                     mov esi, [esi];
-                    call edi;  // Griditem::GriditemDie
-                    mov esi, {self._controller.result_address};
+                    call {0x44D000};  // Griditem::GriditemDie
+                    mov esi, ebx;
                     jmp LIterate;
                     
                 LFreeAll:
                     mov eax, {self.base_ptr}
-                    mov edx, {0x41E7D0};  // DataArray<Griditem>::DataArrayFreeAll
-                    call edx;
-                    pop ebx;
+                    call {0x41E7D0};  // DataArray<Griditem>::DataArrayFreeAll
                     pop esi;
                     pop edi;
+                    pop ebx;
                     ret;"""
         asm.run(code, self._controller)
         return self

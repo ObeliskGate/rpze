@@ -128,7 +128,7 @@ class InjectedGame:
             
             LDeleteChallengeScreen:
             mov edx, {0x44fd00}; // LawnApp::KillChallengeScreen(esi = LawnApp* this)
-            call edx;
+            call 0x44fd00;
             jmp LPreNewGame;
             
             LCompleteLoading:
@@ -144,7 +144,7 @@ class InjectedGame:
             push 0;
             push {level_num};
             mov edx, {0x44f560}; // LawnApp::PreNewGame
-            call edx;
+            call 0x44f560;
             xor eax, eax;
             mov [{ctler.result_address}], eax;
             pop esi;

@@ -468,8 +468,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                 push esi;
                 mov esi, {self._controller.result_address};
                 mov {node_cls.ITERATOR_P_BOARD_REG}, {p_board};
-                mov ecx, {node_cls.ITERATOR_FUNC_ADDRESS};
-                call ecx;
+                call {node_cls.ITERATOR_FUNC_ADDRESS};
                 mov [esi + 4], al;
                 pop esi;
                 ret;"""  # 可恶的reg优化
@@ -516,7 +515,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
 
         def __invert__(self):
             if self._iterate_func_asm is None:
-                self._iterate_func_asm = asm.decode(self._code)
+                self._iterate_func_asm = asm.decode(self._code, self._controller.result_address)
             return _ObjIterator(self._controller, self._iterate_func_asm)
 
         def reset_stack(self):
