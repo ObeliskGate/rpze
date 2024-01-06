@@ -450,7 +450,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
 
         def __next__(self) -> _T:
             self._controller.result_u64 = self._current_ptr
-            self._controller.run_code(self._iterate_func_asm, len(self._iterate_func_asm))
+            self._controller.run_code(self._iterate_func_asm)
             if (self._controller.result_u64 >> 32) == 0:
                 raise StopIteration
             self._current_ptr = self._controller.result_u32

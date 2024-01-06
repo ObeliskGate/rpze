@@ -2,6 +2,9 @@
 #include "pch.h"
 #include "Enums.h"
 
+
+constexpr uint32_t BUFFER_OFFSET = 4096;
+
 class SharedMemory
 {
 	static SharedMemory* instancePtr;
@@ -47,7 +50,7 @@ public:
 	// 跳帧时游戏的运行状态
 	inline volatile RunState& jumpingRunState() const { return getRef<RunState>(16); }
 
-	// 读写内存时 要读写的内存的位数, 最大为8
+	// 读写内存时 要读写的内存的位数
 	inline volatile const uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
 
 
@@ -57,11 +60,8 @@ public:
 	// 读写内存时的偏移, 如{0x6a9ec0, 0x768, OFFSET_END, ...}, 遇到OFFSET_END停止读取
 	inline volatile uint32_t* getOffsets() const { return reinterpret_cast<uint32_t*>(getPtr() + 24); }
 
-	// 占位8个字节, 读写内存时 指向写入的内存的内容的指针
-	inline void* getWrittenVal() const { return getPtr() + 64; }
-
-	// 占位8个字节, 读写内存时 指向读取内存结果的指针
-	inline void* getReadResult() const { return getPtr() + 72; }
+	// 占位8个字节, 读写内存时 指向值 / 结果的指针
+	inline void* getReadWriteVal() const { return getPtr() + BUFFER_OFFSET; }
 
 	// 全局状态
 	inline volatile HookState& globalState() const { return getRef<HookState>(80); }
@@ -82,8 +82,8 @@ public:
 	// hook位置的状态
 	inline volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 104); }
 
-	// 用来存放asm的指针, 从600开始
-	inline void* getAsmPtr() const { return getPtr() + 600; }
+	// 用来存放asm的指针, 从1024开始
+	inline void* getAsmPtr() const { return getPtr() + BUFFER_OFFSET; }
 
 	// 读内存
 	bool readMemory();

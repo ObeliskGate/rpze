@@ -10,7 +10,7 @@ void Memory::getRemoteMemoryAddress()
 
 	if (executeResult() == ExecuteResult::SUCCESS)
 	{
-		remoteMemoryAddress = *static_cast<volatile uint32_t*>(getReadResult());
+		remoteMemoryAddress = *static_cast<volatile uint32_t*>(getReadWriteVal());
 	}
 	else throw std::exception("unexpected behavior");
 }
@@ -24,7 +24,7 @@ Memory::Memory(DWORD pid)
 		std::cerr << "find shared memory failed: " << GetLastError() << std::endl;
 		throw std::exception("find shared memory failed");
 	}
-	pBuf = MapViewOfFile(hMemory, FILE_MAP_ALL_ACCESS, 0, 0, 1024);
+	pBuf = MapViewOfFile(hMemory, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
 	if (pBuf == NULL)
 	{
 		std::cerr << "create shared memory failed: " << GetLastError() << std::endl;
@@ -42,28 +42,23 @@ Memory::Memory(DWORD pid)
 	endControl();
 }
 
-std::optional<volatile void*> Memory::_readMemory(BYTE size, const std::vector<uint32_t>& offsets)
+std::optional<volatile void*> Memory::_readMemory(uint32_t size, const std::vector<uint32_t>& offsets)
 {
 	memoryNum() = size;
 	CopyMemory(getOffsets(), offsets.data(), sizeof(uint32_t) * offsets.size());
 	getOffsets()[offsets.size()] = OFFSET_END;
 	auto c = getCurrentPhaseCode();
-	// std::cout << static_cast<int>(c) << std::endl;
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);//等待执行完成
-	// if (offsets.size() == 1)
-	// {
-	// 	std::cout << offsets[0] << ' ' << *static_cast<volatile int*>(getReadResult()) << std::endl;
-	// }
-	if (executeResult() == ExecuteResult::SUCCESS) return getReadResult();
+	if (executeResult() == ExecuteResult::SUCCESS) return getReadWriteVal();
 	if (executeResult() == ExecuteResult::FAIL) return {};
 	throw std::exception("unexpected behavior of _readMemory");
 }
 
-bool Memory::_writeMemory(const void* pVal, BYTE size, const std::vector<uint32_t>& offsets)
+bool Memory::_writeMemory(const void* pVal, uint32_t size, const std::vector<uint32_t>& offsets)
 {
 	memoryNum() = size;
-	CopyMemory(getWrittenVal(), pVal, size);
+	CopyMemory(getReadWriteVal(), pVal, size);
 	CopyMemory(getOffsets(), offsets.data(), sizeof(uint32_t) * offsets.size());
 	getOffsets()[offsets.size()] = OFFSET_END;
 
@@ -76,6 +71,10 @@ bool Memory::_writeMemory(const void* pVal, BYTE size, const std::vector<uint32_
 
 bool Memory::startJumpFrame()
 {
+	if (!hookConnected(HookPosition::MAIN_LOOP))
+	{
+		throw std::exception("startJumpFrame: main loop hook not connected");
+	}
 	if (isJumpingFrame) return false;
 	isJumpingFrame = true;
 	pCurrentPhaseCode = &jumpingPhaseCode();
@@ -87,6 +86,10 @@ bool Memory::startJumpFrame()
 
 bool Memory::endJumpFrame()
 {
+	if (!hookConnected(HookPosition::MAIN_LOOP))
+	{
+		throw std::exception("endJumpFrame: main loop hook not connected");
+	}
 	if (!isJumpingFrame) return false;
 	isJumpingFrame = false;
 	pCurrentPhaseCode = &phaseCode();
@@ -96,14 +99,75 @@ bool Memory::endJumpFrame()
 	return true;
 }
 
-bool Memory::runCode(const char* codes, int num)
+std::optional<std::string> Memory::readBytes(uint32_t size, const std::vector<uint32_t>& offsets)
 {
-	if (num > 400)
+	if (size > BUFFER_SIZE)
 	{
-		executeResult() = ExecuteResult::FAIL;
+		throw std::exception("readBytes: too many bytes");
+	}
+	if (!hookConnected(HookPosition::MAIN_LOOP))
+	{
+		HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+		uint64_t basePtr = offsets[0];
+		do
+		{
+			for (size_t i = 1; i < offsets.size(); i++)
+			{
+				ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(uint32_t), nullptr);
+				if (!basePtr) break;
+				basePtr += offsets[i];
+			}
+			if (!basePtr) break;
+			std::string ret;
+			ret.reserve(size);
+			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), ret.data(), size, nullptr);
+			CloseHandle(hPvz);
+			return ret;
+		} while (false);
+		CloseHandle(hPvz);
+		return {};
+	}
+	auto p = _readMemory(size, offsets);
+	if (!p.has_value()) return {};
+	return std::string(const_cast<char*>(static_cast<volatile char*>(*p)), size);
+}
+
+bool Memory::writeBytes(const std::string& in, const std::vector<uint32_t>& offsets)
+{
+	if (in.size() > BUFFER_SIZE)
+	{
+		throw std::exception("writeBytes: too many bytes");
+	}
+	if (!hookConnected(HookPosition::MAIN_LOOP))
+	{
+		HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+		uint64_t basePtr = offsets[0];
+		do
+		{
+			for (size_t i = 1; i < offsets.size(); i++)
+			{
+				ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(uint32_t), nullptr);
+				if (!basePtr) break;
+				basePtr += offsets[i];
+			}
+			if (!basePtr) break;
+			WriteProcessMemory(hPvz, reinterpret_cast<LPVOID>(basePtr), in.data(), in.size(), nullptr);
+			CloseHandle(hPvz);
+			return true;
+		} while (false);
+		CloseHandle(hPvz);
+		return false;
+	}
+	return _writeMemory(in.data(), in.size(), offsets);
+}
+
+bool Memory::runCode(const std::string& codes) const
+{
+	if (codes.size() > 4096)
+	{
 		throw std::exception("runCode: too many codes");
 	}
-	CopyMemory(getAsmPtr(), codes, num);
+	CopyMemory(getAsmPtr(), codes.data(), codes.size());
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
 	if (executeResult() == ExecuteResult::SUCCESS) return true;

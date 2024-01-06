@@ -12,14 +12,14 @@ SharedMemory::SharedMemory()
 		nullptr,                
 		PAGE_READWRITE,    
 		0,                      
-		1024,                
+		SHARED_MEMORY_SIZE,
 		sharedMemoryName.c_str());
 	if (!hMapFile)
 	{
 		std::cout << "cannot create shared memory: " << GetLastError() << std::endl;
 		throw std::exception("cannot create shared memory");
 	}
-	sharedMemoryPtr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 1024);
+	sharedMemoryPtr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
 	if (sharedMemoryPtr)
 	{
 		std::cout << "create shared memory success" << std::endl;
@@ -69,7 +69,7 @@ bool SharedMemory::deleteInstance()
 
 bool SharedMemory::readMemory()
 {
-	*static_cast<volatile uint64_t*>(getReadResult()) = 0;
+	*static_cast<volatile uint64_t*>(getReadWriteVal()) = 0;
 	bool b = false;
 	do
 	{
@@ -79,7 +79,7 @@ bool SharedMemory::readMemory()
 			b = false;
 			break;
 		}
-		memcpy(const_cast<void*>(getReadResult()), *p, memoryNum());
+		memcpy(getReadWriteVal(), *p, memoryNum());
 		b = true;
 		// std::cout << *p << ' ' << *(int*)*p << ' ' << *static_cast<volatile uint64_t*>(getReadResult()) << std::endl;
 	} while (false);
@@ -97,7 +97,7 @@ bool SharedMemory::writeMemory()
 			b = false;
 			break;
 		}
-		memcpy(*p, const_cast<const void*>(getWrittenVal()), memoryNum());
+		memcpy(*p, getReadWriteVal(), memoryNum());
 		b = true;
 	} while (false);
 	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;

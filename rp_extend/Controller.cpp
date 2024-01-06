@@ -25,6 +25,9 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("open_hook", &Controller::open_hook)
 		.def("close_hook", &Controller::close_hook)
 
+		.def("read_bytes", &Controller::read_bytes)
+		.def("write_bytes", &Controller::write_bytes)
+
 		// read
 		.def("read_bool", &Controller::read_memory<bool>)
 		.def("read_i8", &Controller::read_memory<int8_t>)

@@ -40,7 +40,7 @@ public:
 	inline bool write_memory(T&& val, const std::vector<uint32_t>& offsets) 
 	{ return mem.writeMemory(std::forward<T>(val), offsets); }
 	
-	inline bool run_code(const char* codes, int num) { return mem.runCode(codes, num); }
+	inline bool run_code(const py::bytes& codes) const { return mem.runCode(codes); }
 
 	inline void end() { mem.endControl(); }
 
@@ -64,5 +64,17 @@ public:
 	{
 		static_assert(sizeof(T) <= 8);
 		*static_cast<volatile T*>(mem.getReturnResult()) = val;
+	}
+
+	std::optional<py::bytes> read_bytes(uint32_t size, const std::vector<uint32_t>& offsets)
+	{
+		auto p = mem.readBytes(size, offsets);
+		if (!p.has_value()) return {};
+		return py::bytes(*p);
+	}
+
+	bool write_bytes(const py::bytes& in, const std::vector<uint32_t>& offsets)
+	{
+		return mem.writeBytes(in, offsets);
 	}
 };

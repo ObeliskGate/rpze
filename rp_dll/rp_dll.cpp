@@ -81,7 +81,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		case PhaseCode::READ_MEMORY_PTR:
 		{
 			auto s = SharedMemory::getInstance();
-			*static_cast<volatile uint32_t*>(s->getReadResult()) = reinterpret_cast<uint32_t>(s->getSharedMemoryPtr());
+			*static_cast<volatile uint32_t*>(s->getReadWriteVal()) = reinterpret_cast<uint32_t>(s->getSharedMemoryPtr());
 			s->executeResult() = ExecuteResult::SUCCESS;
 			phaseCode = PhaseCode::WAIT;
 			continue;

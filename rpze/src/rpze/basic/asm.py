@@ -15,7 +15,7 @@ def run(code: str, controller: Controller) -> bool:
         执行成功返回True
     """
     r = decode(code)
-    return controller.run_code(r, len(r))
+    return controller.run_code(r)
     
 
 __keystone_assembler = ks.Ks(ks.KS_ARCH_X86, ks.KS_MODE_32)
