@@ -27,6 +27,9 @@ class Memory
 	// pvz进程id
 	DWORD pid = 0;
 public:
+	static constexpr uint32_t BUFFER_OFFSET = 4096;
+	static constexpr uint32_t BUFFER_SIZE = SHARED_MEMORY_SIZE - BUFFER_OFFSET;
+
 	explicit Memory(DWORD pid);
 
 	~Memory() { 
@@ -36,72 +39,69 @@ public:
 		CloseHandle(hMemory);  
 	}
 
-	inline DWORD getPid() const { return pid; }
+	DWORD getPid() const { return pid; }
 
 	// 怎么运行游戏
-	inline volatile PhaseCode& phaseCode() const { return getRef<PhaseCode>(0); }
+	volatile PhaseCode& phaseCode() const { return getRef<PhaseCode>(0); }
 
 	// 游戏运行状态
-	inline volatile RunState& runState() const { return getRef<RunState>(4); }
+	volatile RunState& runState() const { return getRef<RunState>(4); }
 
-	// 游戏当前时间
-	inline volatile int32_t& gameTime() const { return getRef<int32_t>(8); }
+	// // 游戏当前时间
+	// volatile int32_t& gameTime() const { return getRef<int32_t>(8); }
 
 	//  跳帧时怎么运行游戏
-	inline volatile PhaseCode& jumpingPhaseCode() const { return getRef<PhaseCode>(12); }
+	volatile PhaseCode& jumpingPhaseCode() const { return getRef<PhaseCode>(12); }
 
 	// 跳帧时游戏的运行状态
-	inline volatile RunState& jumpingRunState() const { return getRef<RunState>(16); }
+	volatile RunState& jumpingRunState() const { return getRef<RunState>(16); }
 
-	// 读写内存时 要读写的内存的位数, 最大为8
-	inline volatile uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
+	// 读写内存时 要读写的内存的位数
+	volatile uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
 
 
 # undef max  // sb macro
 	static constexpr size_t LENGTH = 10;
 	static constexpr uint32_t OFFSET_END = std::numeric_limits<uint32_t>::max();
 	// 读写内存时的偏移, 如{0x6a9ec0, 0x768, OFFSET_END, ...}, 遇到OFFSET_END停止读取
-	inline uint32_t* getOffsets() const { return reinterpret_cast<uint32_t*>(getPtr() + 24); }
+	inline uint32_t* getOffsets() { return reinterpret_cast<uint32_t*>(getPtr() + 24); }
 
-	// 占位8个字节, 读写内存时 指向共享内存中写入的内存的内容的指针
-	inline void* getWrittenVal() const { return getPtr() + 64; }
-
-	// 占位8个字节, 读写内存时 指向读取内存结果的指针
-	inline void* getReadResult() const { return static_cast<void*>(getPtr() + 72); }
+	// 占位8个字节, 读写内存时 指向值 / 结果的指针
+	void* getReadWriteVal() const { return getPtr() + BUFFER_OFFSET; }
 	
 	// 获得全局状态
-	inline volatile HookState& globalState() const { return getRef<HookState>(80); }
+	volatile HookState& globalState() const { return getRef<HookState>(80); }
 
 	// 读写结果
-	inline volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(84); }
+	volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(84); }
 
 	// 8字节 返回结果
-	inline volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + 88);  }
+	volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + 88);  }
 
 	// p_board指针
-	inline volatile uint32_t& boardPtr() const { return getRef<uint32_t>(96); }
+	volatile uint32_t& boardPtr() const { return getRef<uint32_t>(96); }
 
 	// pBoard指针效验位
-	inline volatile bool& isBoardPtrValid() const { return getRef<bool>(100); }
+	volatile bool& isBoardPtrValid() const { return getRef<bool>(100); }
 
 	// 开10个
 	// hook位置的状态
-	inline volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 104); }
+	volatile HookState* hookStateArr() { return reinterpret_cast<HookState*>(getPtr() + 104); }
 
 
-	// 用来存放asm的指针, 从600开始
-	inline void* getAsmPtr() const { return getPtr() + 600; }
+	// 用来存放asm的指针
+	void* getAsmPtr() const { return getPtr() + BUFFER_OFFSET; }
 
-	inline volatile PhaseCode& getCurrentPhaseCode() const { return *pCurrentPhaseCode; }
+	volatile PhaseCode& getCurrentPhaseCode() const { return *pCurrentPhaseCode; }
 
-	inline volatile RunState& getCurrentRunState() const { return *pCurrentRunState; }
+	volatile RunState& getCurrentRunState() const { return *pCurrentRunState; }
 
 
 	// 读取内存, 但是没有杂七杂八的检查
-	std::optional<volatile void*> _readMemory(BYTE size, const std::vector<uint32_t>& offsets);
+	std::optional<volatile void*> _readMemory(uint32_t size, const std::vector<uint32_t>& offsets);
 
 	// 写入内存, 但是没有杂七杂八的检查
-	bool _writeMemory(const void* pVal, BYTE size, const std::vector<uint32_t>& offsets);
+	bool _writeMemory(const void* pVal, uint32_t size, const std::vector<uint32_t>& offsets);
 
 	template<typename T>
 	std::optional<T> _readRemoteMemory(const std::vector<uint32_t>& offsets);
@@ -112,7 +112,7 @@ public:
 	// 主要接口
 
 	// 跳到下一帧
-	inline void next() { getCurrentPhaseCode() = PhaseCode::CONTINUE; }
+	void next() const { getCurrentPhaseCode() = PhaseCode::CONTINUE; }
 	
 	// 开始跳帧, 若已在跳帧返回false
 	bool startJumpFrame();
@@ -131,7 +131,11 @@ public:
 	template<typename T>
 	bool writeMemory(T&& val, const std::vector<uint32_t>& offsets);
 
-	bool runCode(const char* codes, int num);
+	std::optional<std::string> readBytes(uint32_t size, const std::vector<uint32_t>& offsets);
+
+	bool writeBytes(const std::string& in, const std::vector<uint32_t>& offsets);
+
+	bool runCode(const std::string& codes) const;
 
 	void startControl();
 
@@ -141,7 +145,11 @@ public:
 
 	void closeHook(HookPosition hook);
 
-	uint32_t getWrittenAddress();
+	bool hookConnected(HookPosition hook) { return globalState() == HookState::CONNECTED && hookStateArr()[getHookIndex(hook)] == HookState::CONNECTED; }
+
+	uint32_t getWrittenAddress() const;
+
+	uint32_t getAsmAddress() const { return remoteMemoryAddress + BUFFER_OFFSET; }
 
 	inline std::tuple<bool, uint32_t> getPBoard() const // 第一位返回0表示无须换新
 	{
@@ -160,7 +168,7 @@ std::optional<T> Memory::_readRemoteMemory(const std::vector<uint32_t>& offsets)
 	{
 		for (size_t i = 1; i < offsets.size(); i++)
 		{
-			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(int32_t), nullptr);
+			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(uint32_t), nullptr);
 			if (!basePtr) break;
 			basePtr += offsets[i];
 		}
@@ -183,7 +191,7 @@ bool Memory::_writeRemoteMemory(T&& val, const std::vector<uint32_t>& offsets)
 	{
 		for (size_t i = 1; i < offsets.size(); i++)
 		{
-			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(int32_t), nullptr);
+			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(uint32_t), nullptr);
 			if (!basePtr) break;
 			basePtr += offsets[i];
 		}
@@ -199,22 +207,19 @@ bool Memory::_writeRemoteMemory(T&& val, const std::vector<uint32_t>& offsets)
 template<typename T>
 inline std::optional<T> Memory::readMemory(const std::vector<uint32_t>& offsets)
 {
-	static_assert(sizeof(T) <= 8, "Please assert sizeof(T) <= 8. ");
+	static_assert(sizeof(T) <= BUFFER_SIZE);
 	if (offsets.size() > 10) return {};
-	if (globalState() == HookState::NOT_CONNECTED || hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) 
-		return _readRemoteMemory<T>(offsets);
+	if (!hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets);
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p.has_value()) return {};
 	return *static_cast<volatile T*>(*p);
-
 }
 
 template<typename T>
 inline bool Memory::writeMemory(T&& val, const std::vector<uint32_t>& offsets)
 {
-	static_assert(sizeof(T) <= 8, "Please assert sizeof(T) <= 8.");
+	static_assert(sizeof(T) <= BUFFER_SIZE);
 	if (offsets.size() > 10) return false;
-	if (globalState() == HookState::NOT_CONNECTED || hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) 
-		return _writeRemoteMemory(std::forward<T>(val), offsets);
+	if (!hookConnected(HookPosition::MAIN_LOOP)) return _writeRemoteMemory(std::forward<T>(val), offsets);
 	return _writeMemory(&val, sizeof(T), offsets);
 }

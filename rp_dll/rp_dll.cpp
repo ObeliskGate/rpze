@@ -81,7 +81,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 		case PhaseCode::READ_MEMORY_PTR:
 		{
 			auto s = SharedMemory::getInstance();
-			*static_cast<volatile uint32_t*>(s->getReadResult()) = reinterpret_cast<uint32_t>(s->getSharedMemoryPtr());
+			*static_cast<volatile uint32_t*>(s->getReadWriteVal()) = reinterpret_cast<uint32_t>(s->getSharedMemoryPtr());
 			s->executeResult() = ExecuteResult::SUCCESS;
 			phaseCode = PhaseCode::WAIT;
 			continue;
@@ -92,7 +92,6 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 
 void mainHook(const DWORD isInGame, const SharedMemory* pSharedMemory)
 {
-	pSharedMemory->gameTime() = readMemory<int32_t>(0x6a9ec0, { 0x768 , 0x556c }).value_or(INT32_MIN);
 	pSharedMemory->boardPtr() = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
 	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED || 
 		pSharedMemory->hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;

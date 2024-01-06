@@ -39,11 +39,8 @@ class GameBoard(ob.ObjBase):
     is_dance_mode = ob.property_bool(0x5765, "在dance秘籍时中为True")
 
     sun_num = ob.property_i32(0x5560, "阳光数量")
-
-    @property
-    def game_time(self) -> int:
-        """游戏时间(包括选卡停留的时间)"""
-        return self._controller.get_time()
+    
+    game_time = ob.property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
 
     @property
     def mj_clock(self) -> int:
@@ -77,8 +74,7 @@ class GameBoard(ob.ObjBase):
         code = f"""
             mov eax, {p_c};
             push {plant.base_ptr};
-            mov ecx, {0x42A530}; // Challenge::IZombieSetupPlant
-            call ecx;
+            call {0x42A530}; // Challenge::IZombieSetupPlant
             ret;"""
         asm.run(code, self._controller)
 
@@ -101,13 +97,12 @@ class GameBoard(ob.ObjBase):
             push {row};
             push {col};
             mov eax, {self.base_ptr};
-            mov edx,{0x40CE20};  // Board::NewPlant
-            call edx;
+            call {0x40CE20};  // Board::NewPlant
             mov [{self._controller.result_address}], eax;
             ret;'''
         asm.run(code, self._controller)
         return Plant(self._controller.result_u32, self._controller)
-    
+
     def iz_new_plant(self, row: int, col: int, type_: PlantType) -> Plant | None:
         """
         判断植物能否种植在指定格子内, 若能则种植植物并对植物进行我是僵尸关卡的特殊调整.
@@ -131,14 +126,13 @@ class GameBoard(ob.ObjBase):
             push {col};
             push {int(type_)};
             mov edi, {p_c};
-            mov ecx, {0x42a660}; // Challenge::IZombiePlacePlantInSquare
-            call ecx;  
+            call {0x42a660}; // Challenge::IZombiePlacePlantInSquare 
             pop edi;
             pop ebx;
             ret;"""
         asm.run(code, self._controller)
         return self.plant_list.find(next_idx)
-    
+
     def iz_place_zombie(self, row: int, col: int, type_: ZombieType) -> Zombie:
         """
         向指定位置放置僵尸.
@@ -160,8 +154,7 @@ class GameBoard(ob.ObjBase):
             push {col};
             push {int(type_)};
             mov ecx, {p_c};
-            mov edx, {0x42a0f0};  // Challenge::IZombiePlaceZombie
-            call edx;
+            call {0x42a0f0};  // Challenge::IZombiePlaceZombie
             ret;'''
         asm.run(code, self._controller)
         return self.zombie_list.at(ret_idx)
@@ -181,8 +174,7 @@ class GameBoard(ob.ObjBase):
             mov edi, {y};
             mov eax, {x};
             mov ecx, {self.base_ptr};
-            mov edx, {0x41c4c0};  // Board::PixelToGridX 
-            call edx;
+            call {0x41c4c0};  // Board::PixelToGridX 
             mov [{self._controller.result_address}], eax;
             pop edi;
             ret;"""
@@ -200,14 +192,11 @@ class GameBoard(ob.ObjBase):
             对应的行数, 0开始, 对地图外的点, 返回-1
         """
         code = f"""
-            push ebx;
             mov ecx, {y};
             mov eax, {x};
             mov edx, {self.base_ptr};
-            mov ebx, {0x41c550};  // Board::PixelToGridY
-            call ebx;
+            call {0x41c550};  // Board::PixelToGridY
             mov [{self._controller.result_address}], eax;
-            pop ebx;
             ret;"""
         asm.run(code, self._controller)
         return self._controller.result_i32
@@ -241,8 +230,7 @@ class GameBoard(ob.ObjBase):
             mov esi, {row};
             mov eax, {col};
             mov ecx, {self.base_ptr};
-            mov edx, {0x41C680};  // Board::GridToPixelX
-            call edx;
+            call {0x41C680};  // Board::GridToPixelX
             mov [{self._controller.result_address}], eax;
             pop esi;
             ret;"""
@@ -264,8 +252,7 @@ class GameBoard(ob.ObjBase):
             mov ebx, {self.base_ptr};
             mov eax, {row};
             mov ecx, {col};
-            mov edx, {0x41c740};  // Board::GridToPixelY
-            call edx;
+            call {0x41c740};  // Board::GridToPixelY
             mov [{self._controller.result_address}], eax;
             pop ebx;
             ret;"""
@@ -302,7 +289,7 @@ class GameBoard(ob.ObjBase):
         ret.x = float(self.grid_to_pixel_x(0, 0) - 40)
         ret.y = float(self.grid_to_pixel_y(row, 0) + 40)
         return ret
-    
+
     def process_delete_queue(self) -> Self:
         """
         删除所有标记为回收的游戏对象
@@ -313,8 +300,7 @@ class GameBoard(ob.ObjBase):
         code = f"""
             push esi;
             mov esi, {self.base_ptr};
-            mov edx, {0x41BAD0};  // Board::ProcessDeleteQueue
-            call edx;
+            call {0x41BAD0};  // Board::ProcessDeleteQueue
             pop esi;
             ret;"""
         asm.run(code, self._controller)

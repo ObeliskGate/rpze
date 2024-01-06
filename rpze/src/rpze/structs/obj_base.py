@@ -65,7 +65,7 @@ class ObjBase(abc.ABC):
             other : 另一个ObjBase对象
         """
         return self.base_ptr == other.base_ptr and (self._controller == other._controller)
-    
+
     def __ne__(self, other: typing.Self) -> bool:
         return not (self.base_ptr == other.base_ptr and (self._controller == other._controller))
 
@@ -85,6 +85,7 @@ class OffsetProperty(property):
     Attributes:
         offset: 属性在游戏中的偏移
     """
+
     def __init__(self, fget, fset, fdel, doc, offset):
         super().__init__(fget, fset, fdel, None)
         self.__doc__ = doc
@@ -262,7 +263,7 @@ class ObjId(ObjBase):
         except ValueError as ve:
             raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
         return self._controller.read_u32([self.base_ptr]) == ((rank << 16) | index)
-    
+
     def __ne__(self, val: typing.Self | tuple[int, int]) -> bool:
         return not (self.__eq__(val))
 
@@ -450,7 +451,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
 
         def __next__(self) -> _T:
             self._controller.result_u64 = self._current_ptr
-            self._controller.run_code(self._iterate_func_asm, len(self._iterate_func_asm))
+            self._controller.run_code(self._iterate_func_asm)
             if (self._controller.result_u64 >> 32) == 0:
                 raise StopIteration
             self._current_ptr = self._controller.result_u32
@@ -468,8 +469,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                 push esi;
                 mov esi, {self._controller.result_address};
                 mov {node_cls.ITERATOR_P_BOARD_REG}, {p_board};
-                mov ecx, {node_cls.ITERATOR_FUNC_ADDRESS};
-                call ecx;
+                call {node_cls.ITERATOR_FUNC_ADDRESS};
                 mov [esi + 4], al;
                 pop esi;
                 ret;"""  # 可恶的reg优化
@@ -516,7 +516,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
 
         def __invert__(self):
             if self._iterate_func_asm is None:
-                self._iterate_func_asm = asm.decode(self._code)
+                self._iterate_func_asm = asm.decode(self._code, self._controller.result_address)
             return _ObjIterator(self._controller, self._iterate_func_asm)
 
         def reset_stack(self):

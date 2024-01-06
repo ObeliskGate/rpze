@@ -1,7 +1,12 @@
-# -*- coding: utf_8 -*- 
+# -*- coding: utf_8 -*-
+"""
+执行编译汇编相关的函数.
+"""
 from functools import lru_cache
-from ..rp_extend import Controller
+
 import keystone as ks
+
+from ..rp_extend import Controller
 
 
 def run(code: str, controller: Controller) -> bool:
@@ -14,22 +19,23 @@ def run(code: str, controller: Controller) -> bool:
     Returns:
         执行成功返回True
     """
-    r = decode(code)
-    return controller.run_code(r, len(r))
-    
+    r = decode(code, controller.asm_address)
+    return controller.run_code(r)
+
 
 __keystone_assembler = ks.Ks(ks.KS_ARCH_X86, ks.KS_MODE_32)
 
 
 @lru_cache()
-def decode(code: str) -> bytes:
+def decode(code: str, addr: int = 0) -> bytes:
     """
     解码code汇编码
     
     Args:
         code: x86 intel格式汇编字符串
+        addr: 汇编码首字节地址
     Returns:
         解码后的字节码
     """
-    asm, _ = __keystone_assembler.asm(code, as_bytes=True)
+    asm, _ = __keystone_assembler.asm(code, addr, True)
     return asm

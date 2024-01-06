@@ -52,5 +52,5 @@ def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
             if plant_list["5-2"] is not None:
                 row_five_fail_count += 1
 
-    iz_test.start_test(jump_frame=False, speed_rate=5)
+    iz_test.start_test(jump_frame=True, speed_rate=5)
     print(row_one_fail_count, row_five_fail_count)

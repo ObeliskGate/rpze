@@ -49,7 +49,6 @@
     <Compile Include="src\rpze\structs\zombie.py" />
     <Compile Include="src\rpze\structs\__init__.py" />
     <Compile Include="src\rpze\__init__.py" />
-    <Compile Include="tests.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="CondaEnv|CondaEnv|312" />
