@@ -67,6 +67,7 @@ void testJumpFrame(Memory& mem)
 
 void testReadWriteMemory(Memory& mem)
 {
+	uint32_t sunPtr[] = {0x6a9ec0, 0x768, 0x5560 };
 	while (true)
 	{
 		if (mem.isBlocked()) continue;
@@ -77,14 +78,14 @@ void testReadWriteMemory(Memory& mem)
 			if (i == 'p')
 			{
 				std::cout << "p" << std::endl;
-				auto sun = mem.readMemory<int32_t>({ 0x6a9ec0, 0x768, 0x5560 });
+				auto sun = mem.readMemory<int32_t>(sunPtr, 3);
 				if (!sun.has_value()) std::cerr << "fail" << std::endl;
 				else std::cout << "success  " << *sun << std::endl;
 			}
 			else if (i == 'c')
 			{
 				std::cout << "c" << std::endl;
-				auto b = mem.writeMemory(8000, { 0x6a9ec0, 0x768, 0x5560 });
+				auto b = mem.writeMemory(8000, sunPtr, 3);
 				if (!b) std::cerr << "fail" << std::endl;
 				else std::cout << "success" << std::endl;
 			}

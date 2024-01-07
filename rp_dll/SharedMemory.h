@@ -40,8 +40,9 @@ public:
 	// 游戏运行状态
 	volatile RunState& runState() const { return getRef<RunState>(4); }
 
-	// // 游戏当前时间
-	// volatile int32_t& gameTime() const { return getRef<int32_t>(8); }
+	// pBoard指针
+	volatile uint32_t& boardPtr() const { return getRef<uint32_t>(8); }
+
 
 	//  跳帧时怎么运行游戏
 	volatile PhaseCode& jumpingPhaseCode() const { return getRef<PhaseCode>(12); }
@@ -54,32 +55,29 @@ public:
 
 
 #undef max
-	static constexpr size_t LENGTH = 10;
+	static constexpr size_t OFFSETS_LEN = 16;
 	static constexpr uint32_t OFFSET_END = std::numeric_limits<uint32_t>::max();
 	// 读写内存时的偏移, 如{0x6a9ec0, 0x768, OFFSET_END, ...}, 遇到OFFSET_END停止读取
 	volatile uint32_t* getOffsets() const { return reinterpret_cast<uint32_t*>(getPtr() + 24); }
 
 	// 占位8个字节, 读写内存时 指向值 / 结果的指针
-	void* getReadWriteVal() { return getPtr() + BUFFER_OFFSET; }
+	void* getReadWriteVal() const { return getPtr() + BUFFER_OFFSET; }
 
 	// 全局状态
-	volatile HookState& globalState() const { return getRef<HookState>(80); }
+	volatile HookState& globalState() const { return getRef<HookState>(90); }
 
 	// 执行结果
-	volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(84); }
+	volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(94); }
 
 	// 8字节 返回结果
-	void* returnResult() const { return getPtr() + 88; }
-
-	// pBoard指针
-	volatile uint32_t& boardPtr() const { return getRef<uint32_t>(96); }
+	void* returnResult() const { return getPtr() + 98; }
 
 	// pBoard指针效验位
-	volatile bool& isBoardPtrValid() const { return getRef<bool>(100); }
+	volatile bool& isBoardPtrValid() const { return getRef<bool>(106); }
 
-	// 开10个
+	static constexpr size_t HOOK_LEN = 16;
 	// hook位置的状态
-	volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 104); }
+	volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 112); }
 
 	// 用来存放asm的指针, 从1024开始
 	void* getAsmPtr() const { return getPtr() + BUFFER_OFFSET; }

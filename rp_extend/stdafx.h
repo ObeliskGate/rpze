@@ -13,6 +13,7 @@
 #include <vector>
 #include <limits>
 #include <pybind11/pybind11.h>
+#include <variant>
 
 constexpr wchar_t SHARED_MEMORY_NAME_AFFIX[] = L"rp_dll_shared_memory_";
 

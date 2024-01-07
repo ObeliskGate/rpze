@@ -68,3 +68,39 @@ PYBIND11_MODULE(rp_extend, m)
 		.def_property("result_f64", &Controller::get_result<double>, &Controller::set_result<double>);
 
 }
+
+uint32_t Controller::set_offset_arr_of_py_list(const py::list& offsets)
+{
+	auto len_ = static_cast<uint32_t>(offsets.size()); 
+	if (len_ > Memory::LENGTH)
+	{
+		throw std::exception("offsets too long"); 
+	}
+	for (uint32_t i = 0; i < (len_); ++i)
+	{
+		offset_buffer[i] = py::cast<uint32_t>(offsets[i]); 
+	}
+	return len_;
+}
+
+bool Controller::run_code(const py::bytes& codes) const
+{
+	auto sw = std::string_view(codes);
+	return mem.runCode(sw.data(), sw.size());
+}
+
+py::object Controller::read_bytes(uint32_t size, const py::list& offsets)
+{
+	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto buffer = std::make_unique<char[]>(size);
+	auto ret = mem.readBytes(buffer.get(), size, offset_buffer, len_);
+	if (ret) return py::bytes(buffer.get(), size);
+	return py::none();
+}
+
+bool Controller::write_bytes(const py::bytes& in, const py::list& offsets)
+{
+	auto sw = std::string_view(in);
+	auto len_ = set_offset_arr_of_py_list(offsets);
+	return mem.writeBytes(sw.data(), static_cast<uint32_t>(sw.size()), offset_buffer, len_);
+}

@@ -4,9 +4,26 @@
 #include <pybind11/stl.h>
 // 给Python侧暴露的类型
 
+// #define __GET_OFFSET_ARR_OF_PY_LIST(offset_arr_name, len_name, offsets) \
+// 	uint32_t offset_arr_name[Memory::LENGTH];\
+// 	uint32_t len_name = static_cast<uint32_t>((offsets).size());\
+// 	do {\
+// 		if ((len_name) > Memory::LENGTH)\
+// 		{\
+// 			throw std::exception("offsets too long");\
+// 		}\
+// 		for (uint32_t i = 0; i < (len_name); ++i)\
+// 		{\
+// 			(offset_buffer)[i] = py::cast<uint32_t>((offsets)[i]);\
+// 		}\
+// 	} while (0)
+
 class Controller
 {
 	Memory mem;
+	uint32_t offset_buffer[Memory::LENGTH] = {};
+
+	uint32_t set_offset_arr_of_py_list(const py::list& offsets);
 public:
 	explicit Controller(DWORD pid) : mem(pid) {}
 
@@ -17,7 +34,7 @@ public:
 		return mem.getPBoard();
 	}
 
-	inline void next_frame() { mem.next(); }
+	inline void next_frame() const { mem.next(); }
 
 	inline void before() const { while (mem.isBlocked()) {} }
 
@@ -26,14 +43,12 @@ public:
 	inline bool end_jump_frame() { return mem.endJumpFrame(); }
 
 	template <typename T>
-	inline std::optional<T> read_memory(const std::vector<uint32_t>& offsets) 
-	{ return mem.readMemory<T>(offsets); }
+	inline std::optional<T> read_memory(const py::list& offsets);
 
 	template <typename T>
-	inline bool write_memory(T&& val, const std::vector<uint32_t>& offsets) 
-	{ return mem.writeMemory(std::forward<T>(val), offsets); }
+	inline bool write_memory(T&& val, const py::list& offsets);
 	
-	inline bool run_code(const py::bytes& codes) const { return mem.runCode(codes); }
+	inline bool run_code(const py::bytes& codes) const;
 
 	inline void end() { mem.endControl(); }
 
@@ -61,15 +76,21 @@ public:
 		*static_cast<volatile T*>(mem.getReturnResult()) = val;
 	}
 
-	py::object read_bytes(uint32_t size, const std::vector<uint32_t>& offsets)
-	{
-		auto p = mem.readBytes(size, offsets);
-		if (!p.has_value()) return py::none();
-		return py::bytes(*p);
-	}
+	py::object read_bytes(uint32_t size, const py::list& offsets);
 
-	bool write_bytes(const py::bytes& in, const std::vector<uint32_t>& offsets)
-	{
-		return mem.writeBytes(in, offsets);
-	}
+	bool write_bytes(const py::bytes& in, const py::list& offsets);
 };
+
+template <typename T>
+std::optional<T> Controller::read_memory(const py::list& offsets)
+{
+	auto len_ = set_offset_arr_of_py_list(offsets);
+	return mem.readMemory<T>(offset_buffer, len_);
+}
+
+template <typename T>
+bool Controller::write_memory(T&& val, const py::list& offsets)
+{
+	auto len_ = set_offset_arr_of_py_list(offsets);
+	return mem.writeMemory<T>(std::forward<T>(val), offset_buffer, len_);
+}
