@@ -4,20 +4,6 @@
 #include <pybind11/stl.h>
 // 给Python侧暴露的类型
 
-// #define __GET_OFFSET_ARR_OF_PY_LIST(offset_arr_name, len_name, offsets) \
-// 	uint32_t offset_arr_name[Memory::LENGTH];\
-// 	uint32_t len_name = static_cast<uint32_t>((offsets).size());\
-// 	do {\
-// 		if ((len_name) > Memory::LENGTH)\
-// 		{\
-// 			throw std::exception("offsets too long");\
-// 		}\
-// 		for (uint32_t i = 0; i < (len_name); ++i)\
-// 		{\
-// 			(offset_buffer)[i] = py::cast<uint32_t>((offsets)[i]);\
-// 		}\
-// 	} while (0)
-
 class Controller
 {
 	Memory mem;

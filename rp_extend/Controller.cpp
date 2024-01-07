@@ -72,11 +72,8 @@ PYBIND11_MODULE(rp_extend, m)
 uint32_t Controller::set_offset_arr_of_py_list(const py::list& offsets)
 {
 	auto len_ = static_cast<uint32_t>(offsets.size()); 
-	if (len_ > Memory::LENGTH)
-	{
-		throw std::exception("offsets too long"); 
-	}
-	for (uint32_t i = 0; i < (len_); ++i)
+	if (len_ > Memory::LENGTH) throw std::exception("offsets too long"); 
+	for (uint32_t i = 0; i < len_; ++i)
 	{
 		offset_buffer[i] = py::cast<uint32_t>(offsets[i]); 
 	}

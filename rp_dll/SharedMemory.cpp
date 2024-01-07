@@ -67,7 +67,7 @@ bool SharedMemory::deleteInstance()
 	return true;
 }
 
-bool SharedMemory::readMemory()
+bool SharedMemory::readMemory() const
 {
 	*static_cast<volatile uint64_t*>(getReadWriteVal()) = 0;
 	bool b = false;
@@ -86,7 +86,7 @@ bool SharedMemory::readMemory()
 	return b;
 }
 
-bool SharedMemory::writeMemory()
+bool SharedMemory::writeMemory() const
 {
 	bool b;
 	do {

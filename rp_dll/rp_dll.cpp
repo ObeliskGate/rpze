@@ -17,7 +17,7 @@ void init()
 	SharedMemory::getInstance();
 }
 
-void doAsPhaseCode(volatile PhaseCode& phaseCode)
+void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory)
 {
 	while (true)
 	{
@@ -30,59 +30,34 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode)
 			continue;
 		case PhaseCode::RUN_CODE:
 		{
-			auto p = SharedMemory::getInstance()->getAsmPtr();
+			auto p = pSharedMemory->getAsmPtr();
 			__asm
 			{
 				mov edx, p
 				call edx
 			}
-			SharedMemory::getInstance()->executeResult() = ExecuteResult::SUCCESS;
+			pSharedMemory->executeResult() = ExecuteResult::SUCCESS;
 			phaseCode = PhaseCode::WAIT;
 			continue;
 		}
 		case PhaseCode::JUMP_FRAME:
 		{
-			auto pSharedMemory = SharedMemory::getInstance();
-			auto pBoard = pSharedMemory->boardPtr();
-			auto pLawnApp = *reinterpret_cast<BYTE**>(0x6a9ec0);
-			while (phaseCode == PhaseCode::JUMP_FRAME)
-			{
-				*reinterpret_cast<int32_t*>(pLawnApp + 0x838) += 1;  // mjClock++
-				__asm
-				{
-					mov esi, pBoard
-					mov edx, 0x41BAD0  // Board::ProcessDeleteQueue
-					call edx
-					mov ecx, esi
-					mov edx, 0x415D40  // Board::Update
-					call edx
-					mov esi, pLawnApp
-					mov eax, [esi + 0x820]
-					push eax
-					mov edx, 0x445680  // EffectSystem::ProcessDeleteQueue
-					call edx
-					mov eax, esi
-					mov edx, 0x4524F0  // LawnApp::CheckForGameEnd
-					call edx
-				}
-				mainHook(1, pSharedMemory);
-			}
+			doWhenJmpFrame(phaseCode);
 			continue;
 		}
 		case PhaseCode::READ_MEMORY:
-			SharedMemory::getInstance()->readMemory();
+			pSharedMemory->readMemory();
 			phaseCode = PhaseCode::WAIT;
 			continue;
 		case PhaseCode::WRITE_MEMORY:
-			SharedMemory::getInstance()->writeMemory();
+			pSharedMemory->writeMemory();
 			phaseCode = PhaseCode::WAIT;
 			continue;
 
 		case PhaseCode::READ_MEMORY_PTR:
 		{
-			auto s = SharedMemory::getInstance();
-			*static_cast<volatile uint32_t*>(s->getReadWriteVal()) = reinterpret_cast<uint32_t>(s->getSharedMemoryPtr());
-			s->executeResult() = ExecuteResult::SUCCESS;
+			*static_cast<volatile uint32_t*>(pSharedMemory->getReadWriteVal()) = reinterpret_cast<uint32_t>(pSharedMemory->getSharedMemoryPtr());
+			pSharedMemory->executeResult() = ExecuteResult::SUCCESS;
 			phaseCode = PhaseCode::WAIT;
 			continue;
 		}
@@ -95,18 +70,65 @@ void mainHook(const DWORD isInGame, const SharedMemory* pSharedMemory)
 	pSharedMemory->boardPtr() = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
 	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED || 
 		pSharedMemory->hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
-	volatile PhaseCode* pPhaseCode = &pSharedMemory->phaseCode();
-	volatile RunState* pRunState = &pSharedMemory->runState();
+	volatile PhaseCode* pPhaseCode;
+	volatile RunState* pRunState;
 	if (isInGame)
 	{
 		if (pSharedMemory->phaseCode() != PhaseCode::JUMP_FRAME) return;
 		pPhaseCode = &pSharedMemory->jumpingPhaseCode();
 		pRunState = &pSharedMemory->jumpingRunState();
 	}
+	else
+	{
+		pPhaseCode = &pSharedMemory->phaseCode();
+		pRunState = &pSharedMemory->runState();
+	}
 	*pPhaseCode = PhaseCode::WAIT;
 	*pRunState = RunState::OVER;
-	doAsPhaseCode(*pPhaseCode);
+	doAsPhaseCode(*pPhaseCode, pSharedMemory);
 	*pRunState = RunState::RUNNING;
+}
+
+void doWhenJmpFrame(volatile PhaseCode& phaseCode)
+{
+	auto pSharedMemory = SharedMemory::getInstance();
+	auto pLawnApp = *reinterpret_cast<BYTE**>(0x6a9ec0);
+	auto pBoard = *reinterpret_cast<BYTE**>(pLawnApp + 0x768);
+	if (!pBoard)
+	{
+		std::cout << "board ptr invalid, panic!!!" << std::endl;
+		throw std::exception();
+	}
+	while (phaseCode == PhaseCode::JUMP_FRAME)
+	{
+		*reinterpret_cast<int32_t*>(pLawnApp + 0x838) += 1;  // mjClock++
+		__asm
+		{
+			mov esi, pBoard
+			mov edx, 0x41BAD0  // Board::ProcessDeleteQueue
+			call edx
+			mov ecx, esi
+			mov edx, 0x415D40  // Board::Update
+			call edx
+			mov esi, pLawnApp
+			mov eax, [esi + 0x820]
+			push eax
+			mov edx, 0x445680  // EffectSystem::ProcessDeleteQueue
+			call edx
+			mov eax, esi
+			mov edx, 0x4524F0  // LawnApp::CheckForGameEnd
+			call edx
+		}
+		if (!(time(nullptr) % 5))
+		{
+			MSG msg;
+			while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+				TranslateMessage(&msg);
+				DispatchMessage(&msg);
+			}
+		}
+		mainHook(1, pSharedMemory);
+	}
 }
 
 bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook)

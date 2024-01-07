@@ -83,8 +83,8 @@ public:
 	void* getAsmPtr() const { return getPtr() + BUFFER_OFFSET; }
 
 	// ¶ÁÄÚ´æ
-	bool readMemory();
+	bool readMemory() const;
 
 	// Ð´ÄÚ´æ
-	bool writeMemory();
+	bool writeMemory() const;
 };

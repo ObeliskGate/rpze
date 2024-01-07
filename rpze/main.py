@@ -6,7 +6,7 @@ from src.rpze.examples.iztools_example import default_test
 with InjectedGame(r"C:\space\pvz\Plants vs. Zombies 1.0.0.1051 EN\PlantsVsZombies.exe") as game:
     board = game.enter_level(70)
     ctler = game.controller
-    botanical_clock(ctler)
+    default_test(ctler)
     # ctler.start()
     # ctler.before()
     # print(ctler.read_bytes(8, [0x6a9ec0, 0x768, 0xa8, 0x0]))
