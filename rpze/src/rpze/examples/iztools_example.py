@@ -6,9 +6,9 @@ from ..flow.iztest import IzTest
 from ..rp_extend import Controller
 
 
-def default_test(ctler: Controller):  # iztools 默认例子, 兼容性体现
-    iz_test = IzTest(ctler).init_by_str('''
-                 10000 -1
+def default_test(ctler: Controller, time=1000):  # iztools 默认例子, 兼容性体现
+    iz_test = IzTest(ctler).init_by_str(f'''
+                 {time} -1
                  3-0 4-0 5-0 3-3
                  .....
                  .....

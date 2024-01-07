@@ -9,10 +9,10 @@ from ..flow.utils import until_plant_die, until_plant_last_shoot, repeat, place,
 from ..rp_extend import Controller
 
 
-def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
+def botanical_clock(ctler: Controller, jump_frame=False):  # 生物钟. 卡相位式非定态
     iz_test = IzTest(ctler).init_by_str('''
         1000 -1
-        1-2 5-2
+        1-2 5-4
         zh_j5
         cptoh
         .....
@@ -49,8 +49,8 @@ def botanical_clock(ctler: Controller):  # 生物钟. 卡相位式非定态
             plant_list = iz_test.game_board.plant_list
             if plant_list["1-2"] is not None:
                 row_one_fail_count += 1
-            if plant_list["5-2"] is not None:
+            if plant_list["5-4"] is not None:
                 row_five_fail_count += 1
 
-    iz_test.start_test(jump_frame=False, speed_rate=5)
+    iz_test.start_test(jump_frame, speed_rate=5)
     print(row_one_fail_count, row_five_fail_count)

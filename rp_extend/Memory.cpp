@@ -171,6 +171,10 @@ bool Memory::runCode(const char* codes, size_t len) const
 	{
 		throw std::exception("runCode: too many codes");
 	}
+	if (!hookConnected(HookPosition::MAIN_LOOP))
+	{
+		throw std::exception("runCode: main loop hook connected");
+	}
 	memcpy(getAsmPtr(), codes, len);
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
 	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成

@@ -79,7 +79,7 @@ public:
 
 	// 开10个
 	// hook位置的状态
-	volatile HookState* hookStateArr() { return reinterpret_cast<HookState*>(getPtr() + 112); }
+	volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 112); }
 
 	// 用来存放asm的指针
 	void* getAsmPtr() const { return getPtr() + BUFFER_OFFSET; }
@@ -138,7 +138,7 @@ public:
 
 	void closeHook(HookPosition hook);
 
-	bool hookConnected(HookPosition hook) { return globalState() == HookState::CONNECTED && hookStateArr()[getHookIndex(hook)] == HookState::CONNECTED; }
+	bool hookConnected(HookPosition hook) const { return globalState() == HookState::CONNECTED && hookStateArr()[getHookIndex(hook)] == HookState::CONNECTED; }
 
 	uint32_t getWrittenAddress() const { return remoteMemoryAddress + 98; }
 

@@ -23,6 +23,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("end", &Controller::end)
 		.def("open_hook", &Controller::open_hook)
 		.def("close_hook", &Controller::close_hook)
+		.def("hook_connected", &Controller::hook_connected, py::arg("hook") = HookPosition::MAIN_LOOP)
 
 		.def("read_bytes", &Controller::read_bytes)
 		.def("write_bytes", &Controller::write_bytes)
@@ -72,7 +73,6 @@ PYBIND11_MODULE(rp_extend, m)
 uint32_t Controller::set_offset_arr_of_py_list(const py::list& offsets)
 {
 	auto len_ = static_cast<uint32_t>(offsets.size()); 
-	if (len_ > Memory::LENGTH) throw std::exception("offsets too long"); 
 	for (uint32_t i = 0; i < len_; ++i)
 	{
 		offset_buffer[i] = py::cast<uint32_t>(offsets[i]); 

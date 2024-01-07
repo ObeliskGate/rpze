@@ -65,30 +65,6 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 	}
 }
 
-void mainHook(const DWORD isInGame, const SharedMemory* pSharedMemory)
-{
-	pSharedMemory->boardPtr() = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
-	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED || 
-		pSharedMemory->hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
-	volatile PhaseCode* pPhaseCode;
-	volatile RunState* pRunState;
-	if (isInGame)
-	{
-		if (pSharedMemory->phaseCode() != PhaseCode::JUMP_FRAME) return;
-		pPhaseCode = &pSharedMemory->jumpingPhaseCode();
-		pRunState = &pSharedMemory->jumpingRunState();
-	}
-	else
-	{
-		pPhaseCode = &pSharedMemory->phaseCode();
-		pRunState = &pSharedMemory->runState();
-	}
-	*pPhaseCode = PhaseCode::WAIT;
-	*pRunState = RunState::OVER;
-	doAsPhaseCode(*pPhaseCode, pSharedMemory);
-	*pRunState = RunState::RUNNING;
-}
-
 void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 {
 	auto pSharedMemory = SharedMemory::getInstance();
@@ -111,8 +87,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 			mov edx, 0x415D40  // Board::Update
 			call edx
 			mov esi, pLawnApp
-			mov eax, [esi + 0x820]
-			push eax
+			push dword ptr [esi + 0x820]
 			mov edx, 0x445680  // EffectSystem::ProcessDeleteQueue
 			call edx
 			mov eax, esi
@@ -122,12 +97,13 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 		if (!(time(nullptr) % 5))
 		{
 			MSG msg;
-			while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+			while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) 
+			{
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);
 			}
 		}
-		mainHook(1, pSharedMemory);
+		mainHook<1>(pSharedMemory);
 	}
 }
 
