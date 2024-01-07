@@ -26,12 +26,12 @@ SharedMemory::SharedMemory()
 	}
 
 	// 初始化getOffsets数组!!!, 四个一单位的应该不能用memset
-	for (size_t i = 0; i < LENGTH; i++)
+	for (size_t i = 0; i < OFFSETS_LEN; i++)
 	{
 		getOffsets()[i] = OFFSET_END;
 	}
 	globalState() = HookState::NOT_CONNECTED;
-	for (size_t i = 0; i < LENGTH; i++)
+	for (size_t i = 0; i < HOOK_LEN; i++)
 	{
 		hookStateArr()[i] = HookState::NOT_CONNECTED;
 	}
@@ -40,7 +40,7 @@ SharedMemory::SharedMemory()
 std::optional<void*> SharedMemory::getReadWritePtr() const
 {
 	uint32_t ptr = getOffsets()[0];
-	for (size_t i = 1; i < LENGTH; i++)
+	for (size_t i = 1; i < OFFSETS_LEN; i++)
 	{
 		if (getOffsets()[i] == OFFSET_END) break;
 		ptr = *reinterpret_cast<uint32_t*>(ptr);
@@ -67,7 +67,7 @@ bool SharedMemory::deleteInstance()
 	return true;
 }
 
-bool SharedMemory::readMemory()
+bool SharedMemory::readMemory() const
 {
 	*static_cast<volatile uint64_t*>(getReadWriteVal()) = 0;
 	bool b = false;
@@ -86,7 +86,7 @@ bool SharedMemory::readMemory()
 	return b;
 }
 
-bool SharedMemory::writeMemory()
+bool SharedMemory::writeMemory() const
 {
 	bool b;
 	do {

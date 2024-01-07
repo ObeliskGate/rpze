@@ -23,6 +23,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("end", &Controller::end)
 		.def("open_hook", &Controller::open_hook)
 		.def("close_hook", &Controller::close_hook)
+		.def("hook_connected", &Controller::hook_connected, py::arg("hook") = HookPosition::MAIN_LOOP)
 
 		.def("read_bytes", &Controller::read_bytes)
 		.def("write_bytes", &Controller::write_bytes)
@@ -67,4 +68,36 @@ PYBIND11_MODULE(rp_extend, m)
 		.def_property("result_f32", &Controller::get_result<float>, &Controller::set_result<float>)
 		.def_property("result_f64", &Controller::get_result<double>, &Controller::set_result<double>);
 
+}
+
+uint32_t Controller::set_offset_arr_of_py_list(const py::list& offsets)
+{
+	auto len_ = static_cast<uint32_t>(offsets.size()); 
+	for (uint32_t i = 0; i < len_; ++i)
+	{
+		offset_buffer[i] = py::cast<uint32_t>(offsets[i]); 
+	}
+	return len_;
+}
+
+bool Controller::run_code(const py::bytes& codes) const
+{
+	auto sw = std::string_view(codes);
+	return mem.runCode(sw.data(), sw.size());
+}
+
+py::object Controller::read_bytes(uint32_t size, const py::list& offsets)
+{
+	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto buffer = std::make_unique<char[]>(size);
+	auto ret = mem.readBytes(buffer.get(), size, offset_buffer, len_);
+	if (ret) return py::bytes(buffer.get(), size);
+	return py::none();
+}
+
+bool Controller::write_bytes(const py::bytes& in, const py::list& offsets)
+{
+	auto sw = std::string_view(in);
+	auto len_ = set_offset_arr_of_py_list(offsets);
+	return mem.writeBytes(sw.data(), static_cast<uint32_t>(sw.size()), offset_buffer, len_);
 }

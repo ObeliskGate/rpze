@@ -16,19 +16,20 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 	case DLL_PROCESS_ATTACH:
 		{
 			init();
-			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, [](const Registers&) // main loop LawnApp::UpdateFrames 
+			auto pSharedMemory = SharedMemory::getInstance();
+			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, [pSharedMemory](const Registers&) // main loop LawnApp::UpdateFrames 
 			{
-				mainHook(0, SharedMemory::getInstance());
+				mainHook<0>(pSharedMemory);
 			});
 			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
-			 	[](const Registers&) // Board::Board
+			 	[pSharedMemory](const Registers&) // Board::Board
 			 	{
-			 		SharedMemory::getInstance()->isBoardPtrValid() = false;
+					pSharedMemory->isBoardPtrValid() = false;
 			 	});
 			InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), 9,
-				[](const Registers&, void*) -> std::optional<int32_t> 
+				[pSharedMemory](const Registers&, void*) -> std::optional<int32_t>
 				{
-					if (closableHook(SharedMemory::getInstance(), HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN))
+					if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN))
 					{
 						return {};
 					}
