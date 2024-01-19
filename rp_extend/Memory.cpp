@@ -107,7 +107,7 @@ bool Memory::endJumpFrame()
 	return true;
 }
 
-bool Memory::readBytes(char* buffer, uint32_t size, const uint32_t* offsets, uint32_t len)
+std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const uint32_t* offsets, uint32_t len)
 {
 	if (size > BUFFER_SIZE) throw std::exception("readBytes: too many bytes");
 	if (len > LENGTH) throw std::exception("readBytes: too many offsets");
@@ -124,18 +124,19 @@ bool Memory::readBytes(char* buffer, uint32_t size, const uint32_t* offsets, uin
 				basePtr += offsets[i];
 			}
 			if (!basePtr) break;
-			std::string ret(size, '\0');
-			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), buffer, size, nullptr);
+			auto ret = std::make_unique<char[]>(size);
+			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), ret.get(), size, nullptr);
 			CloseHandle(hPvz);
-			return true;
+			return ret;
 		} while (false);
 		CloseHandle(hPvz);
-		return false;
+		return {};
 	}
 	auto p = _readMemory(size, offsets, len);
-	if (!p.has_value()) return false;
-	memcpy(buffer, const_cast<const void*>(*p), size);
-	return true;
+	if (!p.has_value()) return {};
+	auto ret = std::make_unique<char[]>(size);
+	memcpy(ret.get(), const_cast<const void*>(*p), size);
+	return ret;
 }
 
 bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len)

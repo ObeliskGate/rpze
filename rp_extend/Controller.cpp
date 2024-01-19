@@ -12,7 +12,12 @@ PYBIND11_MODULE(rp_extend, m)
 		.def(py::init<DWORD>())
 		.def("__eq__", &Controller::operator==)
 		.def("__ne__", &Controller::operator!=)
+		.def("__repr__", [](const Controller& ctler)
+		{
+			return "Controller(" + std::to_string(ctler.pid()) + ")";
+		})
 		.def_property_readonly("pid", &Controller::pid)
+		.def_readonly("result_mem", &Controller::result_mem, py::return_value_policy::reference_internal)
 		.def("next_frame", &Controller::next_frame)
 		.def("before", &Controller::before)
 		.def("start_jump_frame", &Controller::start_jump_frame)
@@ -80,6 +85,10 @@ uint32_t Controller::set_offset_arr_of_py_list(const py::list& offsets)
 	return len_;
 }
 
+Controller::Controller(DWORD pid) : mem(pid),
+	result_mem(py::memoryview::from_memory(const_cast<void*>(mem.getReturnResult()), Memory::RESULT_SIZE, false))
+{ }
+
 bool Controller::run_code(const py::bytes& codes) const
 {
 	auto sw = std::string_view(codes);
@@ -89,9 +98,8 @@ bool Controller::run_code(const py::bytes& codes) const
 py::object Controller::read_bytes(uint32_t size, const py::list& offsets)
 {
 	auto len_ = set_offset_arr_of_py_list(offsets);
-	auto buffer = std::make_unique<char[]>(size);
-	auto ret = mem.readBytes(buffer.get(), size, offset_buffer, len_);
-	if (ret) return py::bytes(buffer.get(), size);
+	auto ret = mem.readBytes(size, offset_buffer, len_);
+	if (ret.has_value()) return py::bytes(ret->get(), size);
 	return py::none();
 }
 

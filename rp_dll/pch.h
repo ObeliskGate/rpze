@@ -21,7 +21,7 @@
 
 constexpr wchar_t SHARED_MEMORY_NAME_AFFIX[] = L"rp_dll_shared_memory_";
 
-constexpr size_t SHARED_MEMORY_SIZE = 8192;
+constexpr size_t SHARED_MEMORY_SIZE = 1024 * 8;
 
 // ¶ÁÈ¡ÄÚ´æ
 template <typename T>

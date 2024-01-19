@@ -26,7 +26,10 @@ class SharedMemory
 	std::optional<void*> getReadWritePtr() const;
 
 public:
-	static constexpr uint32_t BUFFER_OFFSET = 4096;
+	static constexpr uint32_t BUFFER_OFFSET = 1024 * 4;
+	static constexpr uint32_t BUFFER_SIZE = SHARED_MEMORY_SIZE - BUFFER_OFFSET;
+	static constexpr uint32_t RESULT_OFFSET = 1024;
+	static constexpr uint32_t RESULT_SIZE = BUFFER_OFFSET - RESULT_OFFSET;
 
 	void* getSharedMemoryPtr() const { return sharedMemoryPtr; }
 
@@ -68,9 +71,6 @@ public:
 
 	// 执行结果
 	volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(94); }
-
-	// 8字节 返回结果
-	void* returnResult() const { return getPtr() + 98; }
 
 	// pBoard指针效验位
 	volatile bool& isBoardPtrValid() const { return getRef<bool>(106); }
