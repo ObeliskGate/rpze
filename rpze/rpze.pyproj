@@ -30,7 +30,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="main.py" />
-    <Compile Include="in_t.py" />
     <Compile Include="src\rpze\basic\asm.py" />
     <Compile Include="src\rpze\basic\inject.py" />
     <Compile Include="src\rpze\basic\__init__.py" />
@@ -50,6 +49,7 @@
     <Compile Include="src\rpze\structs\zombie.py" />
     <Compile Include="src\rpze\structs\__init__.py" />
     <Compile Include="src\rpze\__init__.py" />
+    <Compile Include="src\rpze\__main__.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="CondaEnv|CondaEnv|312" />

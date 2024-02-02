@@ -10,8 +10,23 @@ rpze是一个用于ize测试的框架, 旨在保持一定性能、高精度、�
 通过与注入游戏的DLL进行ipc以实现理论100%精度和不崩溃的原版函数调用.
 
 ## 支持平台
-所需CPython版本 >= 3.11, 仅支持**Windows10及以上**的x64平台.  
-仅支持1.0.0.1051版本pvz, 测试以[pt站上的英语原版(lcx版)](https://pvz.tools/download/)为准. 原则上支持各类汉化版, **不支持jspvz上的英语原版.**
+所需CPython版本 >= 3.11, 仅支持**Windows10及以上**的x64平台.
+
+仅支持1.0.0.1051版本pvz, 测试以[pt站上的英语原版(lcx版)](https://pvz.tools/download/)为准. 原则上支持各类汉化版, **不支持jspvz上的英语原版.**, 各种其他来源的“英语原版”有不小概率出自
+
+## 安装
+在满足上述平台要求后, 执行`python -m pip install rpze`即可.  
+若想确认安装成功, 执行`python -m rpze --path "your\path\to\PlantVsZombies.exe`, 若游戏正常启动且在加载界面加载到一半时自动运行生物钟脚本, 则安装成功.
+### 常见安装Q&A
+- 
+    - 为什么弹出一个黑色窗口显示create shared memory success? 
+    - 这是正常现象, 无须多注意. 用于确认成功以及在跳帧时关闭游戏等.
+-
+    - create shared memory failed?
+    - 请再运行一次试试, 可能和杀毒有关; 若一直这样请和我反馈.
+-
+    - 游戏正常启动但并不自动运行脚本/invalid command?
+    - 重新阅读[支持平台](#支持平台). 请考虑你使用的版本是否符合上述要求. 请注意, *仅确保兼容[pt站上的英语原版(lcx版)](https://pvz.tools/download/)!!!*
 
 ## 优缺点
 优点:
