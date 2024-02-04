@@ -3,7 +3,8 @@
 简化flow编写的工具函数
 """
 import random
-from typing import overload
+import typing
+from typing import overload, Sequence
 
 from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool
 from ..structs.game_board import GameBoard, get_board
@@ -279,3 +280,45 @@ def randomize_generate_cd(plant: Plant) -> Plant:
     distribution = [h] * (max_ - 15) + [h / 15 * i for i in range(15, 0, -1)]
     plant.generate_cd = random.choices(population=range(1, max_ + 1), weights=distribution)[0]
     return plant
+
+
+@typing.overload
+def set_puff_x_offset(puffshroom: Plant, offset: int):
+    """
+    为小喷设置x偏移
+
+    Args:
+        puffshroom: 目标小喷
+        offset: 小喷x偏移
+    Raises:
+        ValueError: offset不在范围内
+    Examples:
+        >>> p = ...
+        >>> set_puff_x_offset(p, 3)
+        为小喷设置x偏移为+3
+    """
+
+
+@typing.overload
+def set_puff_x_offset(puffshroom: Plant, offsets: typing.Iterable[int]):
+    """
+    为小喷设置x偏移
+
+    Args:
+        puffshroom: 目标小喷
+        offsets: 小喷x偏移范围
+    Raises:
+        ValueError: **最终随机结果的**偏移不在范围内.
+    Examples:
+        >>> p = ...
+        >>> set_puff_x_offset(p, range(-5, 4))
+        为小喷设置在整个范围内的随机x偏移
+    """
+
+
+def set_puff_x_offset(puffshroom: Plant, arg):
+    center_x = get_board().grid_to_pixel_x(puffshroom.col, puffshroom.row)
+    offset = arg if isinstance(arg, int) else random.choice(list(arg))
+    if not (-5 <= offset <= 4):
+        raise ValueError(f"offset {offset} out of valid range of puffshroom")
+    puffshroom.x = center_x + offset
