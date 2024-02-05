@@ -5,6 +5,7 @@ iztools 全场测试功能模拟
 import time
 from collections import namedtuple
 from collections.abc import Callable
+from msvcrt import kbhit, getwch
 from random import randint
 from typing import TypeAlias, Self
 
@@ -345,7 +346,8 @@ class IzTest:
 
     def start_test(self, jump_frame: bool = False,
                    speed_rate: float = 1.0,
-                   print_interval: int = 10) -> tuple[float, float]:
+                   print_interval: int = 10,
+                   control_speed_key: str = '\x12') -> tuple[float, float]:
         """
         开始测试
 
@@ -353,6 +355,7 @@ class IzTest:
             jump_frame: True则开启跳帧测试.
             speed_rate: 速度倍率. 仅当jump_frame = False时有效.
             print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
+            control_speed_key: 非跳帧时切换原速/倍速的按键. 默认值为Ctrl+R
         Returns:
             (测试概率, 使用时间)元组
         """
@@ -367,7 +370,8 @@ class IzTest:
         if jump_frame:
             ctler.start_jump_frame()
         else:
-            self.game_board.frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
+            frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
+            self.game_board.frame_duration = frame_duration
         ctler.next_frame()
 
         def __one_test():
@@ -378,6 +382,9 @@ class IzTest:
             while not self._last_test_ended:
                 ctler.before()
                 _flow_manager.run()
+                if not jump_frame and kbhit() and getwch() == control_speed_key:
+                    self.game_board.frame_duration = 10 \
+                        if self.game_board.frame_duration != 10 else frame_duration
                 ctler.next_frame()
             self._last_test_ended = False
             if print_interval and self._test_time % print_interval == 0:
