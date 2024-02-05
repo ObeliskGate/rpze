@@ -6,25 +6,9 @@ import abc
 import collections.abc as c_abc
 import typing
 from enum import IntEnum
-from functools import lru_cache
 
 from ..basic import asm
 from ..rp_extend import Controller
-
-
-@lru_cache()
-def parse_grid_str(grid_str: str, minus_one: bool = True) -> tuple[int, int]:
-    """
-    根据f'{row}-{col}'字符串返回(row, col)对象
-
-    Args:
-        grid_str: 形如'1-2'的字符串
-        minus_one: 为True时会自动为row, col减1，使其从0开始
-    Returns:
-        (row, col)元组
-    """
-    return (int(grid_str.split('-')[0]) - 1, int(grid_str.split('-')[1]) - 1) if minus_one \
-        else (int(grid_str.split('-')[0]), int(grid_str.split('-')[1]))
 
 
 class ObjBase(abc.ABC):
