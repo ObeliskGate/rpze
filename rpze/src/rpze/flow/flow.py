@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import heapq
 from collections.abc import Callable, Awaitable, Coroutine, Generator
 from enum import Enum, auto
 from itertools import count
@@ -175,11 +174,11 @@ class FlowManager:
                 fcl.pop(i)
 
         _counter = count()
-        tick_runner_heap = [(-priority, next(_counter), it) for priority, it in tick_runners]
-        heapq.heapify(tick_runner_heap)
-        heapq.heappush(tick_runner_heap, (-flow_priority, next(_counter), __flow_tick_runner))
+        tick_runner_list = [(-priority, next(_counter), it) for priority, it in tick_runners]
+        tick_runner_list.append((-flow_priority, next(_counter), __flow_tick_runner))
+        tick_runner_list.sort()
         # -priority让priority越大优先级别越高
-        self.tick_runners: list[TickRunner] = [i[2] for i in tick_runner_heap]
+        self.tick_runners: list[TickRunner] = [i[2] for i in tick_runner_list]
         self.time = 0
 
     def add(self) -> Callable[[TickRunner], TickRunner]:
