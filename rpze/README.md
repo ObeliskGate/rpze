@@ -20,7 +20,7 @@ Remote Python, Zombie Endless(or endless rp?)
 ## [生物钟](https://www.bilibili.com/video/BV1gK4y1n7V5?p=2)
 一个生物钟一二路卡相位的例子.
 ```python
-from rpze import *
+from rpze.basic import InjectedGame
 from rpze.flow import *
 
 with InjectedGame(r"your\game\path") as game:

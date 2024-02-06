@@ -8,6 +8,7 @@ from enum import IntEnum
 from . import obj_base as ob
 from .obj_base import ObjNode
 from ..basic import asm
+from ..basic.gridstr import parse_grid_str, gridstr
 
 
 class PlantType(IntEnum):
@@ -245,19 +246,19 @@ class PlantList(ob.obj_list(Plant)):
         return None
 
     @typing.overload
-    def __getitem__(self, grid_str: str) -> Plant | None:
+    def __getitem__(self, grid: gridstr) -> Plant | None:
         """
         通过grid_str坐标获取植物
 
         Args:
-            grid_str: 格子字符串
+            grid: 格子字符串
         Returns:
             对应位置编号最小的植物, 找不到返回None
         """
 
     def __getitem__(self, item):
         if isinstance(item, str):
-            return self.get_by_grid(*ob.parse_grid_str(item))
+            return self.get_by_grid(*parse_grid_str(item))
         return super().__getitem__(item)
 
     def free_all(self) -> typing.Self:

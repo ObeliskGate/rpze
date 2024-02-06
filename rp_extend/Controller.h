@@ -7,18 +7,18 @@
 class Controller
 {
 	Memory mem;
-	uint32_t offset_buffer[1024] = {};
+	uint32_t offset_buffer[128] = {};
 
 	uint32_t set_offset_arr_of_py_list(const py::list& offsets);
+
 public:
-	explicit Controller(DWORD pid) : mem(pid) {}
+	py::memoryview result_mem;
+
+	explicit Controller(DWORD pid);
 
 	DWORD pid() const { return mem.getPid(); }
 
-	std::tuple<bool, uint32_t> get_p_board() const // 第一位返回true表示无须换新
-	{
-		return mem.getPBoard();
-	}
+	std::tuple<bool, uint32_t> get_p_board() const { return mem.getPBoard(); }
 
 	bool hook_connected(HookPosition pos = HookPosition::MAIN_LOOP) const { return mem.hookConnected(pos); }
 
@@ -46,13 +46,6 @@ public:
 
 	uint32_t asm_address() const { return mem.getAsmAddress(); }
 
-	template<typename T>
-	T get_result()
-	{
-		static_assert(sizeof(T) <= 8);
-		return *static_cast<volatile T*>(mem.getReturnResult());
-	}
-
 	bool operator==(const Controller& other) const { return mem.getPid() == other.mem.getPid(); }
 
 	bool operator!=(const Controller& other) const { return mem.getPid() != other.mem.getPid(); }
@@ -62,11 +55,10 @@ public:
 	void close_hook(HookPosition hook) { mem.closeHook(hook); }
 
 	template<typename T>
-	void set_result(T val)
-	{
-		static_assert(sizeof(T) <= 8);
-		*static_cast<volatile T*>(mem.getReturnResult()) = val;
-	}
+	T get_result();
+
+	template<typename T>
+	void set_result(T val);
 
 	py::object read_bytes(uint32_t size, const py::list& offsets);
 
@@ -85,4 +77,19 @@ bool Controller::write_memory(T&& val, const py::list& offsets)
 {
 	auto len_ = set_offset_arr_of_py_list(offsets);
 	return mem.writeMemory<T>(std::forward<T>(val), offset_buffer, len_);
+}
+
+template <typename T>
+T Controller::get_result()
+{
+	
+	static_assert(sizeof(T) <= Memory::RESULT_SIZE);
+	return *static_cast<volatile T*>(mem.getReturnResult());
+}
+
+template <typename T>
+void Controller::set_result(T val)
+{
+	static_assert(sizeof(T) <= Memory::RESULT_SIZE);
+	*static_cast<volatile T*>(mem.getReturnResult()) = val;
 }

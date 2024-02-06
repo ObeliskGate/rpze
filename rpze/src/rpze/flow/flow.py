@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import heapq
 from collections.abc import Callable, Awaitable, Coroutine, Generator
 from enum import Enum, auto
 from itertools import count
@@ -40,21 +39,47 @@ class VariablePool:  # thanks Reisen
     具体属性由构造函数而定
     """
 
+    def reset(self) -> Self:
+        """
+        重置变量池. 重置后变量池的属性值为初始值.
+
+        Returns:
+            self
+        """
+        self._args_list = list(self.origin_list)
+        for k, v in self.origin_dict.items():
+            setattr(self, k, v)
+        return self
+
     def __init__(self, *args, **kwargs):
         """
         Args:
             *args: 匿名变量. 使用下标运算访问.
             **kwargs: 属性. 属性名=初始值
         """
-        self._args_list = list(args)
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        self._args_list = []
+        self.origin_list = args
+        self.origin_dict = kwargs
+        self.reset()
 
     def __getitem__(self, item):
         return self._args_list[item]
 
     def __setitem__(self, key, value):
         self._args_list[key] = value
+
+    def get_all_attrs(self) -> tuple[tuple, dict] | None:
+        """
+        获取所有属性的值
+
+        Returns:
+            所有匿名属性(in a tuple), 所有具名属性(in a dict)
+        """
+        return tuple(self._args_list), {k: getattr(self, k) for k in self.origin_dict}
+
+    def __str__(self):
+        t, d = self.get_all_attrs()
+        return f"<{t}, {d}>"
 
 
 def _await_generator(t):
@@ -175,11 +200,11 @@ class FlowManager:
                 fcl.pop(i)
 
         _counter = count()
-        tick_runner_heap = [(-priority, next(_counter), it) for priority, it in tick_runners]
-        heapq.heapify(tick_runner_heap)
-        heapq.heappush(tick_runner_heap, (-flow_priority, next(_counter), __flow_tick_runner))
+        tick_runner_list = [(-priority, next(_counter), it) for priority, it in tick_runners]
+        tick_runner_list.append((-flow_priority, next(_counter), __flow_tick_runner))
+        tick_runner_list.sort()
         # -priority让priority越大优先级别越高
-        self.tick_runners: list[TickRunner] = [i[2] for i in tick_runner_heap]
+        self.tick_runners: list[TickRunner] = [i[2] for i in tick_runner_list]
         self.time = 0
 
     def add(self) -> Callable[[TickRunner], TickRunner]:

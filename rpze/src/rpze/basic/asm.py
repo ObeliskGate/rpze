@@ -37,5 +37,5 @@ def decode(code: str, addr: int = 0) -> bytes:
     Returns:
         解码后的字节码
     """
-    asm, _ = __keystone_assembler.asm(code, addr, True)
+    asm = __keystone_assembler.asm(code, addr, True)[0]
     return asm

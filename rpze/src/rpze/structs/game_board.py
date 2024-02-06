@@ -78,7 +78,31 @@ class GameBoard(ob.ObjBase):
             ret;"""
         asm.run(code, self._controller)
 
-    def plain_new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
+    def get_plants_on_lawn(self, row: int, col: int) -> \
+            tuple[Plant | None, Plant | None, Plant | None, Plant | None]:
+        """
+        获取指定格子位置的植物元组. 有(底座, 南瓜, 飞行, 常规)植物四种.
+
+        Args:
+            row: 行, 从0开始
+            col: 列, 从0开始
+        Returns:
+            (底座, 南瓜, 飞行, 常规)元组, 对应位置没有植物则返回None.
+        """
+        code = f"""
+            push ebx;
+            mov ebx, {(ctler := self._controller).result_address};
+            push {row};
+            push {col};
+            mov edx, {self.base_ptr};
+            call {0x40d2a0};
+            pop ebx;
+            ret;"""
+        asm.run(code, ctler)
+        view = ctler.result_mem[:16].cast("I")  # 以单个元素为u32格式读取前16字节
+        return tuple(None if it == 0 else Plant(it, ctler) for it in view)
+
+    def new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
         """
         关卡内种植植物
         

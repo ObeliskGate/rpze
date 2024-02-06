@@ -27,8 +27,10 @@ class Memory
 	// pvz进程id
 	DWORD pid = 0;
 public:
-	static constexpr uint32_t BUFFER_OFFSET = 4096;
+	static constexpr uint32_t BUFFER_OFFSET = 1024 * 4;
 	static constexpr uint32_t BUFFER_SIZE = SHARED_MEMORY_SIZE - BUFFER_OFFSET;
+	static constexpr uint32_t RESULT_OFFSET = 1024;
+	static constexpr uint32_t RESULT_SIZE = BUFFER_OFFSET - RESULT_OFFSET;
 
 	explicit Memory(DWORD pid);
 
@@ -71,7 +73,7 @@ public:
 	volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(94); }
 
 	// 8字节 返回结果
-	volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + 98);  }
+	volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + RESULT_OFFSET);  }
 
 
 	// pBoard指针效验位
@@ -124,7 +126,7 @@ public:
 	template<typename T>
 	bool writeMemory(T&& val, const uint32_t* offsets, uint32_t len);
 
-	bool readBytes(char* buffer, uint32_t size, const uint32_t* offsets, uint32_t len);
+	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, const uint32_t* offsets, uint32_t len);
 
 	bool writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len);
 
@@ -140,7 +142,7 @@ public:
 
 	bool hookConnected(HookPosition hook) const { return globalState() == HookState::CONNECTED && hookStateArr()[getHookIndex(hook)] == HookState::CONNECTED; }
 
-	uint32_t getWrittenAddress() const { return remoteMemoryAddress + 98; }
+	uint32_t getWrittenAddress() const { return remoteMemoryAddress + RESULT_OFFSET; }
 
 	uint32_t getAsmAddress() const { return remoteMemoryAddress + BUFFER_OFFSET; }
 
