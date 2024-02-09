@@ -44,6 +44,8 @@ class Projectile(ob.ObjNode):
 
     int_y = ob.property_i32(0xc, "图像整数y坐标")
 
+    col = ob.property_i32(0x1c, "所在行数")
+
     x = ob.property_f32(0x30, "浮点x坐标")
 
     y = ob.property_f32(0x34, "浮点y坐标")

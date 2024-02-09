@@ -434,7 +434,9 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
             self._iterate_func_asm = _iterate_func_asm
 
         def __next__(self) -> _T:
+            print(f"iterating {node_cls.__name__}")
             self._controller.result_u64 = self._current_ptr
+            print(self._controller.result_u64, self._current_ptr, self._controller.result_u32)
             self._controller.run_code(self._iterate_func_asm)
             if (self._controller.result_u64 >> 32) == 0:
                 raise StopIteration
@@ -457,6 +459,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                 mov [esi + 4], al;
                 pop esi;
                 ret;"""  # 可恶的reg优化
+            print(self._code)
             self._iterate_func_asm = None
 
         def at(self, index: int) -> _T:
@@ -500,7 +503,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
 
         def __invert__(self):
             if self._iterate_func_asm is None:
-                self._iterate_func_asm = asm.decode(self._code, self._controller.result_address)
+                self._iterate_func_asm = asm.decode(self._code, self._controller.asm_address)
             return _ObjIterator(self._controller, self._iterate_func_asm)
 
         def reset_stack(self):
