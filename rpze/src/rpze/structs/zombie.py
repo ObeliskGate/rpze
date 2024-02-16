@@ -209,12 +209,12 @@ class Zombie(ob.ObjNode):
     @property
     def master_id(self) -> ob.ObjId:  # 似乎所有ObjNode subclass都用Property而不是Attribute更好看
         """舞王id"""
-        return ob.ObjId(self.base_ptr + 0xf0, self._controller)
+        return ob.ObjId(self.base_ptr + 0xf0, self.controller)
 
     @property
     def partner_ids(self) -> tuple[ob.ObjId, ob.ObjId, ob.ObjId, ob.ObjId]:
         """伴舞id"""
-        return tuple(ob.ObjId(self.base_ptr + 0xf4 + i * 4, self._controller) for i in range(4))
+        return tuple(ob.ObjId(self.base_ptr + 0xf4 + i * 4, self.controller) for i in range(4))
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"
@@ -227,17 +227,17 @@ class Zombie(ob.ObjNode):
             mov ecx, {self.base_ptr};
             call {0x530510}; // Zombie::DieNoLoot
             ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
 
 
 class ZombieList(ob.obj_list(Zombie)):
     def free_all(self) -> Self:
-        p_board = self._controller.get_p_board()[1]
+        p_board = self.controller.get_p_board()[1]
         code = f"""
             push edi;
             push esi;
             mov edi, {p_board};
-            mov esi, {self._controller.result_address};
+            mov esi, {self.controller.result_address};
             xor edx, edx;
             mov [esi], edx;
             LIterate:
@@ -255,5 +255,5 @@ class ZombieList(ob.obj_list(Zombie)):
                 pop esi;
                 pop edi;
                 ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
         return self

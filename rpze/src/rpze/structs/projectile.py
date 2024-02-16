@@ -61,7 +61,7 @@ class Projectile(ob.ObjNode):
     @property
     def target_zombie_id(self) -> ob.ObjId:
         """香蒲子弹目标僵尸"""
-        return ob.ObjId(self.base_ptr + 0x88, self._controller)
+        return ob.ObjId(self.base_ptr + 0x88, self.controller)
 
     def die(self):
         """
@@ -71,17 +71,17 @@ class Projectile(ob.ObjNode):
             mov eax, {self.base_ptr};
             call {0x46EB20};  // Projectile::Die
             ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
 
 
 class ProjectileList(ob.obj_list(Projectile)):
     def free_all(self) -> Self:
-        p_board = self._controller.get_p_board()[1]
+        p_board = self.controller.get_p_board()[1]
         code = f"""
                 push edi;   
                 push esi;
                 mov edi, {p_board}
-                mov esi, {self._controller.result_address};
+                mov esi, {self.controller.result_address};
                 xor edx, edx;
                 mov [esi], edx;
                 LIterate:
@@ -99,5 +99,5 @@ class ProjectileList(ob.obj_list(Projectile)):
                     pop esi;
                     pop edi;
                     ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
         return self

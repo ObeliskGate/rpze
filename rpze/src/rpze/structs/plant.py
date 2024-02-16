@@ -182,7 +182,7 @@ class Plant(ObjNode):
     @property
     def target_zombie_id(self) -> ob.ObjId:
         """倭瓜, 水草目标僵尸编号"""
-        return ob.ObjId(self.base_ptr + 0x12c, self._controller)
+        return ob.ObjId(self.base_ptr + 0x12c, self.controller)
 
     def __str__(self) -> str:
         return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
@@ -195,7 +195,7 @@ class Plant(ObjNode):
             push {self.base_ptr};
             call {0x4679b0};  // Plant::Die
             ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
 
 
 class PlantList(ob.obj_list(Plant)):
@@ -211,11 +211,11 @@ class PlantList(ob.obj_list(Plant)):
         Returns:
             对应位置编号最小的植物, 找不到返回None
         """
-        p_board = self._controller.get_p_board()[1]  # 常用函数汇编提速喵
+        p_board = self.controller.get_p_board()[1]  # 常用函数汇编提速喵
         code = f"""
             push esi;
             push edi;
-            mov esi, {self._controller.result_address};
+            mov esi, {self.controller.result_address};
             xor eax, eax;
             mov [esi], eax;
             mov edi, {p_board};
@@ -240,9 +240,9 @@ class PlantList(ob.obj_list(Plant)):
                 pop edi;
                 pop esi;
                 ret;"""
-        asm.run(code, self._controller)
-        if (result := self._controller.result_u32) != 0:
-            return Plant(result, self._controller)
+        asm.run(code, self.controller)
+        if (result := self.controller.result_u32) != 0:
+            return Plant(result, self.controller)
         return None
 
     @typing.overload
@@ -262,12 +262,12 @@ class PlantList(ob.obj_list(Plant)):
         return super().__getitem__(item)
 
     def free_all(self) -> typing.Self:
-        p_board = self._controller.get_p_board()[1]
+        p_board = self.controller.get_p_board()[1]
         code = f"""
             push esi;
             push ebx;
             mov ebx, {p_board};
-            mov esi, {self._controller.result_address};
+            mov esi, {self.controller.result_address};
             xor edx, edx;
             mov [esi], edx;  // mov [esi], 0 is invalid
             LIterate:
@@ -285,5 +285,5 @@ class PlantList(ob.obj_list(Plant)):
                 pop ebx;
                 pop esi;
                 ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
         return self

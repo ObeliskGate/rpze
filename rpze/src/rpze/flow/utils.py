@@ -207,7 +207,7 @@ zombie_abbr_to_type: dict[str, ZombieType] = {
 
 
 # operate utils
-def place(place_str: gridstr, board: GameBoard | None = None) -> Zombie | Plant | None:
+def place(place_str: str, board: GameBoard | None = None) -> Zombie | Plant | None:
     """
     用字符串放置植物
 
@@ -317,7 +317,7 @@ def set_puff_x_offset(puffshroom: Plant, offsets: typing.Iterable[int]):
 
 
 def set_puff_x_offset(puffshroom: Plant, arg):
-    center_x = get_board().grid_to_pixel_x(puffshroom.col, puffshroom.row)
+    center_x = get_board(puffshroom.controller).grid_to_pixel_x(puffshroom.col, puffshroom.row)
     offset = arg if isinstance(arg, int) else random.choice(list(arg))
     if not (-5 <= offset <= 4):
         raise ValueError(f"offset {offset} out of valid range of puffshroom")

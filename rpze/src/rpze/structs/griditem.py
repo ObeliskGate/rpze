@@ -58,7 +58,7 @@ class Griditem(ob.ObjNode):
             mov esi, {self.base_ptr};
             call {0x44D000}  // Griditem::GriditemDie
             ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
 
 
 class GriditemList(ob.obj_list(Griditem)):
@@ -73,20 +73,20 @@ class GriditemList(ob.obj_list(Griditem)):
             push esi;
             mov esi, {self.base_ptr};
             call {0x41E1C0};  // DataArray<GridItem>::DataArrayAlloc
-            mov [{self._controller.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             pop esi;
             ret;"""
-        asm.run(code, self._controller)
-        return Griditem(self._controller.result_u32, self._controller)
+        asm.run(code, self.controller)
+        return Griditem(self.controller.result_u32, self.controller)
 
     def free_all(self) -> Self:
-        p_board = self._controller.get_p_board()[1]
+        p_board = self.controller.get_p_board()[1]
         code = f"""
                 push ebx;
                 push edi;
                 push esi;
                 mov edi, {p_board};
-                mov ebx, {self._controller.result_address}
+                mov ebx, {self.controller.result_address}
                 mov esi, ebx;
                 xor edx, edx;
                 mov [esi], edx;
@@ -107,5 +107,5 @@ class GriditemList(ob.obj_list(Griditem)):
                     pop edi;
                     pop ebx;
                     ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
         return self
