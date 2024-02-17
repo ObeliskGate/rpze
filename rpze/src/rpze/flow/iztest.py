@@ -268,6 +268,19 @@ class IzTest:
 
         return TickRunnerResult.BREAK_DONE
 
+    def check_end(self) -> TickRunnerResult | None:
+        """
+        默认的判断是否结束测试的函数
+
+        Returns:
+            如果结束则返回TickRunnerResult.BREAK_RUN, 否则返回None
+        """
+        if (all(plant.is_dead for plant in self.target_plants) and
+                all(brain.id.rank == 0 for brain in self.target_brains)):
+            return self.end(True)
+        if self.game_board.zombie_list.obj_num == 0:
+            return self.end(False)
+
     def check_tests_end(self) -> Callable[[Callable[[int, int], float | None]], Callable[[int, int], float | None]]:
         """
         装饰器, 设置判断是否结束测试的回调函数
@@ -337,11 +350,7 @@ class IzTest:
             @self.flow_factory.add_tick_runner(priority=check_end_priority)
             def _check_end(fm: FlowManager):
                 if fm.time >= self.start_check_end_time:
-                    if (all(plant.is_dead for plant in self.target_plants) and
-                            all(brain.id.rank == 0 for brain in self.target_brains)):
-                        return self.end(True)  # all iterable对象所有元素为True时候True
-                    if self.game_board.zombie_list.obj_num == 0:
-                        return self.end(False)
+                    return self.check_end()
         return self
 
     def start_test(self, jump_frame: bool = False,
