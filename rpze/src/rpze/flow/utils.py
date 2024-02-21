@@ -4,6 +4,7 @@
 """
 import random
 import typing
+import warnings
 from typing import overload
 
 from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool
@@ -43,9 +44,13 @@ def until(cond_func: CondFunc) -> AwaitableCondFunc:
 
 
 def until(arg):
-    if isinstance(arg, int):
-        return AwaitableCondFunc(lambda fm: fm.time >= arg)
-    return AwaitableCondFunc(arg)
+    if callable(arg):
+        return AwaitableCondFunc(arg)
+    if isinstance(arg, bool):
+        warnings.warn("until(bool) is usually not what you want, use until(lambda _: bool) instead.",
+                      SyntaxWarning,
+                      stacklevel=2)
+    return AwaitableCondFunc(lambda fm: fm.time >= arg)
 
 
 def delay(time: int) -> AwaitableCondFunc:
