@@ -42,6 +42,8 @@ class Griditem(ob.ObjNode):
 
     layer = ob.property_i32(0x1c, "图层")
 
+    is_dead = ob.property_bool(0x20, "是否死亡")
+
     x = ob.property_f32(0x24, "x坐标")
 
     y = ob.property_f32(0x28, "y坐标")

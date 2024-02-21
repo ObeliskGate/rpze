@@ -54,6 +54,8 @@ class Projectile(ob.ObjNode):
 
     dy = ob.property_f32(0x40, "y速度")
 
+    is_dead = ob.property_bool(0x50, "是否死亡")
+
     type_ = ob.property_int_enum(0x5c, ProjectileType, "子弹类型")
 
     motion_type = ob.property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")

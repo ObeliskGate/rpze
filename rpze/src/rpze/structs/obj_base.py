@@ -273,6 +273,9 @@ class ObjNode(ObjBase, abc.ABC):
     ITERATOR_P_BOARD_REG: str = "edx"
     """迭代对象函数用于存储Board指针的寄存器, reanimation和粒子系统为eax, 其他为edx"""
 
+    is_dead: OffsetProperty = NotImplemented
+    """对象是否存活, 必须在所有非抽象子类中赋值"""
+
 
 _T = typing.TypeVar("_T", bound=ObjNode)
 
@@ -283,7 +286,6 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
 
     仅帮助type hint用, 请勿直接使用, 而是使用obj_list函数构造.
     """
-
     OBJ_SIZE = 28
 
     max_length = property_i32(4, "最大时对象数")
@@ -416,6 +418,21 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
             返回自己
         """
 
+    def set_next_idx(self, idx: int) -> typing.Self:
+        """
+        设置下一个对象的编号, 若idx大于当前最大长度, 会调整最大长度至和idx相同.
+
+        当前实现: 为将idx和next_idx在"栈位"对应位置中交换.
+        "调整长度"当前实现: 从所需最高到当前长度倒序添加; 与ize一开始类似且调整长度后无需再次交换.
+
+        Args:
+            idx: 下一个对象的编号
+        Returns:
+            返回自己.
+        Raises:
+            ValueError: idx不合法或idx所在对象未回收时抛出.
+        """
+
 
 def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
     """
@@ -511,8 +528,48 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
             length = self.max_length
             self.max_length = 0
             while next_idx != length:
-                next_idx = (t := self.at(next_idx).id).index
+                t = self.at(next_idx).id
+                next_idx = t.index
                 t.index = 0
+            return self
+
+        def _assert_size(self, size: int) -> typing.Self:
+            if size <= (current_len := self.max_length):
+                return self
+            if self.next_index == current_len:
+                self.next_index = size
+            else:
+                for it in self:
+                    if it.id.index == current_len:
+                        it.id.index = size
+                        break
+            self.max_length = size
+            node = self.at(current_len)
+            node.id.index = self.next_index
+            node.is_dead = True
+            for i in range(current_len + 1, size):
+                node = self.at(i)
+                node.id.index = i - 1
+                node.is_dead = True
+            self.next_index = size - 1
+            return self
+
+        def set_next_idx(self, idx: int) -> typing.Self:
+            if idx < 0:
+                raise ValueError(f"next index should be non-negative, not {idx}")
+            if self.at(idx).id.rank != 0:
+                print(self.at(idx).id)
+                raise ValueError(f"object at index {idx} is still unavailable")
+            self._assert_size(idx + 1)
+            if idx == self.next_index:
+                return self
+            target_node = self.at(idx)
+            first_node = self.at(self.next_index)
+            before_node = first_node
+            while before_node.id.index != idx:
+                before_node = self.at(before_node.id.index)
+            before_node.id.index, self.next_index = self.next_index, idx
+            target_node.id.index, first_node.id.index = first_node.id.index, target_node.id.index
             return self
 
     return _ObjListImplement
