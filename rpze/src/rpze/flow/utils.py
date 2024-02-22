@@ -17,7 +17,7 @@ from ..structs.zombie import ZombieType, Zombie
 # flow utils
 # 除去delay以外 所有的CondFunc factory以until + 情况命名
 @overload
-def until(time: int) -> AwaitableCondFunc:
+def until(time: int, /) -> AwaitableCondFunc:
     """
     生成一个 判断时间是否到达 的函数
 
@@ -32,7 +32,7 @@ def until(time: int) -> AwaitableCondFunc:
 
 
 @overload
-def until(cond_func: CondFunc) -> AwaitableCondFunc:
+def until(cond_func: CondFunc, /) -> AwaitableCondFunc:
     """
     把cond_func函数包装为AwaitableCondFunc对象.
 
@@ -288,7 +288,7 @@ def randomize_generate_cd(plant: Plant) -> Plant:
 
 
 @typing.overload
-def set_puff_x_offset(puffshroom: Plant, offset: int):
+def set_puff_x_offset(puffshroom: Plant, offset: int, /):
     """
     为小喷设置x偏移
 
@@ -305,7 +305,7 @@ def set_puff_x_offset(puffshroom: Plant, offset: int):
 
 
 @typing.overload
-def set_puff_x_offset(puffshroom: Plant, offsets: typing.Iterable[int]):
+def set_puff_x_offset(puffshroom: Plant, offsets: typing.Iterable[int], /):
     """
     为小喷设置x偏移
 

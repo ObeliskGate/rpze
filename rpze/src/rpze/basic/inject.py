@@ -64,7 +64,7 @@ class InjectedGame:
         controller: 被注入游戏的控制器
     """
     @overload
-    def __init__(self, process_id: int):
+    def __init__(self, process_id: int, /):
         """
         通过process id构造InjectedGame对象
 
@@ -73,7 +73,7 @@ class InjectedGame:
         """
 
     @overload
-    def __init__(self, game_path: str):
+    def __init__(self, game_path: str, /):
         """
         通过游戏路径构造InjectedGame对象
 
@@ -82,7 +82,7 @@ class InjectedGame:
         """
 
     @overload
-    def __init__(self, controller: Controller):
+    def __init__(self, controller: Controller, /):
         """
         通过Controller对象构造InjectedGame对象
 

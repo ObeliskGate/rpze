@@ -316,7 +316,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         """
 
     @typing.overload
-    def __getitem__(self, index: int) -> _T:
+    def __getitem__(self, index: int, /) -> _T:
         """
         返回index对应下标的元素
 
@@ -329,7 +329,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         """
 
     @typing.overload
-    def __getitem__(self, index: slice) -> list[_T]:
+    def __getitem__(self, index: slice, /) -> list[_T]:
         """
         返回slice切片对应的列表
 
@@ -362,7 +362,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         return self.__invert__()
 
     @typing.overload
-    def find(self, index: int | ObjId) -> _T | None:
+    def find(self, index: int | ObjId, /) -> _T | None:
         """
         通过index查找对象
 
@@ -381,7 +381,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         """
 
     @typing.overload
-    def find(self, idx: int, rank: int) -> _T | None:
+    def find(self, idx: int, rank: int, /) -> _T | None:
         """
         通过(index, rank)组查找对象
 

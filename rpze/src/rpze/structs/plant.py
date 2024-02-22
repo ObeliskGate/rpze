@@ -246,7 +246,7 @@ class PlantList(ob.obj_list(Plant)):
         return None
 
     @typing.overload
-    def __getitem__(self, grid: gridstr) -> Plant | None:
+    def __getitem__(self, grid: gridstr, /) -> Plant | None:
         """
         通过grid_str坐标获取植物
 
