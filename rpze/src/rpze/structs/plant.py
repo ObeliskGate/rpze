@@ -185,7 +185,9 @@ class Plant(ObjNode):
         return ob.ObjId(self.base_ptr + 0x12c, self.controller)
 
     def __str__(self) -> str:
-        return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
+        if not self.is_dead:
+            return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
+        return "dead plant"
 
     def die(self):
         """

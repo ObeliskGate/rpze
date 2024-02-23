@@ -49,7 +49,9 @@ class Griditem(ob.ObjNode):
     y = ob.property_f32(0x28, "y坐标")
 
     def __str__(self):
-        return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
+        if not self.is_dead:
+            return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
+        return "dead griditem"
 
     def die(self):
         """

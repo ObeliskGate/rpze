@@ -217,7 +217,9 @@ class Zombie(ob.ObjNode):
         return tuple(ob.ObjId(self.base_ptr + 0xf4 + i * 4, self.controller) for i in range(4))
 
     def __str__(self) -> str:
-        return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"
+        if not self.is_dead:
+            return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"
+        return "dead zombie"
 
     def die_no_loot(self):
         """
