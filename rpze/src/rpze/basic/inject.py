@@ -108,7 +108,7 @@ class InjectedGame:
 
     def enter_level(self, level_num: int) -> GameBoard:
         """
-        进入游戏, 返回GameBoard对象
+        进入游戏, 返回GameBoard对象.
 
         **请切记这个函数会毁坏你原有的关卡存档!**
 
@@ -117,7 +117,7 @@ class InjectedGame:
         Returns:
             GameBoard对象
         Raises:
-            RuntimeError: 若不在载入界面, 主界面或小游戏选项卡界面使用此函数则抛出
+            RuntimeError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
         """
         ctler = self.controller
         code = f"""
@@ -129,7 +129,9 @@ class InjectedGame:
             cmp eax, 1;
             je LDeleteGameSelector;
             cmp eax, 7;
-            je LDeleteChallengeScreen;     
+            je LDeleteChallengeScreen;
+            cmp eax, 3;
+            je LNewBoard;
             LError:
             mov [{ctler.result_address}], eax;
             pop esi;
@@ -137,6 +139,12 @@ class InjectedGame:
             
             LDeleteChallengeScreen:
             call 0x44fd00;  // LawnApp::KillChallengeScreen(esi = LawnApp* this)
+            jmp LPreNewGame;
+            
+            LNewBoard:
+            mov eax, [esi + {0x768}]
+            mov cl, [eax + {0x5760}]
+            mov [esi + {0x88c}], cl
             jmp LPreNewGame;
             
             LCompleteLoading:
@@ -154,18 +162,23 @@ class InjectedGame:
             mov [{ctler.result_address}], eax;
             pop esi;
             ret;"""  # copied from avz
-        while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
-            continue
-        ctler.start()
+        if ctler.read_bool([0x6a9ec0, 0x76c]):
+            while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
+                continue
+        is_connected = ctler.hook_connected()
+        if not is_connected:
+            ctler.start()
         ctler.before()
         asm.run(code, ctler)
         ctler.next_frame()
         ctler.before()
         ctler.next_frame()
         ctler.before()
-        ctler.end()
+        ret = get_board(ctler)
+        if not is_connected:
+            ctler.end()
         if self.controller.result_i32:
             raise RuntimeError("this function should be used at loading screen, "
                                "main selector screen or challenge selector screen, "
                                f"while the current screen num is {self.controller.result_i32}")
-        return get_board(ctler)
+        return ret
