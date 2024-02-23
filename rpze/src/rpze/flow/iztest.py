@@ -12,6 +12,7 @@ from typing import TypeAlias, Self
 from .flow import FlowFactory, TickRunnerResult, FlowManager
 from .utils import until, plant_abbr_to_type, zombie_abbr_to_type, randomize_generate_cd
 from ..basic.gridstr import parse_grid_str
+from ..basic.inject import ConnectedContext
 from ..rp_extend import Controller, HookPosition
 from ..structs.game_board import GameBoard, get_board
 from ..structs.griditem import Griditem
@@ -374,48 +375,47 @@ class IzTest:
         ctler.open_hook(HookPosition.CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
         if not self._flow_factory_set:
             self.set_flow_factory()
-        ctler.start()
-        ctler.before()
-        if jump_frame:
-            ctler.start_jump_frame()
-        else:
-            frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
-            self.game_board.frame_duration = frame_duration
-        ctler.next_frame()
-
-        def __one_test():
-            nonlocal last_time
-            _flow_manager = self.flow_factory.build_manager()
+        with ConnectedContext(ctler) as ctler:
             ctler.before()
+            if jump_frame:
+                ctler.start_jump_frame()
+            else:
+                frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
+                self.game_board.frame_duration = frame_duration
             ctler.next_frame()
-            while not self._last_test_ended:
+
+            def __one_test():
+                nonlocal last_time
+                _flow_manager = self.flow_factory.build_manager()
                 ctler.before()
-                _flow_manager.run()
-                if not jump_frame and kbhit() and getwch() == control_speed_key:
-                    self.game_board.frame_duration = 10 \
-                        if self.game_board.frame_duration != 10 else frame_duration
                 ctler.next_frame()
-            self._last_test_ended = False
-            if print_interval and self._test_time % print_interval == 0:
-                print(f"ended {self._test_time} of {self.repeat_time}, "
-                      f"success rate: {self._success_count / self._test_time:.2%}, "
-                      f"using time: {(t := time.time()) - last_time:.2f}s.")
-                last_time = t
+                while not self._last_test_ended:
+                    ctler.before()
+                    _flow_manager.run()
+                    if not jump_frame and kbhit() and getwch() == control_speed_key:
+                        self.game_board.frame_duration = 10 \
+                            if self.game_board.frame_duration != 10 else frame_duration
+                    ctler.next_frame()
+                self._last_test_ended = False
+                if print_interval and self._test_time % print_interval == 0:
+                    print(f"ended {self._test_time} of {self.repeat_time}, "
+                          f"success rate: {self._success_count / self._test_time:.2%}, "
+                          f"using time: {(t := time.time()) - last_time:.2f}s.")
+                    last_time = t
 
-        if __callback := self.check_tests_end_callback:
-            __one_test()  # no do while!
-            while (result := __callback(self._test_time, self._success_count)) is None:
-                __one_test()
-        else:
-            for _ in range(self.repeat_time):
-                __one_test()
-            result = self._success_count / self.repeat_time
+            if __callback := self.check_tests_end_callback:
+                __one_test()  # no do while!
+                while (result := __callback(self._test_time, self._success_count)) is None:
+                    __one_test()
+            else:
+                for _ in range(self.repeat_time):
+                    __one_test()
+                result = self._success_count / self.repeat_time
 
-        ctler.before()
-        if jump_frame:
-            ctler.end_jump_frame()
-        else:
-            self.game_board.frame_duration = 10
-        ctler.close_hook(HookPosition.CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
-        ctler.end()
+            ctler.before()
+            if jump_frame:
+                ctler.end_jump_frame()
+            else:
+                self.game_board.frame_duration = 10
+            ctler.close_hook(HookPosition.CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
         return result, (time.time() - start_time)

@@ -165,20 +165,37 @@ class InjectedGame:
         if ctler.read_bool([0x6a9ec0, 0x76c]):
             while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
                 continue
-        is_connected = ctler.hook_connected()
-        if not is_connected:
-            ctler.start()
-        ctler.before()
-        asm.run(code, ctler)
-        ctler.next_frame()
-        ctler.before()
-        ctler.next_frame()
-        ctler.before()
-        ret = get_board(ctler)
-        if not is_connected:
-            ctler.end()
+        with ConnectedContext(ctler) as ctler:
+            ctler.before()
+            asm.run(code, ctler)
+            ctler.next_frame()
+            ctler.before()
+            ctler.next_frame()
+            ctler.before()
+            ret = get_board(ctler)
         if self.controller.result_i32:
             raise RuntimeError("this function should be used at loading screen, "
                                "main selector screen or challenge selector screen, "
                                f"while the current screen num is {self.controller.result_i32}")
         return ret
+
+class ConnectedContext:
+    """
+    创造已连接游戏的上下文
+
+     Attributes:
+         controller: 被注入游戏的控制器
+    """
+    def __init__(self, controller: Controller):
+        self.controller: Controller = controller
+        self._is_connected: bool = False
+
+    def __enter__(self) -> Controller:
+        self._is_connected = self.controller.hook_connected()
+        if not self._is_connected:
+            self.controller.start()
+        return self.controller
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not self._is_connected:
+            self.controller.end()
