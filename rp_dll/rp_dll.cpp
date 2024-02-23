@@ -69,7 +69,8 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 {
 	auto pSharedMemory = SharedMemory::getInstance();
 	auto pLawnApp = *reinterpret_cast<BYTE**>(0x6a9ec0);
-	auto pBoard = *reinterpret_cast<BYTE**>(pLawnApp + 0x768);
+	auto pBoard = *reinterpret_cast<BYTE***>(pLawnApp + 0x768);
+	auto pBoardUpdateFunc = *reinterpret_cast<BYTE**>(*pBoard + 0x58);
 	if (!pBoard)
 	{
 		std::cout << "board ptr invalid, panic!!!" << std::endl;
@@ -84,7 +85,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 			mov edx, 0x41BAD0  // Board::ProcessDeleteQueue
 			call edx
 			mov ecx, esi
-			mov edx, 0x415D40  // Board::Update
+			mov edx, pBoardUpdateFunc  // Board::Update
 			call edx
 			mov esi, pLawnApp
 			push dword ptr [esi + 0x820]

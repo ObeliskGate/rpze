@@ -4,6 +4,7 @@
 """
 import random
 import typing
+import warnings
 from typing import overload
 
 from .flow import FlowManager, AwaitableCondFunc, CondFunc, VariablePool
@@ -16,7 +17,7 @@ from ..structs.zombie import ZombieType, Zombie
 # flow utils
 # 除去delay以外 所有的CondFunc factory以until + 情况命名
 @overload
-def until(time: int) -> AwaitableCondFunc:
+def until(time: int, /) -> AwaitableCondFunc:
     """
     生成一个 判断时间是否到达 的函数
 
@@ -31,7 +32,7 @@ def until(time: int) -> AwaitableCondFunc:
 
 
 @overload
-def until(cond_func: CondFunc) -> AwaitableCondFunc:
+def until(cond_func: CondFunc, /) -> AwaitableCondFunc:
     """
     把cond_func函数包装为AwaitableCondFunc对象.
 
@@ -43,9 +44,13 @@ def until(cond_func: CondFunc) -> AwaitableCondFunc:
 
 
 def until(arg):
-    if isinstance(arg, int):
-        return AwaitableCondFunc(lambda fm: fm.time >= arg)
-    return AwaitableCondFunc(arg)
+    if callable(arg):
+        return AwaitableCondFunc(arg)
+    if isinstance(arg, bool):
+        warnings.warn("until(bool) is usually not what you want, use until(lambda _: bool) instead.",
+                      SyntaxWarning,
+                      stacklevel=2)
+    return AwaitableCondFunc(lambda fm: fm.time >= arg)
 
 
 def delay(time: int) -> AwaitableCondFunc:
@@ -207,7 +212,7 @@ zombie_abbr_to_type: dict[str, ZombieType] = {
 
 
 # operate utils
-def place(place_str: gridstr, board: GameBoard | None = None) -> Zombie | Plant | None:
+def place(place_str: str, board: GameBoard | None = None) -> Zombie | Plant | None:
     """
     用字符串放置植物
 
@@ -283,7 +288,7 @@ def randomize_generate_cd(plant: Plant) -> Plant:
 
 
 @typing.overload
-def set_puff_x_offset(puffshroom: Plant, offset: int):
+def set_puff_x_offset(puffshroom: Plant, offset: int, /):
     """
     为小喷设置x偏移
 
@@ -300,7 +305,7 @@ def set_puff_x_offset(puffshroom: Plant, offset: int):
 
 
 @typing.overload
-def set_puff_x_offset(puffshroom: Plant, offsets: typing.Iterable[int]):
+def set_puff_x_offset(puffshroom: Plant, offsets: typing.Iterable[int], /):
     """
     为小喷设置x偏移
 
@@ -317,7 +322,7 @@ def set_puff_x_offset(puffshroom: Plant, offsets: typing.Iterable[int]):
 
 
 def set_puff_x_offset(puffshroom: Plant, arg):
-    center_x = get_board().grid_to_pixel_x(puffshroom.col, puffshroom.row)
+    center_x = get_board(puffshroom.controller).grid_to_pixel_x(puffshroom.col, puffshroom.row)
     offset = arg if isinstance(arg, int) else random.choice(list(arg))
     if not (-5 <= offset <= 4):
         raise ValueError(f"offset {offset} out of valid range of puffshroom")

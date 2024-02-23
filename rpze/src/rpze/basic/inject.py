@@ -64,7 +64,7 @@ class InjectedGame:
         controller: 被注入游戏的控制器
     """
     @overload
-    def __init__(self, process_id: int):
+    def __init__(self, process_id: int, /):
         """
         通过process id构造InjectedGame对象
 
@@ -73,7 +73,7 @@ class InjectedGame:
         """
 
     @overload
-    def __init__(self, game_path: str):
+    def __init__(self, game_path: str, /):
         """
         通过游戏路径构造InjectedGame对象
 
@@ -82,7 +82,7 @@ class InjectedGame:
         """
 
     @overload
-    def __init__(self, controller: Controller):
+    def __init__(self, controller: Controller, /):
         """
         通过Controller对象构造InjectedGame对象
 
@@ -108,7 +108,7 @@ class InjectedGame:
 
     def enter_level(self, level_num: int) -> GameBoard:
         """
-        进入游戏, 返回GameBoard对象
+        进入游戏, 返回GameBoard对象.
 
         **请切记这个函数会毁坏你原有的关卡存档!**
 
@@ -117,7 +117,7 @@ class InjectedGame:
         Returns:
             GameBoard对象
         Raises:
-            RuntimeError: 若不在载入界面, 主界面或小游戏选项卡界面使用此函数则抛出
+            RuntimeError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
         """
         ctler = self.controller
         code = f"""
@@ -129,7 +129,9 @@ class InjectedGame:
             cmp eax, 1;
             je LDeleteGameSelector;
             cmp eax, 7;
-            je LDeleteChallengeScreen;     
+            je LDeleteChallengeScreen;
+            cmp eax, 3;
+            je LNewBoard;
             LError:
             mov [{ctler.result_address}], eax;
             pop esi;
@@ -137,6 +139,12 @@ class InjectedGame:
             
             LDeleteChallengeScreen:
             call 0x44fd00;  // LawnApp::KillChallengeScreen(esi = LawnApp* this)
+            jmp LPreNewGame;
+            
+            LNewBoard:
+            mov eax, [esi + {0x768}]
+            mov cl, [eax + {0x5760}]
+            mov [esi + {0x88c}], cl
             jmp LPreNewGame;
             
             LCompleteLoading:
@@ -154,18 +162,40 @@ class InjectedGame:
             mov [{ctler.result_address}], eax;
             pop esi;
             ret;"""  # copied from avz
-        while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
-            continue
-        ctler.start()
-        ctler.before()
-        asm.run(code, ctler)
-        ctler.next_frame()
-        ctler.before()
-        ctler.next_frame()
-        ctler.before()
-        ctler.end()
+        if ctler.read_bool([0x6a9ec0, 0x76c]):
+            while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
+                continue
+        with ConnectedContext(ctler) as ctler:
+            ctler.before()
+            asm.run(code, ctler)
+            ctler.next_frame()
+            ctler.before()
+            ctler.next_frame()
+            ctler.before()
+            ret = get_board(ctler)
         if self.controller.result_i32:
             raise RuntimeError("this function should be used at loading screen, "
                                "main selector screen or challenge selector screen, "
                                f"while the current screen num is {self.controller.result_i32}")
-        return get_board(ctler)
+        return ret
+
+class ConnectedContext:
+    """
+    创造已连接游戏的上下文
+
+     Attributes:
+         controller: 被注入游戏的控制器
+    """
+    def __init__(self, controller: Controller):
+        self.controller: Controller = controller
+        self._is_connected: bool = False
+
+    def __enter__(self) -> Controller:
+        self._is_connected = self.controller.hook_connected()
+        if not self._is_connected:
+            self.controller.start()
+        return self.controller
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if not self._is_connected:
+            self.controller.end()

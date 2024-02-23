@@ -45,20 +45,20 @@ class GameBoard(ob.ObjBase):
     @property
     def mj_clock(self) -> int:
         """mj时钟"""
-        return self._controller.read_i32([0x6a9ec0, 0x838])  # 我真看不懂为什么mj时钟在LawnApp底下啊
+        return self.controller.read_i32([0x6a9ec0, 0x838])  # 我真看不懂为什么mj时钟在LawnApp底下啊
 
     @mj_clock.setter
     def mj_clock(self, value: int):
-        self._controller.write_i32(value, [0x6a9ec0, 0x838])
+        self.controller.write_i32(value, [0x6a9ec0, 0x838])
 
     @property
     def frame_duration(self) -> int:
         """帧时长, 以ms为单位"""
-        return self._controller.read_i32([0x6a9ec0, 0x454])
+        return self.controller.read_i32([0x6a9ec0, 0x454])
 
     @frame_duration.setter
     def frame_duration(self, value: int):
-        self._controller.write_i32(value, [0x6a9ec0, 0x454])
+        self.controller.write_i32(value, [0x6a9ec0, 0x454])
 
     def iz_setup_plant(self, plant: Plant):
         """
@@ -76,7 +76,7 @@ class GameBoard(ob.ObjBase):
             push {plant.base_ptr};
             call {0x42A530}; // Challenge::IZombieSetupPlant
             ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
 
     def get_plants_on_lawn(self, row: int, col: int) -> \
             tuple[Plant | None, Plant | None, Plant | None, Plant | None]:
@@ -91,7 +91,7 @@ class GameBoard(ob.ObjBase):
         """
         code = f"""
             push ebx;
-            mov ebx, {(ctler := self._controller).result_address};
+            mov ebx, {(ctler := self.controller).result_address};
             push {row};
             push {col};
             mov edx, {self.base_ptr};
@@ -122,10 +122,10 @@ class GameBoard(ob.ObjBase):
             push {col};
             mov eax, {self.base_ptr};
             call {0x40CE20};  // Board::NewPlant
-            mov [{self._controller.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             ret;'''
-        asm.run(code, self._controller)
-        return Plant(self._controller.result_u32, self._controller)
+        asm.run(code, self.controller)
+        return Plant(self.controller.result_u32, self.controller)
 
     def iz_new_plant(self, row: int, col: int, type_: PlantType) -> Plant | None:
         """
@@ -154,7 +154,7 @@ class GameBoard(ob.ObjBase):
             pop edi;
             pop ebx;
             ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
         return self.plant_list.find(next_idx)
 
     def iz_place_zombie(self, row: int, col: int, type_: ZombieType) -> Zombie:
@@ -180,7 +180,7 @@ class GameBoard(ob.ObjBase):
             mov ecx, {p_c};
             call {0x42a0f0};  // Challenge::IZombiePlaceZombie
             ret;'''
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
         return self.zombie_list.at(ret_idx)
 
     def pixel_to_col(self, x: int, y: int = 0) -> int:
@@ -199,11 +199,11 @@ class GameBoard(ob.ObjBase):
             mov eax, {x};
             mov ecx, {self.base_ptr};
             call {0x41c4c0};  // Board::PixelToGridX 
-            mov [{self._controller.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             pop edi;
             ret;"""
-        asm.run(code, self._controller)
-        return self._controller.result_i32
+        asm.run(code, self.controller)
+        return self.controller.result_i32
 
     def pixel_to_row(self, x: int, y: int) -> int:
         """
@@ -220,10 +220,10 @@ class GameBoard(ob.ObjBase):
             mov eax, {x};
             mov edx, {self.base_ptr};
             call {0x41c550};  // Board::PixelToGridY
-            mov [{self._controller.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             ret;"""
-        asm.run(code, self._controller)
-        return self._controller.result_i32
+        asm.run(code, self.controller)
+        return self.controller.result_i32
 
     def pixel_to_grid(self, x: int, y: int) -> tuple[int, int]:
         """
@@ -255,11 +255,11 @@ class GameBoard(ob.ObjBase):
             mov eax, {col};
             mov ecx, {self.base_ptr};
             call {0x41C680};  // Board::GridToPixelX
-            mov [{self._controller.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             pop esi;
             ret;"""
-        asm.run(code, self._controller)
-        return self._controller.result_i32
+        asm.run(code, self.controller)
+        return self.controller.result_i32
 
     def grid_to_pixel_y(self, row: int, col: int) -> int:
         """
@@ -277,11 +277,11 @@ class GameBoard(ob.ObjBase):
             mov eax, {row};
             mov ecx, {col};
             call {0x41c740};  // Board::GridToPixelY
-            mov [{self._controller.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             pop ebx;
             ret;"""
-        asm.run(code, self._controller)
-        return self._controller.result_i32
+        asm.run(code, self.controller)
+        return self.controller.result_i32
 
     def grid_to_pixel(self, row: int, col: int) -> tuple[int, int]:
         """
@@ -327,7 +327,7 @@ class GameBoard(ob.ObjBase):
             call {0x41BAD0};  // Board::ProcessDeleteQueue
             pop esi;
             ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
         return self
 
 

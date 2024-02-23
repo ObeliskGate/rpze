@@ -44,6 +44,8 @@ class Projectile(ob.ObjNode):
 
     int_y = ob.property_i32(0xc, "图像整数y坐标")
 
+    col = ob.property_i32(0x1c, "所在行数")
+
     x = ob.property_f32(0x30, "浮点x坐标")
 
     y = ob.property_f32(0x34, "浮点y坐标")
@@ -52,6 +54,8 @@ class Projectile(ob.ObjNode):
 
     dy = ob.property_f32(0x40, "y速度")
 
+    is_dead = ob.property_bool(0x50, "是否死亡")
+
     type_ = ob.property_int_enum(0x5c, ProjectileType, "子弹类型")
 
     motion_type = ob.property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")
@@ -59,7 +63,7 @@ class Projectile(ob.ObjNode):
     @property
     def target_zombie_id(self) -> ob.ObjId:
         """香蒲子弹目标僵尸"""
-        return ob.ObjId(self.base_ptr + 0x88, self._controller)
+        return ob.ObjId(self.base_ptr + 0x88, self.controller)
 
     def die(self):
         """
@@ -69,17 +73,17 @@ class Projectile(ob.ObjNode):
             mov eax, {self.base_ptr};
             call {0x46EB20};  // Projectile::Die
             ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
 
 
 class ProjectileList(ob.obj_list(Projectile)):
     def free_all(self) -> Self:
-        p_board = self._controller.get_p_board()[1]
+        p_board = self.controller.get_p_board()[1]
         code = f"""
                 push edi;   
                 push esi;
                 mov edi, {p_board}
-                mov esi, {self._controller.result_address};
+                mov esi, {self.controller.result_address};
                 xor edx, edx;
                 mov [esi], edx;
                 LIterate:
@@ -97,5 +101,5 @@ class ProjectileList(ob.obj_list(Projectile)):
                     pop esi;
                     pop edi;
                     ret;"""
-        asm.run(code, self._controller)
+        asm.run(code, self.controller)
         return self
