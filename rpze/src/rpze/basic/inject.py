@@ -161,18 +161,22 @@ class InjectedGame:
             xor eax, eax;
             mov [{ctler.result_address}], eax;
             pop esi;
-            ret;"""  # copied from avz
-        if ctler.read_bool([0x6a9ec0, 0x76c]):
-            while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
-                continue
+            ret;"""
         with ConnectedContext(ctler) as ctler:
             ctler.before()
+            if ctler.read_bool([0x6a9ec0, 0x76c]):
+                ctler.end()
+                while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
+                    continue
+                ctler.start()
+                ctler.before()
             asm.run(code, ctler)
             ctler.next_frame()
             ctler.before()
             ctler.next_frame()
             ctler.before()
             ret = get_board(ctler)
+            
         if self.controller.result_i32:
             raise RuntimeError("this function should be used at loading screen, "
                                "main selector screen or challenge selector screen, "
