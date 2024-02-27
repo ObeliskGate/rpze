@@ -10,11 +10,7 @@ class SharedMemory
 	HANDLE hMapFile;
 	std::wstring sharedMemoryName;
 	SharedMemory();
-	~SharedMemory() 
-	{ 
-		UnmapViewOfFile(sharedMemoryPtr);
-		CloseHandle(hMapFile); 
-	}
+	~SharedMemory();
 
 	template<typename T = BYTE>
 	T* getPtr() const { return static_cast<T*>(sharedMemoryPtr); }

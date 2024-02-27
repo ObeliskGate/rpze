@@ -79,7 +79,7 @@ public:
 	// pBoard指针效验位
 	volatile bool& isBoardPtrValid() const { return getRef<bool>(106); }
 
-	// 开10个
+	static constexpr size_t HOOK_LEN = 16;
 	// hook位置的状态
 	volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 112); }
 
@@ -106,6 +106,9 @@ public:
 
 	// 主要接口
 
+	// 等到本cs执行
+	void before() const;
+
 	// 跳到下一帧
 	void next() const { getCurrentPhaseCode() = PhaseCode::CONTINUE; }
 	
@@ -116,6 +119,10 @@ public:
 	bool endJumpFrame();
 
 	inline bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING || *pCurrentPhaseCode == PhaseCode::CONTINUE; }
+
+	inline void untilGameExecuted() const;
+
+
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>
