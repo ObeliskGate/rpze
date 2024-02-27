@@ -174,11 +174,11 @@ bool Memory::runCode(const char* codes, size_t len) const
 	}
 	if (!hookConnected(HookPosition::MAIN_LOOP))
 	{
-		throw std::exception("runCode: main loop hook connected");
+		throw std::exception("runCode: main loop hook not connected");
 	}
 	memcpy(getAsmPtr(), codes, len);
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
-	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
+	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  // 等待执行完成
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
 	if (executeResult() == ExecuteResult::FAIL) return false;
 	throw std::exception("unexpected behavior of runCode");

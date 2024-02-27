@@ -146,7 +146,7 @@ ize_plant_types: set[PlantType] = {
     PlantType.chomper,
     PlantType.repeater,
     PlantType.puffshroom,
-    PlantType.doomshroom,
+    PlantType.fumeshroom,
     PlantType.scaredyshroom,
     PlantType.squash,
     PlantType.threepeater,

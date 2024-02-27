@@ -82,7 +82,7 @@ class ZombieStatus(IntEnum):
     dancing_armrise5 = 0x31
     backup_spawning = 0x32
     dolphin_walk_with_dolphin = 0x33
-    dophin_jump_in_pool = 0x34
+    dolphin_jump_in_pool = 0x34
     dolphin_ride = 0x35
     dolphin_jump = 0x36
     dolphin_walk_in_pool = 0x37
@@ -92,7 +92,7 @@ class ZombieStatus(IntEnum):
     snorkel_swim = 0x3b
     snorkel_up_to_eat = 0x3c
     snorkel_eat = 0x3d
-    snorkel_finied_eat = 0x3e
+    snorkel_finished_eat = 0x3e
     catapult_shoot = 0x43
     catapult_idle = 0x44
     balloon_flying = 0x49
