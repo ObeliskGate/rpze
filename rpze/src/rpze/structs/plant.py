@@ -128,6 +128,8 @@ class Plant(ObjNode):
 
     hp = ob.property_i32(0x40, "当前血量")
 
+    max_hp = ob.property_i32(0x44, "最大血量")
+
     status_cd = ob.property_i32(0x54, """
         属性倒计时, 如磁铁cd
                                      

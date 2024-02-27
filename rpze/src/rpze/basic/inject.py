@@ -183,6 +183,7 @@ class InjectedGame:
                                f"while the current screen num is {self.controller.result_i32}")
         return ret
 
+
 class ConnectedContext:
     """
     创造已连接游戏的上下文
