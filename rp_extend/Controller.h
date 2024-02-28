@@ -26,6 +26,8 @@ public:
 
 	void before() const { mem.before(); }
 
+	bool is_jumping_frame() const { return mem.isJumpingFrame(); }
+
 	bool start_jump_frame() { return mem.startJumpFrame(); }
 
 	bool end_jump_frame() { return mem.endJumpFrame(); }

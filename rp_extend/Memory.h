@@ -8,7 +8,7 @@ class Memory
 	HANDLE hMemory;
 
 	// 是否在跳帧
-	bool isJumpingFrame = false;
+	bool jumpingFrame = false;
 
 	volatile PhaseCode* pCurrentPhaseCode;
 	volatile RunState* pCurrentRunState;
@@ -111,6 +111,8 @@ public:
 
 	// 跳到下一帧
 	void next() const { getCurrentPhaseCode() = PhaseCode::CONTINUE; }
+
+	bool isJumpingFrame() const { return jumpingFrame; }
 	
 	// 开始跳帧, 若已在跳帧返回false
 	bool startJumpFrame();
@@ -118,9 +120,9 @@ public:
 	// 结束跳帧, 若不在跳帧返回false
 	bool endJumpFrame();
 
-	inline bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING || *pCurrentPhaseCode == PhaseCode::CONTINUE; }
+	bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING || *pCurrentPhaseCode == PhaseCode::CONTINUE; }
 
-	inline void untilGameExecuted() const;
+	void untilGameExecuted() const;
 
 
 	// 形如<int>({0x6a9ec0, 0x768})这样调用

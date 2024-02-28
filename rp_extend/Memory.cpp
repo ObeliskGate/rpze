@@ -92,8 +92,12 @@ bool Memory::startJumpFrame()
 	{
 		throw std::exception("startJumpFrame: main loop hook not connected");
 	}
-	if (isJumpingFrame) return false;
-	isJumpingFrame = true;
+	if (!boardPtr())
+	{
+		throw std::exception("startJumpFrame: board ptr not found");
+	}
+	if (jumpingFrame) return false;
+	jumpingFrame = true;
 	pCurrentPhaseCode = &jumpingPhaseCode();
 	pCurrentRunState = &jumpingRunState();
 	jumpingPhaseCode() = PhaseCode::WAIT;
@@ -107,8 +111,8 @@ bool Memory::endJumpFrame()
 	{
 		throw std::exception("endJumpFrame: main loop hook not connected");
 	}
-	if (!isJumpingFrame) return false;
-	isJumpingFrame = false;
+	if (!jumpingFrame) return false;
+	jumpingFrame = false;
 	pCurrentPhaseCode = &phaseCode();
 	pCurrentRunState = &runState();
 	phaseCode() = PhaseCode::WAIT;

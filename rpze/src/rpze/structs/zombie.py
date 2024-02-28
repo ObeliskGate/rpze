@@ -182,7 +182,7 @@ class Zombie(ob.ObjNode):
 
     accessories_max_hp_2 = ob.property_i32(0xe0, "二类饰品血量上限")
 
-    target_col = ob.property_i32(0x80, "蹦级目标所在列")
+    bungee_col = ob.property_i32(0x80, "蹦级目标所在列")
 
     hit_box_x = ob.property_i32(0x8c, "中弹判定横坐标")
 
