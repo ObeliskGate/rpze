@@ -10,4 +10,3 @@ with InjectedGame(r"C:\space\pvz\Plants vs. Zombies 1.0.0.1051 EN\PlantsVsZombie
     ctler.next_frame()
     ctler.before()
     board.remove_cutscene_zombie()
-    
