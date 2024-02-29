@@ -5,6 +5,10 @@
 
 void Memory::getRemoteMemoryAddress()
 {
+	if (!isShmPrepared())
+	{
+		throw std::exception("getRemoteMemoryAddress: main loop not prepared");
+	}
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY_PTR;
 	untilGameExecuted();
 	if (executeResult() == ExecuteResult::SUCCESS)
@@ -132,7 +136,7 @@ std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const ui
 {
 	if (size > BUFFER_SIZE) throw std::exception("readBytes: too many bytes");
 	if (len > LENGTH) throw std::exception("readBytes: too many offsets");
-	if (!hookConnected(HookPosition::MAIN_LOOP))
+	if (!isShmPrepared())
 	{
 		HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 		if (!hPvz)
@@ -168,7 +172,7 @@ bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, 
 {
 	if (size > BUFFER_SIZE) throw std::exception("writeBytes: too many bytes");
 	if (len > LENGTH) throw std::exception("writeBytes: too many offsets");
-	if (!hookConnected(HookPosition::MAIN_LOOP))
+	if (!isShmPrepared())
 	{
 		HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 		if (!hPvz)
@@ -201,9 +205,9 @@ bool Memory::runCode(const char* codes, size_t len) const
 	{
 		throw std::exception("runCode: too many codes");
 	}
-	if (!hookConnected(HookPosition::MAIN_LOOP))
+	if (!isShmPrepared())
 	{
-		throw std::exception("runCode: main loop hook not connected");
+		throw std::exception("runCode: main loop not prepared");
 	}
 	memcpy(getAsmPtr(), codes, len);
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;

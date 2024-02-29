@@ -124,6 +124,9 @@ public:
 
 	void untilGameExecuted() const;
 
+	bool isShmPrepared() const { return hookConnected(HookPosition::MAIN_LOOP)
+		&& *pCurrentPhaseCode == PhaseCode::WAIT
+		&& *pCurrentRunState == RunState::OVER; }
 
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
@@ -155,7 +158,7 @@ public:
 
 	uint32_t getAsmAddress() const { return remoteMemoryAddress + BUFFER_OFFSET; }
 
-	inline std::tuple<bool, uint32_t> getPBoard() const // 第一位返回0表示无须换新
+	std::tuple<bool, uint32_t> getPBoard() const // 第一位返回0表示无须换新
 	{
 		auto t = isBoardPtrValid();
 		isBoardPtrValid() = true;
