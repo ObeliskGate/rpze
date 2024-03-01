@@ -4,6 +4,7 @@
 """
 import os
 import subprocess
+import time
 from typing import overload
 
 from . import asm
@@ -168,7 +169,7 @@ class InjectedGame:
             if ctler.read_bool([0x6a9ec0, 0x76c]):
                 ctler.end()
                 while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
-                    continue
+                    time.sleep(0.1)
                 ctler.start()
                 ctler.before()
             asm.run(code, ctler)
@@ -195,7 +196,6 @@ def enter_ize(game: InjectedGame) -> GameBoard:
     with ConnectedContext(game.controller) as ctler:
         ctler.before()
         board = game.enter_level(70)
-        print(board.game_time)
         board.remove_cutscene_zombie()
         ctler.next_frame()
     return board
