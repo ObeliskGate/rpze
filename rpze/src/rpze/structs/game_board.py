@@ -330,6 +330,22 @@ class GameBoard(ob.ObjBase):
         asm.run(code, self.controller)
         return self
 
+    def remove_cutscene_zombie(self) -> Self:
+        """
+        移除选卡界面的僵尸
+
+        Returns:
+            返回自己
+        """
+        code = f"""
+            push ebx;
+            mov ebx, {self.base_ptr};
+            call {0x40DF70};  // Board::RemoveCutsceneZombie
+            pop ebx;
+            ret;"""
+        asm.run(code, self.controller)
+        return self
+
 
 __game_board_cache = None  # 重复构造对象会导致多次decode字节码, 故缓存.
 

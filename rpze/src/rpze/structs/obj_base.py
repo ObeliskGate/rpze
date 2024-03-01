@@ -558,7 +558,6 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
             if idx < 0:
                 raise ValueError(f"next index should be non-negative, not {idx}")
             if self.at(idx).id.rank != 0:
-                print(self.at(idx).id)
                 raise ValueError(f"object at index {idx} is still unavailable")
             self._assert_size(idx + 1)
             if idx == self.next_index:

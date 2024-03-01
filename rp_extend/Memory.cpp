@@ -5,14 +5,17 @@
 
 void Memory::getRemoteMemoryAddress()
 {
+	if (!isShmPrepared())
+	{
+		throw std::exception("getRemoteMemoryAddress: main loop not prepared");
+	}
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY_PTR;
-	__until(getCurrentPhaseCode() == PhaseCode::WAIT);
-
+	untilGameExecuted();
 	if (executeResult() == ExecuteResult::SUCCESS)
 	{
 		remoteMemoryAddress = *static_cast<volatile uint32_t*>(getReadWriteVal());
 	}
-	else throw std::exception("unexpected behavior");
+	else throw std::exception("getRemoteMemoryAddress: unexpected behavior");
 }
 
 Memory::Memory(DWORD pid)
@@ -37,7 +40,7 @@ Memory::Memory(DWORD pid)
 	this->pid = pid;
 	globalState() = HookState::CONNECTED;
 	startControl();
-	__until(getCurrentPhaseCode() == PhaseCode::WAIT);
+	before();
 	getRemoteMemoryAddress();
 	endControl();
 }
@@ -55,12 +58,11 @@ std::optional<volatile void*> Memory::_readMemory(uint32_t size, const uint32_t*
 	memoryNum() = size;
 	CopyMemory(getOffsets(), offsets, sizeof(uint32_t) * len);
 	getOffsets()[len] = OFFSET_END;
-	auto c = getCurrentPhaseCode();
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
-	__until(getCurrentPhaseCode() == PhaseCode::WAIT);//等待执行完成
+	untilGameExecuted(); 
 	if (executeResult() == ExecuteResult::SUCCESS) return getReadWriteVal();
 	if (executeResult() == ExecuteResult::FAIL) return {};
-	throw std::exception("unexpected behavior of _readMemory");
+	throw std::exception("_readMemory: unexpected behavior");
 }
 
 bool Memory::_writeMemory(const void* pVal, uint32_t size, const uint32_t* offsets, uint32_t len)
@@ -69,12 +71,23 @@ bool Memory::_writeMemory(const void* pVal, uint32_t size, const uint32_t* offse
 	CopyMemory(getReadWriteVal(), pVal, size);
 	CopyMemory(getOffsets(), offsets, sizeof(uint32_t) * len);
 	getOffsets()[len] = OFFSET_END;
-
 	getCurrentPhaseCode() = PhaseCode::WRITE_MEMORY;
-	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
+	untilGameExecuted();
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
 	if (executeResult() == ExecuteResult::FAIL) return false;
-	throw std::exception("unexpected behavior of _writeMemory");
+	throw std::exception("_writeMemory: unexpected behavior");
+}
+
+void Memory::before() const
+{
+	if (!hookConnected(HookPosition::MAIN_LOOP))
+	{
+		throw std::exception("before: main loop hook not connected");
+	}
+	while (isBlocked())
+	{
+		if (globalState() == HookState::NOT_CONNECTED) throw std::exception("before: hook not connected");
+	}
 }
 
 bool Memory::startJumpFrame()
@@ -83,8 +96,12 @@ bool Memory::startJumpFrame()
 	{
 		throw std::exception("startJumpFrame: main loop hook not connected");
 	}
-	if (isJumpingFrame) return false;
-	isJumpingFrame = true;
+	if (!boardPtr())
+	{
+		throw std::exception("startJumpFrame: board ptr not found");
+	}
+	if (jumpingFrame) return false;
+	jumpingFrame = true;
 	pCurrentPhaseCode = &jumpingPhaseCode();
 	pCurrentRunState = &jumpingRunState();
 	jumpingPhaseCode() = PhaseCode::WAIT;
@@ -98,8 +115,8 @@ bool Memory::endJumpFrame()
 	{
 		throw std::exception("endJumpFrame: main loop hook not connected");
 	}
-	if (!isJumpingFrame) return false;
-	isJumpingFrame = false;
+	if (!jumpingFrame) return false;
+	jumpingFrame = false;
 	pCurrentPhaseCode = &phaseCode();
 	pCurrentRunState = &runState();
 	phaseCode() = PhaseCode::WAIT;
@@ -107,13 +124,25 @@ bool Memory::endJumpFrame()
 	return true;
 }
 
+void Memory::untilGameExecuted() const
+{
+	while (getCurrentPhaseCode() != PhaseCode::WAIT)
+	{
+		if (globalState() == HookState::NOT_CONNECTED) throw std::exception("untilGameExecuted: hook not connected");
+	}
+}
+
 std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const uint32_t* offsets, uint32_t len)
 {
 	if (size > BUFFER_SIZE) throw std::exception("readBytes: too many bytes");
 	if (len > LENGTH) throw std::exception("readBytes: too many offsets");
-	if (!hookConnected(HookPosition::MAIN_LOOP))
+	if (!isShmPrepared())
 	{
 		HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+		if (!hPvz)
+		{
+			throw std::exception("readBytes: open game process failed");
+		}	
 		uint64_t basePtr = offsets[0];
 		do
 		{
@@ -143,9 +172,13 @@ bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, 
 {
 	if (size > BUFFER_SIZE) throw std::exception("writeBytes: too many bytes");
 	if (len > LENGTH) throw std::exception("writeBytes: too many offsets");
-	if (!hookConnected(HookPosition::MAIN_LOOP))
+	if (!isShmPrepared())
 	{
 		HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+		if (!hPvz)
+		{
+			throw std::exception("writeBytes: open game process failed");
+		}
 		uint64_t basePtr = offsets[0];
 		do
 		{
@@ -172,16 +205,16 @@ bool Memory::runCode(const char* codes, size_t len) const
 	{
 		throw std::exception("runCode: too many codes");
 	}
-	if (!hookConnected(HookPosition::MAIN_LOOP))
+	if (!isShmPrepared())
 	{
-		throw std::exception("runCode: main loop hook connected");
+		throw std::exception("runCode: main loop not prepared");
 	}
 	memcpy(getAsmPtr(), codes, len);
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
-	__until(getCurrentPhaseCode() == PhaseCode::WAIT);  //等待执行完成
+	untilGameExecuted();
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
 	if (executeResult() == ExecuteResult::FAIL) return false;
-	throw std::exception("unexpected behavior of runCode");
+	throw std::exception("runCode: unexpected behavior");
 }
 
 void Memory::startControl()

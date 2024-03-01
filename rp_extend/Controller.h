@@ -24,7 +24,9 @@ public:
 
 	void next_frame() const { mem.next(); }
 
-	void before() const { while (mem.isBlocked()) {} }
+	void before() const { mem.before(); }
+
+	bool is_jumping_frame() const { return mem.isJumpingFrame(); }
 
 	bool start_jump_frame() { return mem.startJumpFrame(); }
 

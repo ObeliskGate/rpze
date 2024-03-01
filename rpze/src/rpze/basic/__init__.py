@@ -1,1 +1,1 @@
-from .inject import InjectedGame
+from .inject import InjectedGame, enter_ize

@@ -37,6 +37,13 @@ SharedMemory::SharedMemory()
 	}
 }
 
+SharedMemory::~SharedMemory()
+{
+	globalState() = HookState::NOT_CONNECTED;
+	UnmapViewOfFile(sharedMemoryPtr);
+	CloseHandle(hMapFile);
+}
+
 std::optional<void*> SharedMemory::getReadWritePtr() const
 {
 	uint32_t ptr = getOffsets()[0];
