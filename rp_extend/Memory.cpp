@@ -38,6 +38,11 @@ Memory::Memory(DWORD pid)
 	pCurrentPhaseCode = &phaseCode();
 	pCurrentRunState = &runState();
 	this->pid = pid;
+	this->hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
+	if (!hPvz)
+	{
+		throw std::exception("cannot find game process!");
+	}
 	globalState() = HookState::CONNECTED;
 	startControl();
 	before();
@@ -51,6 +56,7 @@ Memory::~Memory()
 	globalState() = HookState::NOT_CONNECTED;
 	UnmapViewOfFile(pBuf);
 	CloseHandle(hMemory);
+	CloseHandle(hPvz);
 }
 
 std::optional<volatile void*> Memory::_readMemory(uint32_t size, const uint32_t* offsets, uint32_t len)
@@ -80,21 +86,30 @@ bool Memory::_writeMemory(const void* pVal, uint32_t size, const uint32_t* offse
 
 void Memory::before() const
 {
-	if (!hookConnected(HookPosition::MAIN_LOOP))
-	{
-		throw std::exception("before: main loop hook not connected");
-	}
 	while (isBlocked())
 	{
 		if (globalState() == HookState::NOT_CONNECTED) throw std::exception("before: hook not connected");
 	}
 }
 
+void Memory::skipFrames(size_t num) const
+{
+	if (!isShmPrepared())
+	{
+		throw std::exception("before: main loop hook not connected");
+	}
+	for (size_t i = 0; i < num; i++)
+	{
+		next();
+		before();
+	}
+}
+
 bool Memory::startJumpFrame()
 {
-	if (!hookConnected(HookPosition::MAIN_LOOP))
+	if (!isShmPrepared())
 	{
-		throw std::exception("startJumpFrame: main loop hook not connected");
+		throw std::exception("startJumpFrame: main loop hook not prepared");
 	}
 	if (!boardPtr())
 	{
@@ -106,14 +121,15 @@ bool Memory::startJumpFrame()
 	pCurrentRunState = &jumpingRunState();
 	jumpingPhaseCode() = PhaseCode::WAIT;
 	phaseCode() = PhaseCode::JUMP_FRAME;
+	before();
 	return true;
 }
 
 bool Memory::endJumpFrame()
 {
-	if (!hookConnected(HookPosition::MAIN_LOOP))
+	if (!isShmPrepared())
 	{
-		throw std::exception("endJumpFrame: main loop hook not connected");
+		throw std::exception("endJumpFrame: main loop hook not prepared");
 	}
 	if (!jumpingFrame) return false;
 	jumpingFrame = false;
@@ -121,6 +137,7 @@ bool Memory::endJumpFrame()
 	pCurrentRunState = &runState();
 	phaseCode() = PhaseCode::WAIT;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
+	before();
 	return true;
 }
 
@@ -128,38 +145,22 @@ void Memory::untilGameExecuted() const
 {
 	while (getCurrentPhaseCode() != PhaseCode::WAIT)
 	{
-		if (globalState() == HookState::NOT_CONNECTED) throw std::exception("untilGameExecuted: hook not connected");
+		if (globalState() == HookState::NOT_CONNECTED) 
+			throw std::exception("untilGameExecuted: hook not connected");
 	}
 }
 
 std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const uint32_t* offsets, uint32_t len)
 {
 	if (size > BUFFER_SIZE) throw std::exception("readBytes: too many bytes");
-	if (len > LENGTH) throw std::exception("readBytes: too many offsets");
+	if (len > OFFSET_LENGTH) throw std::exception("readBytes: too many offsets");
 	if (!isShmPrepared())
 	{
-		HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-		if (!hPvz)
-		{
-			throw std::exception("readBytes: open game process failed");
-		}	
-		uint64_t basePtr = offsets[0];
-		do
-		{
-			for (size_t i = 1; i < len; i++)
-			{
-				ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(uint32_t), nullptr);
-				if (!basePtr) break;
-				basePtr += offsets[i];
-			}
-			if (!basePtr) break;
-			auto ret = std::make_unique<char[]>(size);
-			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), ret.get(), size, nullptr);
-			CloseHandle(hPvz);
-			return ret;
-		} while (false);
-		CloseHandle(hPvz);
-		return {};
+		auto remotePtr = getRemotePtr<char[]>(offsets, len);
+		if (!remotePtr.has_value()) return {};
+		auto ret = std::make_unique<char[]>(size);
+		ReadProcessMemory(hPvz, *remotePtr, ret.get(), size, nullptr);
+		return ret;
 	}
 	auto p = _readMemory(size, offsets, len);
 	if (!p.has_value()) return {};
@@ -171,30 +172,13 @@ std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const ui
 bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len)
 {
 	if (size > BUFFER_SIZE) throw std::exception("writeBytes: too many bytes");
-	if (len > LENGTH) throw std::exception("writeBytes: too many offsets");
+	if (len > OFFSET_LENGTH) throw std::exception("writeBytes: too many offsets");
 	if (!isShmPrepared())
 	{
-		HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-		if (!hPvz)
-		{
-			throw std::exception("writeBytes: open game process failed");
-		}
-		uint64_t basePtr = offsets[0];
-		do
-		{
-			for (size_t i = 1; i < len; i++)
-			{
-				ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(uint32_t), nullptr);
-				if (!basePtr) break;
-				basePtr += offsets[i];
-			}
-			if (!basePtr) break;
-			WriteProcessMemory(hPvz, reinterpret_cast<LPVOID>(basePtr), in, size, nullptr);
-			CloseHandle(hPvz);
-			return true;
-		} while (false);
-		CloseHandle(hPvz);
-		return false;
+		auto remotePtr = getRemotePtr<char[]>(offsets, len);
+		if (!remotePtr.has_value()) return false;
+		WriteProcessMemory(hPvz, *remotePtr, in, size, nullptr);
+		return true;
 	}
 	return _writeMemory(in, size, offsets, len);
 }
@@ -222,12 +206,12 @@ void Memory::startControl()
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
 	openHook(HookPosition::MAIN_LOOP);
-	__until(isBlocked());
-	next();
+	before();
 }
 
 void Memory::endControl()
 {
+	if (jumpingFrame) endJumpFrame();
 	closeHook(HookPosition::MAIN_LOOP);
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
@@ -241,6 +225,13 @@ void Memory::openHook(HookPosition hook)
 void Memory::closeHook(HookPosition hook)
 {
 	hookStateArr()[getHookIndex(hook)] = HookState::NOT_CONNECTED;
+}
+
+std::tuple<bool, uint32_t> Memory::getPBoard() const
+{
+	auto t = isBoardPtrValid();
+	isBoardPtrValid() = true;
+	return { t, boardPtr() };
 }
 
 #undef __until

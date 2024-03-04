@@ -164,17 +164,14 @@ class InjectedGame:
             mov [{ctler.result_address}], eax;
             pop esi;
             ret;"""
-        with ConnectedContext(ctler) as ctler:
-            ctler.before()
+        with ConnectedContext(ctler, False) as ctler:
             if ctler.read_bool([0x6a9ec0, 0x76c]):
                 ctler.end()
                 while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
                     time.sleep(0.1)
                 ctler.start()
-                ctler.before()
             asm.run(code, ctler)
-            ctler.next_frame()
-            ctler.before()
+            ctler.skip_frames()
             ret = get_board(ctler)
             
         if self.controller.result_i32:
@@ -194,10 +191,9 @@ def enter_ize(game: InjectedGame) -> GameBoard:
         进入的关卡, GameBoard对象
     """
     with ConnectedContext(game.controller) as ctler:
-        ctler.before()
         board = game.enter_level(70)
         board.remove_cutscene_zombie()
-        ctler.next_frame()
+        ctler.skip_frames()
     return board
 
 
@@ -207,9 +203,9 @@ class ConnectedContext:
 
      Attributes:
          controller: 被注入游戏的控制器
-         ensure_jump_frame: 是否保证跳帧
+         ensure_jump_frame: 是否保证跳帧, True则保证跳帧, False则保证不跳帧. 默认None不处理.
     """
-    def __init__(self, controller: Controller, ensure_jump_frame: bool = False):
+    def __init__(self, controller: Controller, ensure_jump_frame: bool | None = None):
         self.controller: Controller = controller
         self.ensure_jump_frame = ensure_jump_frame
         self._is_connected: bool = False
@@ -219,16 +215,19 @@ class ConnectedContext:
         self._is_connected = self.controller.hook_connected()
         if not self._is_connected:
             self.controller.start()
-        if self.ensure_jump_frame:
+        if self.ensure_jump_frame is not None:
             self._is_jumping = self.controller.is_jumping_frame()
-            if not self._is_jumping:
-                self.controller.before()
+            if self.ensure_jump_frame:
                 self.controller.start_jump_frame()
+            else:
+                self.controller.end_jump_frame()
         return self.controller
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.controller.before()
-        if self.ensure_jump_frame and not self._is_jumping:
-            self.controller.end_jump_frame()
+        if self.ensure_jump_frame is not None:
+            if self._is_jumping:
+                self.controller.start_jump_frame()
+            else:
+                self.controller.end_jump_frame()
         if not self._is_connected:
             self.controller.end()

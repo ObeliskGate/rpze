@@ -68,26 +68,21 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 {
 	auto pSharedMemory = SharedMemory::getInstance();
-	auto pLawnApp = *reinterpret_cast<BYTE**>(0x6a9ec0);
-	auto pBoard = *reinterpret_cast<BYTE***>(pLawnApp + 0x768);
-	auto pBoardUpdateFunc = *reinterpret_cast<BYTE**>(*pBoard + 0x58);
-	if (!pBoard)
-	{
-		std::cout << "board ptr invalid, panic!!!" << std::endl;
-		throw std::exception();
-	}
 	while (phaseCode == PhaseCode::JUMP_FRAME)
 	{
-		*reinterpret_cast<int32_t*>(pLawnApp + 0x838) += 1;  // mjClock++
 		__asm
 		{
-			mov esi, pBoard
+			mov edi, 0x6a9ec0
+			mov edi, [edi]
+			inc dword ptr [edi + 0x838] // mjClock++
+			mov esi, [edi + 0x768]
 			mov edx, 0x41BAD0  // Board::ProcessDeleteQueue
 			call edx
 			mov ecx, esi
-			mov edx, pBoardUpdateFunc  // Board::Update
+			mov edx, [esi]
+			mov edx, [edx + 0x58]   // Board::Update
 			call edx
-			mov esi, pLawnApp
+			mov esi, edi
 			push dword ptr [esi + 0x820]
 			mov edx, 0x445680  // EffectSystem::ProcessDeleteQueue
 			call edx

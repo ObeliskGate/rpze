@@ -6,6 +6,7 @@ class Memory
 {
 	void* pBuf;
 	HANDLE hMemory;
+	HANDLE hPvz;
 
 	// 是否在跳帧
 	bool jumpingFrame = false;
@@ -24,19 +25,11 @@ class Memory
 
 	void getRemoteMemoryAddress();
 
+	template <typename T>
+	std::optional<T*> getRemotePtr(const uint32_t* offsets, uint32_t len);
+
 	// pvz进程id
 	DWORD pid = 0;
-public:
-	static constexpr uint32_t BUFFER_OFFSET = 1024 * 4;
-	static constexpr uint32_t BUFFER_SIZE = SHARED_MEMORY_SIZE - BUFFER_OFFSET;
-	static constexpr uint32_t RESULT_OFFSET = 1024;
-	static constexpr uint32_t RESULT_SIZE = BUFFER_OFFSET - RESULT_OFFSET;
-
-	explicit Memory(DWORD pid);
-
-	~Memory();
-
-	DWORD getPid() const { return pid; }
 
 	// 怎么运行游戏
 	volatile PhaseCode& phaseCode() const { return getRef<PhaseCode>(0); }
@@ -58,8 +51,14 @@ public:
 
 
 # undef max  // sb macro
-	static constexpr size_t LENGTH = 16;
+public:
+	static constexpr uint32_t BUFFER_OFFSET = 1024 * 4;
+	static constexpr uint32_t BUFFER_SIZE = SHARED_MEMORY_SIZE - BUFFER_OFFSET;
+	static constexpr uint32_t RESULT_OFFSET = 1024;
+	static constexpr uint32_t RESULT_SIZE = BUFFER_OFFSET - RESULT_OFFSET;
+	static constexpr size_t OFFSET_LENGTH = 16;
 	static constexpr uint32_t OFFSET_END = std::numeric_limits<uint32_t>::max();
+private:
 	// 读写内存时的偏移, 如{0x6a9ec0, 0x768, OFFSET_END, ...}, 遇到OFFSET_END停止读取
 	inline uint32_t* getOffsets() { return reinterpret_cast<uint32_t*>(getPtr() + 24); }
 
@@ -72,14 +71,12 @@ public:
 	// 读写结果
 	volatile ExecuteResult& executeResult() const { return getRef<ExecuteResult>(94); }
 
-	// 8字节 返回结果
-	volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + RESULT_OFFSET);  }
-
-
 	// pBoard指针效验位
 	volatile bool& isBoardPtrValid() const { return getRef<bool>(106); }
 
+public:
 	static constexpr size_t HOOK_LEN = 16;
+private:
 	// hook位置的状态
 	volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 112); }
 
@@ -105,12 +102,23 @@ public:
 	bool _writeRemoteMemory(T&& val, const uint32_t* offsets, uint32_t len);
 
 	// 主要接口
+public:
+	explicit Memory(DWORD pid);
+
+	~Memory();
+
+	// 8字节 返回结果
+	volatile void* getReturnResult() const { return static_cast<void*>(getPtr() + RESULT_OFFSET); }
+
+	DWORD getPid() const { return pid; }
 
 	// 等到本cs执行
 	void before() const;
 
 	// 跳到下一帧
 	void next() const { getCurrentPhaseCode() = PhaseCode::CONTINUE; }
+
+	void skipFrames(size_t num = 1) const;
 
 	bool isJumpingFrame() const { return jumpingFrame; }
 	
@@ -158,64 +166,50 @@ public:
 
 	uint32_t getAsmAddress() const { return remoteMemoryAddress + BUFFER_OFFSET; }
 
-	std::tuple<bool, uint32_t> getPBoard() const // 第一位返回0表示无须换新
-	{
-		auto t = isBoardPtrValid();
-		isBoardPtrValid() = true;
-		return { t, boardPtr() };
-	}
+	std::tuple<bool, uint32_t> getPBoard() const; // 第一位返回0表示无须换新
 };
+
+template <typename T>
+std::optional<T*> Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
+{
+	uint64_t basePtr = offsets[0];
+	for (size_t i = 1; i < len; i++)
+	{
+		ReadProcessMemory(hPvz, 
+			reinterpret_cast<LPCVOID>(basePtr), 
+			&basePtr, 
+			sizeof(uint32_t), 
+			nullptr);
+		if (!basePtr) return {};
+		basePtr += offsets[i];
+	}
+	return reinterpret_cast<T*>(basePtr);
+}
 
 template <typename T>
 std::optional<T> Memory::_readRemoteMemory(const uint32_t* offsets, uint32_t len)
 {
-	HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	uint64_t basePtr = offsets[0];
-	do
-	{
-		for (size_t i = 1; i < len; i++)
-		{
-			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(uint32_t), nullptr);
-			if (!basePtr) break;
-			basePtr += offsets[i];
-		}
-		if (!basePtr) break;
-		T ret;
-		ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &ret, sizeof(T), nullptr);
-		CloseHandle(hPvz);
-		return ret;
-	} while (false);
-	CloseHandle(hPvz);
-	return {};
+	auto remotePtr = getRemotePtr<T>(offsets, len);
+	if (!remotePtr.has_value()) return {};
+	T ret;
+	ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(*remotePtr), &ret, sizeof(T), nullptr);
+	return ret;
 }
 
 template <typename T>
 bool Memory::_writeRemoteMemory(T&& val, const uint32_t* offsets, uint32_t len)
 {
-	HANDLE hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	uint64_t basePtr = offsets[0];
-	do
-	{
-		for (size_t i = 1; i < len; i++)
-		{
-			ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(basePtr), &basePtr, sizeof(uint32_t), nullptr);
-			if (!basePtr) break;
-			basePtr += offsets[i];
-		}
-		if (!basePtr) break;
-		WriteProcessMemory(hPvz, reinterpret_cast<LPVOID>(basePtr), &val, sizeof(T), nullptr);
-		CloseHandle(hPvz);
-		return true;
-	} while (false);
-	CloseHandle(hPvz);
-	return false;
+	auto remotePtr = getRemotePtr<T>(offsets, len);
+	if (!remotePtr.has_value()) return false;
+	WriteProcessMemory(hPvz, reinterpret_cast<LPVOID>(*remotePtr), &val, sizeof(T), nullptr);
+	return true;
 }
 
 template<typename T>
 std::optional<T> Memory::readMemory(const uint32_t* offsets, uint32_t len)
 {
 	static_assert(sizeof(T) <= BUFFER_SIZE);
-	if (len > LENGTH) throw std::exception("readMemory:offsets too long");
+	if (len > OFFSET_LENGTH) throw std::exception("readMemory:offsets too long");
 	if (!hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets, len);
 	auto p = _readMemory(sizeof(T), offsets, len);
 	if (!p.has_value()) return {};
@@ -226,7 +220,7 @@ template<typename T>
 bool Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len)
 {
 	static_assert(sizeof(T) <= BUFFER_SIZE);
-	if (len > LENGTH) throw std::exception("writeMemory: offsets too long");
+	if (len > OFFSET_LENGTH) throw std::exception("writeMemory: offsets too long");
 	if (!hookConnected(HookPosition::MAIN_LOOP)) return _writeRemoteMemory(std::forward<T>(val), offsets, len);
 	return _writeMemory(&val, sizeof(T), offsets, len);
 }
