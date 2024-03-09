@@ -46,7 +46,7 @@ def inject(pids: list[int]) -> list[Controller]:
     current_dir = os.getcwd()
     os.chdir(os.path.dirname(__file__))
     dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
-    s = f'..\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '
+    s = f'..\\bin\\rp_injector.exe \"{dll_path}\" '
     s += ' '.join([str(i) for i in pids])
     try:
         os.system(s)
