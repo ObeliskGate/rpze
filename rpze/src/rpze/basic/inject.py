@@ -213,21 +213,25 @@ class ConnectedContext:
 
     def __enter__(self) -> Controller:
         self._is_connected = self.controller.hook_connected()
+        ctler = self.controller
         if not self._is_connected:
-            self.controller.start()
+            ctler.start()
         if self.ensure_jump_frame is not None:
-            self._is_jumping = self.controller.is_jumping_frame()
+            self._is_jumping = ctler.is_jumping_frame()
             if self.ensure_jump_frame:
-                self.controller.start_jump_frame()
+                ctler.start_jump_frame()
             else:
-                self.controller.end_jump_frame()
-        return self.controller
+                ctler.end_jump_frame()
+        return ctler
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        ctler = self.controller
         if self.ensure_jump_frame is not None:
             if self._is_jumping:
-                self.controller.start_jump_frame()
+                ctler.start_jump_frame()
             else:
-                self.controller.end_jump_frame()
+                ctler.end_jump_frame()
         if not self._is_connected:
-            self.controller.end()
+            ctler.end()
+        else:
+            ctler.start()

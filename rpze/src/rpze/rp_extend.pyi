@@ -47,18 +47,20 @@ class Controller:
     def asm_address(self) -> int: ...  # start addr of where run_code would be executed
     @property
     def pid(self) -> int: ...  # game process id
-    def skip_frames(self, num: int = 1) -> None: ... # assert prepared; skip {num} frames, auto use before()
+    
+    def skip_frames(self, num: int = 1) -> None: ... # assert prepared; skip {num} frames and get prepared
     def before(self) -> None: ...  # required before every frame after start() control
     def next_frame(self) -> None: ...  # let the game continue to the next frame
-    def start(self) -> None: ...  # assert connected; start control and get prepared
-    def end(self) -> None: ...  # assert connected; end control and jumping frame if necessary
+    def start(self) -> None: ...  # start control and get prepared; do nothing when connected
+    def end(self) -> None: ...  # end control and jumping frame if necessary; do nothing when not connected
+    
     def start_jump_frame(self) -> bool: ...
     # assert prepared and has board
     # return False if already jumping
     # skip a frame and get prepared
-
     def is_jumping_frame(self) -> bool: ...
     def end_jump_frame(self) -> bool: ...  # assert prepared; return False if not jumping
+    
     def get_p_board(self) -> tuple[bool, int]: ...  # return (is_p_board_new, p_board)
     def run_code(self, asm_bytes: bytes, /) -> bool: ...  # assert prepared; return False if failed
     def open_hook(self, hook: HookPosition, /) -> None: ...

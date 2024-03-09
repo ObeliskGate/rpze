@@ -203,6 +203,7 @@ bool Memory::runCode(const char* codes, size_t len) const
 
 void Memory::startControl()
 {
+	if (hookConnected(HookPosition::MAIN_LOOP)) return;
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
 	openHook(HookPosition::MAIN_LOOP);
@@ -211,6 +212,7 @@ void Memory::startControl()
 
 void Memory::endControl()
 {
+	if (!hookConnected(HookPosition::MAIN_LOOP)) return;
 	if (jumpingFrame) endJumpFrame();
 	closeHook(HookPosition::MAIN_LOOP);
 	phaseCode() = PhaseCode::CONTINUE;
