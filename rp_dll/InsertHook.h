@@ -67,7 +67,7 @@ class InsertHook
 	static constexpr char AFTER_CODE[] = "\x9d\x61"		  // popfd popad
 		"\xe9\xcc\xcc\xcc\xcc";				  // jmp pInsert + replacedSize
 
-	static constexpr char RETURN_CODE[] = "\x9d\x61\xc2\xdd"; // popfd popad ret N
+	static constexpr char RETURN_CODE[] = "\x9d\x61\xc2\xdd\xdd"; // popfd popad ret N
 
 	void* pInsert; // ±»×¢ÈëÎ»ÖÃ
 

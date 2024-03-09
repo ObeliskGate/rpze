@@ -39,7 +39,7 @@ class GameBoard(ob.ObjBase):
     is_dance_mode = ob.property_bool(0x5765, "在dance秘籍时中为True")
 
     sun_num = ob.property_i32(0x5560, "阳光数量")
-    
+
     game_time = ob.property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
 
     @property
@@ -90,13 +90,13 @@ class GameBoard(ob.ObjBase):
             (底座, 南瓜, 飞行, 常规)元组, 对应位置没有植物则返回None.
         """
         code = f"""
-            push edi;
-            mov edi, {(ctler := self.controller).result_address};
+            push ebx;
+            mov ebx, {(ctler := self.controller).result_address};
             push {row};
             push {col};
             mov edx, {self.base_ptr};
             call {0x40d2a0};
-            pop edi;
+            pop ebx;
             ret;"""
         asm.run(code, ctler)
         view = ctler.result_mem[:16].cast("I")  # 以单个元素为u32格式读取前16字节
@@ -105,9 +105,9 @@ class GameBoard(ob.ObjBase):
     def new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
         """
         关卡内种植植物
-        
+
         此函数不会创建种植的音、特效且不会触发限制种植类关卡种植特定植物的特殊效果.
-        
+
         Args:
             row: 行, 从0开始
             col: 列, 从0开始
@@ -144,15 +144,15 @@ class GameBoard(ob.ObjBase):
             raise ValueError("Challenge object doesn't exist!")
         next_idx = self.plant_list.next_index
         code = f"""
+            push ebx;
             push edi;
-            push edi;
-            mov edi, {row};
+            mov ebx, {row};
             push {col};
             push {int(type_)};
             mov edi, {p_c};
             call {0x42a660}; // Challenge::IZombiePlacePlantInSquare 
             pop edi;
-            pop edi;
+            pop ebx;
             ret;"""
         asm.run(code, self.controller)
         return self.plant_list.find(next_idx)
@@ -272,13 +272,13 @@ class GameBoard(ob.ObjBase):
             对应的y坐标
         """
         code = f"""
-            push edi;
-            mov edi, {self.base_ptr};
+            push ebx;
+            mov ebx, {self.base_ptr};
             mov eax, {row};
             mov ecx, {col};
             call {0x41c740};  // Board::GridToPixelY
             mov [{self.controller.result_address}], eax;
-            pop edi;
+            pop ebx;
             ret;"""
         asm.run(code, self.controller)
         return self.controller.result_i32
@@ -338,10 +338,10 @@ class GameBoard(ob.ObjBase):
             返回自己
         """
         code = f"""
-            push edi;
-            mov edi, {self.base_ptr};
+            push ebx;
+            mov ebx, {self.base_ptr};
             call {0x40DF70};  // Board::RemoveCutsceneZombie
-            pop edi;
+            pop ebx;
             ret;"""
         asm.run(code, self.controller)
         return self

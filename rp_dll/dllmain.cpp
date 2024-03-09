@@ -17,14 +17,16 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		{
 			init();
 			auto pSharedMemory = SharedMemory::getInstance();
-			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, [pSharedMemory](const Registers&) // main loop LawnApp::UpdateFrames 
-			{
-				mainHook<0>(pSharedMemory);
-			});
+			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, 
+				[pSharedMemory](const Registers&) // main loop LawnApp::UpdateFrames 
+				{
+					mainHook<0>(pSharedMemory);
+				});
 			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
-			 	[pSharedMemory](const Registers&) // Board::Board
+			 	[pSharedMemory](const Registers& reg) // Board::Board
 			 	{
 					pSharedMemory->isBoardPtrValid() = false;
+					pSharedMemory->boardPtr() = *reinterpret_cast<uint32_t*>(reg.esp() + 8); // stack is (... pBoard rta -01) now
 			 	});
 			InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), 9,
 				[pSharedMemory](const Registers&, void*) -> std::optional<int32_t>

@@ -26,23 +26,23 @@ InsertHook::InsertHook(void* pInsert, size_t replacedSize, WORD popStackNum, std
 	// beforeCode赋值
 	beforeCode = ExecutableUniquePtr<char>(sizeof(INIT_CODE) - 1);
 	CopyMemory(beforeCode.get(), INIT_CODE, sizeof(INIT_CODE) - 1);
-	*reinterpret_cast<DWORD*>(beforeCode.get() + 2) = reinterpret_cast<DWORD>(this);
-	*reinterpret_cast<DWORD*>(beforeCode.get() + 7) = reinterpret_cast<DWORD>(&hookStub);
+	*reinterpret_cast<DWORD*>(&beforeCode[2]) = reinterpret_cast<DWORD>(this);
+	*reinterpret_cast<DWORD*>(&beforeCode[7]) = reinterpret_cast<DWORD>(&hookStub);
 
 	// originalCode赋值
 	originalCode = ExecutableUniquePtr<char>(replacedSize + 5);
 	CopyMemory(originalCode.get(), pInsert, replacedSize);
 	originalCode[replacedSize] = '\xe9'; // jmp pInsert + replacedSize
-	*reinterpret_cast<DWORD*>(originalCode.get() + replacedSize + 1)
+	*reinterpret_cast<DWORD*>(&originalCode[replacedSize + 1])
 		= getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, originalCode.get() + replacedSize);
 
 	// afterCode赋值
 	this->afterCode = ExecutableUniquePtr<char>(replacedSize + sizeof(AFTER_CODE) - 1);
 	afterCode[0] = '\x9d'; // popfd
 	afterCode[1] = '\x61'; // popad
-	CopyMemory(this->afterCode.get() + 2, pInsert, replacedSize);
+	CopyMemory(&afterCode[2], pInsert, replacedSize);
 	afterCode[replacedSize + 2] = '\xe9'; // jmp originalCode
-	*reinterpret_cast<DWORD*>(this->afterCode.get() + replacedSize + 3) =
+	*reinterpret_cast<DWORD*>(&afterCode[replacedSize + 3]) =
 		getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, this->afterCode.get() + replacedSize + 2);
 
 	// returnCode赋值
