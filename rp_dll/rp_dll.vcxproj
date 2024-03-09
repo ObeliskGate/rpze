@@ -34,7 +34,7 @@
     <ClInclude Include="pch.h" />
     <ClInclude Include="rp_dll.h" />
     <ClInclude Include="SharedMemory.h" />
-    <ClInclude Include="VirtualUniquePtr.h" />
+    <ClInclude Include="ExecutableUniquePtr.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

@@ -1,6 +1,6 @@
 #pragma once
 #include "pch.h"
-#include "VirtualUniquePtr.h"
+#include "ExecutableUniquePtr.h"
 #include <cstddef>
 
 constexpr size_t REGISTERS_SIZE = 0x24;
@@ -71,13 +71,13 @@ class InsertHook
 
 	void* pInsert; // 被注入位置
 
-	VirtualUniquePtr<char> beforeCode;  // 被替换的代码段, 在jmp结束后执行
+	ExecutableUniquePtr<char> beforeCode;  // 被替换的代码段, 在jmp结束后执行
 
 	size_t replacedSize;  // 被替换的代码段大小
 
-	VirtualUniquePtr<char> afterCode; // 在替被注入的主函数返回时需要执行的代码段 内容为popfd popad jmp pInsert + replacedSize
+	ExecutableUniquePtr<char> afterCode; // 在替被注入的主函数返回时需要执行的代码段 内容为popfd popad jmp pInsert + replacedSize
 
-	VirtualUniquePtr<char> returnCode; // 在帮助原函数返回时需要执行的代码段, 内容为popfd popad ret N
+	ExecutableUniquePtr<char> returnCode; // 在帮助原函数返回时需要执行的代码段, 内容为popfd popad ret N
 
 	Registers registers;  // 用于保存寄存器状态的对象
 
@@ -85,33 +85,30 @@ class InsertHook
 
 	bool __thiscall hookFunc(BYTE* stackTopPtr); // 初始化registers 以及调用InsertHookFunc
 
-	VirtualUniquePtr<char> originalCode; // 用来保存原函数的代码段
+	DWORD __thiscall getAfterCodePtr() { return reinterpret_cast<DWORD>(afterCode.get()); }
 
-	InsertHook(void* pInsert, size_t replacedSize, BYTE popStackNum, std::function<ReplaceHookFunc> hookFunc);
+	DWORD __thiscall getReturnCodePtr() { return reinterpret_cast<DWORD>(returnCode.get()); }
+
+	ExecutableUniquePtr<char> originalCode; // 用来保存原函数的代码段
+
+	InsertHook(void* pInsert, size_t replacedSize, WORD popStackNum, std::function<ReplaceHookFunc> hookFunc);
 
 	~InsertHook();
 
 	inline static std::vector<InsertHook*> hooks{};
 
 public:
-	DWORD popStackNum; // replaceHook 描述清理栈几次的参数.
-
 	int32_t returnVal; // replaceHook 返回值的参数.
 
-	static const InsertHook& addReplace(void* pInsert, size_t replacedSize, std::function<ReplaceHookFunc> hookFunc, BYTE popStackNum = 0);
+	static const InsertHook& addReplace(void* pInsert, size_t replacedSize, std::function<ReplaceHookFunc> hookFunc, WORD popStackNum = 0);
 
 	static const InsertHook& addInsert(void* pInsert, size_t replacedSize, std::function<InsertHookFunc> hookFunc);
 
 	static void deleteAll();
 
-	DWORD __fastcall getAfterCodePtr() { return reinterpret_cast<DWORD>(afterCode.get()); }
-
-	DWORD __fastcall getReturnCodePtr() { return reinterpret_cast<DWORD>(returnCode.get()); }
-
 	void* getOriginalFuncPtr() { return originalCode.get(); } // 用来call原函数的指针
 };
 
-constexpr size_t POP_STACK_NUM_OFFSET = offsetof(InsertHook, popStackNum);
 constexpr size_t RETURN_VAL_OFFSET = offsetof(InsertHook, returnVal);
 
 inline void __declspec(naked) hookStub() // 参数为ecx = InsertHook* 用jmp调用 并且需要手动popfd popad的naked函数. 可能会帮上级函数一起ret.
