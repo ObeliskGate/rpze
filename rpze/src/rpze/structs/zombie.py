@@ -236,11 +236,11 @@ class Zombie(ob.ObjNode):
 
 class ZombieList(ob.obj_list(Zombie)):
     def free_all(self) -> Self:
-        p_board = self.controller.get_p_board()[1]
         code = f"""
             push edi;
             push esi;
-            mov edi, {p_board};
+            mov eax, [0x6a9ec0];
+            mov edi, [eax + 0x768];
             mov esi, {self.controller.result_address};
             xor edx, edx;
             mov [esi], edx;

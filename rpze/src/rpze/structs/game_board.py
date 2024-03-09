@@ -90,13 +90,13 @@ class GameBoard(ob.ObjBase):
             (底座, 南瓜, 飞行, 常规)元组, 对应位置没有植物则返回None.
         """
         code = f"""
-            push ebx;
-            mov ebx, {(ctler := self.controller).result_address};
+            push edi;
+            mov edi, {(ctler := self.controller).result_address};
             push {row};
             push {col};
             mov edx, {self.base_ptr};
             call {0x40d2a0};
-            pop ebx;
+            pop edi;
             ret;"""
         asm.run(code, ctler)
         view = ctler.result_mem[:16].cast("I")  # 以单个元素为u32格式读取前16字节
@@ -144,15 +144,15 @@ class GameBoard(ob.ObjBase):
             raise ValueError("Challenge object doesn't exist!")
         next_idx = self.plant_list.next_index
         code = f"""
-            push ebx;
             push edi;
-            mov ebx, {row};
+            push edi;
+            mov edi, {row};
             push {col};
             push {int(type_)};
             mov edi, {p_c};
             call {0x42a660}; // Challenge::IZombiePlacePlantInSquare 
             pop edi;
-            pop ebx;
+            pop edi;
             ret;"""
         asm.run(code, self.controller)
         return self.plant_list.find(next_idx)
@@ -272,13 +272,13 @@ class GameBoard(ob.ObjBase):
             对应的y坐标
         """
         code = f"""
-            push ebx;
-            mov ebx, {self.base_ptr};
+            push edi;
+            mov edi, {self.base_ptr};
             mov eax, {row};
             mov ecx, {col};
             call {0x41c740};  // Board::GridToPixelY
             mov [{self.controller.result_address}], eax;
-            pop ebx;
+            pop edi;
             ret;"""
         asm.run(code, self.controller)
         return self.controller.result_i32
@@ -338,10 +338,10 @@ class GameBoard(ob.ObjBase):
             返回自己
         """
         code = f"""
-            push ebx;
-            mov ebx, {self.base_ptr};
+            push edi;
+            mov edi, {self.base_ptr};
             call {0x40DF70};  // Board::RemoveCutsceneZombie
-            pop ebx;
+            pop edi;
             ret;"""
         asm.run(code, self.controller)
         return self

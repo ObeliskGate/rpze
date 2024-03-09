@@ -465,11 +465,11 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
         def __init__(self, base_ptr: int, ctler: Controller):
             super().__init__(base_ptr, ctler)
             self._array_base_ptr = ctler.read_u32([base_ptr])
-            p_board = ctler.get_p_board()[1]
             self._code = f"""
                 push esi;
+                mov esi, [0x6a9ec0];
+                mov {node_cls.ITERATOR_P_BOARD_REG}, [esi + 0x768]
                 mov esi, {self.controller.result_address};
-                mov {node_cls.ITERATOR_P_BOARD_REG}, {p_board};
                 call {node_cls.ITERATOR_FUNC_ADDRESS};
                 mov [esi + 4], al;
                 pop esi;
