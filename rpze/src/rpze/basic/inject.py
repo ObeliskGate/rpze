@@ -107,20 +107,18 @@ class InjectedGame:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.controller.end()
 
-    def enter_level(self, level_num: int) -> GameBoard:
+    def enter_level(self, level_num: int, look_for_saved_game: bool = False) -> GameBoard:
         """
         进入游戏, 返回GameBoard对象.
 
-        **请切记这个函数会毁坏你原有的关卡存档!**
-
         Args:
             level_num: 关卡对应数字
+            look_for_saved_game: 是否尝试读档, **请切记默认情况会毁坏你原有的关卡存档!**
         Returns:
             GameBoard对象
         Raises:
             RuntimeError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
         """
-        ctler = self.controller
         code = f"""
             push esi;
             mov esi, [{0x6a9ec0}];
@@ -135,7 +133,7 @@ class InjectedGame:
             test edx, edx;  // have Board
             jnz LNewBoard;
             LError:
-            mov [{ctler.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             pop esi;
             ret;
             
@@ -144,8 +142,7 @@ class InjectedGame:
             jmp LPreNewGame;
             
             LNewBoard:
-            mov eax, [esi + {0x768}]
-            mov cl, [eax + {0x5760}]
+            mov cl, [edx + {0x5760}]
             mov [esi + {0x88c}], cl
             jmp LPreNewGame;
             
@@ -157,14 +154,14 @@ class InjectedGame:
             call {0x44f9e0}; // LawnApp::KillGameSelector(esi = LawnApp* this)
             
             LPreNewGame:
-            push 0;
+            push {int(look_for_saved_game)};
             push {level_num};
             call 0x44f560;  // LawnApp::PreNewGame
             xor eax, eax;
-            mov [{ctler.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             pop esi;
             ret;"""
-        with ConnectedContext(ctler, False) as ctler:
+        with ConnectedContext(self.controller, False) as ctler:
             if ctler.read_bool([0x6a9ec0, 0x76c]):
                 ctler.end()
                 while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
