@@ -2,6 +2,7 @@
 """
 游戏主界面相关的函数和类
 """
+from collections import OrderedDict
 from typing import Self
 
 from . import obj_base as ob
@@ -347,7 +348,9 @@ class GameBoard(ob.ObjBase):
         return self
 
 
-__game_board_cache = None  # 重复构造对象会导致多次decode字节码, 故缓存.
+__game_board_cache = OrderedDict()  # Board对象缓存. LRU, last为最近使用
+
+__GAME_BOARD_CACHE_SIZE = 12  # 缓存大小, 6c12t电脑(确信
 
 
 def get_board(controller: Controller | None = None) -> GameBoard:
@@ -361,14 +364,22 @@ def get_board(controller: Controller | None = None) -> GameBoard:
     Raises:
         RuntimeError: Board对象不存在时抛出
     """
-    global __game_board_cache
     if controller is None:
-        if __game_board_cache is None:
-            raise RuntimeError("Board object doesn't exist!")
-        return __game_board_cache
+        if len(__game_board_cache) == 0:
+            raise RuntimeError("no cached GameBoard object!")
+        return next(reversed(__game_board_cache.values()))  # 最后一个元素
     valid, p_board = controller.get_p_board()
     if not p_board:  # 期待Board对象存在, 用异常不用Optional
         raise RuntimeError("Board object doesn't exist!")
-    if (not valid) or (__game_board_cache is None):
-        __game_board_cache = GameBoard(p_board, controller)
-    return __game_board_cache
+    key = controller.pid
+    if __game_board_cache.get(key) is None:  # 无缓存: 加入, 判删
+        ret = GameBoard(p_board, controller)
+        __game_board_cache[key] = ret
+        if len(__game_board_cache) > __GAME_BOARD_CACHE_SIZE:
+            __game_board_cache.popitem(False)
+        return ret
+    if not valid:  # 有缓存但无效: 换缓存
+        ret = GameBoard(p_board, controller)
+        __game_board_cache[key] = ret
+    __game_board_cache.move_to_end(key)  # 移到最后 返回
+    return __game_board_cache[key]
