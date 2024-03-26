@@ -3,7 +3,7 @@
 欲速不达前置内容. 撑杆落地平均耗时测试.
 """
 from ..flow.flow import FlowManager
-from ..flow.iztest import IzTest
+from ..iztest.iztest import IzTest
 from ..rp_extend import Controller
 from ..structs.zombie import ZombieStatus
 

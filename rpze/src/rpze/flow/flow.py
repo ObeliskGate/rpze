@@ -11,28 +11,6 @@ from itertools import count
 from typing import TypeAlias, Self
 
 
-class TickRunnerResult(Enum):
-    """TickRunner的返回值"""
-    DONE = auto()
-    """本tick runner以后再也不执行时返回"""
-    BREAK_DONE = auto()  # 不用异常打断. StopIteration形式的返回值和type hint系统匹配程度太差.
-    """需要打断本次运行并且以后不再运行本TickRunner时返回"""
-    BREAK_ONCE = auto()
-    """需要打断本次运行但以后还会运行本TickRunner时返回"""
-
-
-CondFunc: TypeAlias = Callable[["FlowManager"], bool]
-"""判断条件的函数"""
-FlowCoroutine: TypeAlias = Coroutine[CondFunc, None, TickRunnerResult | None]
-"""Flow返回的协程对象"""
-Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
-"""await AwaitableCondFunc函数的async def函数"""
-TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult | None]
-"""帧运行函数, 无返回值表示继续执行, 返回TickRunnerResult表示特殊行为"""
-PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
-"""带权重的帧运行函数"""
-
-
 class VariablePool:  # thanks Reisen
     """
     用于表示CondFunc中用于"伴随状态"的默认参数的变量池.
@@ -80,6 +58,28 @@ class VariablePool:  # thanks Reisen
     def __str__(self):
         t, d = self.get_all_attrs()
         return f"<{t}, {d}>"
+
+
+class TickRunnerResult(Enum):
+    """TickRunner的返回值"""
+    DONE = auto()
+    """本tick runner以后再也不执行时返回"""
+    BREAK_DONE = auto()  # 不用异常打断. StopIteration形式的返回值和type hint系统匹配程度太差.
+    """需要打断本次运行并且以后不再运行本TickRunner时返回"""
+    BREAK_ONCE = auto()
+    """需要打断本次运行但以后还会运行本TickRunner时返回"""
+
+
+CondFunc: TypeAlias = Callable[["FlowManager"], bool]
+"""判断条件的函数"""
+FlowCoroutine: TypeAlias = Coroutine[CondFunc, None, TickRunnerResult | None]
+"""Flow返回的协程对象"""
+Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
+"""await AwaitableCondFunc函数的async def函数"""
+TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult | None]
+"""帧运行函数, 无返回值表示继续执行, 返回TickRunnerResult表示特殊行为"""
+PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
+"""带权重的帧运行函数"""
 
 
 def _await_generator(t):

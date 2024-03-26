@@ -4,8 +4,10 @@
 """
 from random import randint
 
-from ..flow.iztest import IzTest
-from ..flow.utils import until_plant_die, until_plant_last_shoot, repeat, place, until
+from ..flow.utils import until
+from ..iztest.cond_funcs import until_plant_last_shoot, until_plant_die
+from ..iztest.iztest import IzTest
+from ..iztest.operations import place, repeat
 from ..rp_extend import Controller
 
 
