@@ -39,9 +39,9 @@
     <Compile Include="src\rpze\examples\iztools_example.py" />
     <Compile Include="src\rpze\examples\pole_jumping_test.py" />
     <Compile Include="src\rpze\flow\flow.py" />
-    <Compile Include="src\rpze\flow\iztest.py" />
     <Compile Include="src\rpze\flow\utils.py" />
     <Compile Include="src\rpze\flow\__init__.py" />
+    <Compile Include="src\rpze\iztest\iztest.py" />
     <Compile Include="src\rpze\structs\game_board.py" />
     <Compile Include="src\rpze\structs\griditem.py" />
     <Compile Include="src\rpze\structs\obj_base.py" />
@@ -63,6 +63,7 @@
     <Folder Include="src\rpze\basic\" />
     <Folder Include="src\rpze\examples\" />
     <Folder Include="src\rpze\flow\" />
+    <Folder Include="src\rpze\iztest\" />
     <Folder Include="src\rpze\structs\" />
   </ItemGroup>
   <ItemGroup>

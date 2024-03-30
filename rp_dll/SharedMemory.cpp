@@ -31,6 +31,7 @@ SharedMemory::SharedMemory()
 		getOffsets()[i] = OFFSET_END;
 	}
 	globalState() = HookState::NOT_CONNECTED;
+	isBoardPtrValid() = false;
 	for (size_t i = 0; i < HOOK_LEN; i++)
 	{
 		hookStateArr()[i] = HookState::NOT_CONNECTED;

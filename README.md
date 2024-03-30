@@ -16,7 +16,7 @@ rpze是一个用于ize测试的框架, 旨在保持一定性能、高精度、�
 
 ## 安装
 在满足上述平台要求后, 执行`python -m pip install rpze`即可.  
-若想确认安装成功, 执行`python -m rpze --path "your\path\to\PlantVsZombies.exe`, 若游戏正常启动且在加载界面加载到一半时自动运行生物钟脚本, 则安装成功.
+若想确认安装成功, 执行`python -m rpze --path "your\path\to\PlantVsZombies.exe"`, 若游戏正常启动且在加载界面加载到一半时自动运行生物钟脚本, 则安装成功.
 ### 常见安装Q&A
 - 
     - 为什么弹出一个黑色窗口显示create shared memory success? 

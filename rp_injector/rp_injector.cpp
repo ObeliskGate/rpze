@@ -76,8 +76,7 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     return true;
 }
 
-// 必须按照 dllAbsolutePath gameNumber pids 的顺序传参.
-// 其中pids的个数与gameNumber相同.
+// 必须按照 dllAbsolutePath pids 的顺序传参.
 int main(int argc, char* argv[])
 {
     if (argc <= 2)
@@ -86,15 +85,9 @@ int main(int argc, char* argv[])
         return 1;
     }
     char* dllAbsolutePath = argv[1];
-    int gameNumber = atoi(argv[2]);
-    if (argc != 3 + gameNumber)
+    for (int i = 0; i < argc - 2; i++)
     {
-        std::cerr << "wrong pid number" << std::endl;
-        return 1;
-    }
-    for (int i = 0; i < gameNumber; i++)
-    {
-        DWORD pid = atoi(argv[3 + i]);
+        DWORD pid = atoi(argv[2 + i]);
         injectDll(pid, dllAbsolutePath);
     }
 	return 0;

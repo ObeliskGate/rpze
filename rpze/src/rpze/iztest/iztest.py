@@ -9,8 +9,10 @@ from msvcrt import kbhit, getwch
 from random import randint
 from typing import TypeAlias, Self
 
-from .flow import FlowFactory, TickRunnerResult, FlowManager
-from .utils import until, plant_abbr_to_type, zombie_abbr_to_type, randomize_generate_cd
+from .consts import plant_abbr_to_type, zombie_abbr_to_type
+from .plant_modifier import randomize_generate_cd
+from ..flow.utils import until
+from ..flow.flow import FlowFactory, TickRunnerResult, FlowManager
 from ..basic.gridstr import parse_grid_str
 from ..basic.inject import ConnectedContext
 from ..rp_extend import Controller, HookPosition
@@ -376,26 +378,23 @@ class IzTest:
         if not self._flow_factory_set:
             self.set_flow_factory()
         with ConnectedContext(ctler) as ctler:
-            ctler.before()
             if jump_frame:
                 ctler.start_jump_frame()
             else:
                 frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
                 self.game_board.frame_duration = frame_duration
-            ctler.next_frame()
+            ctler.skip_frames()
 
             def __one_test():
                 nonlocal last_time
                 _flow_manager = self.flow_factory.build_manager()
-                ctler.before()
-                ctler.next_frame()
+                ctler.skip_frames()
                 while not self._last_test_ended:
-                    ctler.before()
                     _flow_manager.run()
                     if not jump_frame and kbhit() and getwch() == control_speed_key:
                         self.game_board.frame_duration = 10 \
                             if self.game_board.frame_duration != 10 else frame_duration
-                    ctler.next_frame()
+                    ctler.skip_frames()
                 self._last_test_ended = False
                 if print_interval and self._test_time % print_interval == 0:
                     print(f"ended {self._test_time} of {self.repeat_time}, "
@@ -412,7 +411,6 @@ class IzTest:
                     __one_test()
                 result = self._success_count / self.repeat_time
 
-            ctler.before()
             if jump_frame:
                 ctler.end_jump_frame()
             else:

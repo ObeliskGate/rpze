@@ -26,6 +26,8 @@ public:
 
 	void before() const { mem.before(); }
 
+	void skip_frames(size_t num = 1) const { mem.skipFrames(num); }
+
 	bool is_jumping_frame() const { return mem.isJumpingFrame(); }
 
 	bool start_jump_frame() { return mem.startJumpFrame(); }

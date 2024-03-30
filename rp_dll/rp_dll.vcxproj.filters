@@ -47,7 +47,7 @@
     <ClInclude Include="InsertHook.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="VirtualUniquePtr.h">
+    <ClInclude Include="ExecutableUniquePtr.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

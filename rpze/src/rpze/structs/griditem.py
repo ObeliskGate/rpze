@@ -84,14 +84,12 @@ class GriditemList(ob.obj_list(Griditem)):
         return Griditem(self.controller.result_u32, self.controller)
 
     def free_all(self) -> Self:
-        p_board = self.controller.get_p_board()[1]
         code = f"""
-                push ebx;
                 push edi;
                 push esi;
-                mov edi, {p_board};
-                mov ebx, {self.controller.result_address}
-                mov esi, ebx;
+                mov eax, [0x6a9ec0];
+                mov edi, [eax + 0x768];
+                mov esi, {self.controller.result_address}
                 xor edx, edx;
                 mov [esi], edx;
                 LIterate:
@@ -101,7 +99,7 @@ class GriditemList(ob.obj_list(Griditem)):
                     jz LFreeAll;
                     mov esi, [esi];
                     call {0x44D000};  // Griditem::GriditemDie
-                    mov esi, ebx;
+                    mov esi, {self.controller.result_address};
                     jmp LIterate;
                     
                 LFreeAll:
@@ -109,7 +107,6 @@ class GriditemList(ob.obj_list(Griditem)):
                     call {0x41E7D0};  // DataArray<Griditem>::DataArrayFreeAll
                     pop esi;
                     pop edi;
-                    pop ebx;
                     ret;"""
         asm.run(code, self.controller)
         return self

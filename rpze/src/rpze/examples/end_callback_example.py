@@ -2,7 +2,7 @@
 """
 暂停测试过率演示.
 """
-from ..flow.iztest import IzTest
+from ..iztest.iztest import IzTest
 from ..rp_extend import Controller
 
 

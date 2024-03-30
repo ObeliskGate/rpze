@@ -2,7 +2,7 @@
 """
 iztools 默认例子的测试
 """
-from ..flow.iztest import IzTest
+from ..iztest.iztest import IzTest
 from ..rp_extend import Controller
 
 

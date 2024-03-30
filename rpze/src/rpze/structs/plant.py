@@ -215,14 +215,14 @@ class PlantList(ob.obj_list(Plant)):
         Returns:
             对应位置编号最小的植物, 找不到返回None
         """
-        p_board = self.controller.get_p_board()[1]  # 常用函数汇编提速喵
         code = f"""
             push esi;
             push edi;
             mov esi, {self.controller.result_address};
             xor eax, eax;
             mov [esi], eax;
-            mov edi, {p_board};
+            mov eax, [0x6a9ec0];
+            mov edi, [eax + 0x768]
 
             LIterate:
                 mov {Plant.ITERATOR_P_BOARD_REG}, edi;
@@ -266,16 +266,16 @@ class PlantList(ob.obj_list(Plant)):
         return super().__getitem__(item)
 
     def free_all(self) -> typing.Self:
-        p_board = self.controller.get_p_board()[1]
         code = f"""
             push esi;
-            push ebx;
-            mov ebx, {p_board};
+            push edi;
+            mov eax, [0x6a9ec0];
+            mov edi, [eax + 0x768];
             mov esi, {self.controller.result_address};
             xor edx, edx;
             mov [esi], edx;  // mov [esi], 0 is invalid
             LIterate:
-                mov {Plant.ITERATOR_P_BOARD_REG}, ebx;
+                mov {Plant.ITERATOR_P_BOARD_REG}, edi;
                 call {Plant.ITERATOR_FUNC_ADDRESS};  // Board::IteratePlant
                 test al, al;
                 jz LFreeAll;
@@ -286,7 +286,7 @@ class PlantList(ob.obj_list(Plant)):
             LFreeAll:
                 mov eax, {self.base_ptr};
                 call {0x41E590}; // DataArray<Plant>::DataArrayFreeAll
-                pop ebx;
+                pop edi;
                 pop esi;
                 ret;"""
         asm.run(code, self.controller)

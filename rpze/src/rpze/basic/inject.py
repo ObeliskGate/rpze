@@ -3,9 +3,10 @@
 注入, 打开游戏相关的函数和类.
 """
 import os
+import signal
 import subprocess
 import time
-from typing import overload
+from typing import overload, Iterable
 
 from . import asm
 from ..rp_extend import Controller
@@ -34,27 +35,38 @@ def open_game(game_path: str, num: int = 1) -> list[int]:
     return ret
 
 
-def inject(pids: list[int]) -> list[Controller]:
+def inject(pids: Iterable[int]) -> list[Controller]:
     """
     对pids中的每一个进程注入dll
     
     Args:
-        pids: process id列表
+        pids: 所有process id
     Returns:
         所有进程的Controller对象组成的列表
     """
     current_dir = os.getcwd()
     os.chdir(os.path.dirname(__file__))
     dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
-    s = f'..\\bin\\rp_injector.exe \"{dll_path}\" {len(pids)} '
-    s += ' '.join([str(i) for i in pids])
+    s = f'..\\bin\\rp_injector.exe \"{dll_path}\" '
+    s += ' '.join(str(i) for i in pids)
     try:
-        os.system(s)
+        subprocess.run(s)
     except Exception as e:
         raise e
     finally:
         os.chdir(current_dir)
     return [Controller(pid) for pid in pids]
+
+
+def close_by_pids(pids: Iterable[int]) -> None:
+    """
+    通过process id关闭进程
+
+    Args:
+        pids: 需要关闭的 process id
+    """
+    for pid in pids:
+        os.kill(pid, signal.SIGTERM)
 
 
 class InjectedGame:
@@ -65,33 +77,37 @@ class InjectedGame:
         controller: 被注入游戏的控制器
     """
     @overload
-    def __init__(self, process_id: int, /):
+    def __init__(self, process_id: int, /, close_when_exit: bool = True):
         """
         通过process id构造InjectedGame对象
 
         Args:
             process_id: pvz进程的process id
+            close_when_exit: 是否在退出时关闭pvz进程
         """
 
     @overload
-    def __init__(self, game_path: str, /):
+    def __init__(self, game_path: str, /, close_when_exit: bool = True):
         """
         通过游戏路径构造InjectedGame对象
 
         Args:
             game_path: pvz主程序路径
+            close_when_exit: 是否在退出时关闭pvz进程
         """
 
     @overload
-    def __init__(self, controller: Controller, /):
+    def __init__(self, controller: Controller, /, close_when_exit: bool = True):
         """
         通过Controller对象构造InjectedGame对象
 
         Args:
             controller: 注入目标游戏的Controller对象
+            close_when_exit: 是否在退出时关闭pvz进程
         """
 
-    def __init__(self, arg):
+    def __init__(self, arg, close_when_exit: bool = True):
+        self._close_when_exit = close_when_exit
         if isinstance(arg, int):
             self.controller: Controller = Controller(arg)
         elif isinstance(arg, str):
@@ -106,21 +122,21 @@ class InjectedGame:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.controller.end()
+        if self._close_when_exit:
+            close_by_pids((self.controller.pid,))
 
-    def enter_level(self, level_num: int) -> GameBoard:
+    def enter_level(self, level_num: int, look_for_saved_game: bool = False) -> GameBoard:
         """
         进入游戏, 返回GameBoard对象.
 
-        **请切记这个函数会毁坏你原有的关卡存档!**
-
         Args:
             level_num: 关卡对应数字
+            look_for_saved_game: 是否尝试读档, **请切记默认情况会毁坏你原有的关卡存档!**
         Returns:
             GameBoard对象
         Raises:
             RuntimeError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
         """
-        ctler = self.controller
         code = f"""
             push esi;
             mov esi, [{0x6a9ec0}];
@@ -135,7 +151,7 @@ class InjectedGame:
             test edx, edx;  // have Board
             jnz LNewBoard;
             LError:
-            mov [{ctler.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             pop esi;
             ret;
             
@@ -144,8 +160,7 @@ class InjectedGame:
             jmp LPreNewGame;
             
             LNewBoard:
-            mov eax, [esi + {0x768}]
-            mov cl, [eax + {0x5760}]
+            mov cl, [edx + {0x5760}]
             mov [esi + {0x88c}], cl
             jmp LPreNewGame;
             
@@ -157,24 +172,21 @@ class InjectedGame:
             call {0x44f9e0}; // LawnApp::KillGameSelector(esi = LawnApp* this)
             
             LPreNewGame:
-            push 0;
+            push {int(look_for_saved_game)};
             push {level_num};
             call 0x44f560;  // LawnApp::PreNewGame
             xor eax, eax;
-            mov [{ctler.result_address}], eax;
+            mov [{self.controller.result_address}], eax;
             pop esi;
             ret;"""
-        with ConnectedContext(ctler) as ctler:
-            ctler.before()
+        with ConnectedContext(self.controller, False) as ctler:
             if ctler.read_bool([0x6a9ec0, 0x76c]):
                 ctler.end()
                 while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
                     time.sleep(0.1)
                 ctler.start()
-                ctler.before()
             asm.run(code, ctler)
-            ctler.next_frame()
-            ctler.before()
+            ctler.skip_frames()
             ret = get_board(ctler)
             
         if self.controller.result_i32:
@@ -194,10 +206,9 @@ def enter_ize(game: InjectedGame) -> GameBoard:
         进入的关卡, GameBoard对象
     """
     with ConnectedContext(game.controller) as ctler:
-        ctler.before()
         board = game.enter_level(70)
         board.remove_cutscene_zombie()
-        ctler.next_frame()
+        ctler.skip_frames()
     return board
 
 
@@ -207,9 +218,9 @@ class ConnectedContext:
 
      Attributes:
          controller: 被注入游戏的控制器
-         ensure_jump_frame: 是否保证跳帧
+         ensure_jump_frame: 是否保证跳帧, True则保证跳帧, False则保证不跳帧. 默认None不处理.
     """
-    def __init__(self, controller: Controller, ensure_jump_frame: bool = False):
+    def __init__(self, controller: Controller, ensure_jump_frame: bool | None = None):
         self.controller: Controller = controller
         self.ensure_jump_frame = ensure_jump_frame
         self._is_connected: bool = False
@@ -217,18 +228,25 @@ class ConnectedContext:
 
     def __enter__(self) -> Controller:
         self._is_connected = self.controller.hook_connected()
+        ctler = self.controller
         if not self._is_connected:
-            self.controller.start()
-        if self.ensure_jump_frame:
-            self._is_jumping = self.controller.is_jumping_frame()
-            if not self._is_jumping:
-                self.controller.before()
-                self.controller.start_jump_frame()
-        return self.controller
+            ctler.start()
+        if self.ensure_jump_frame is not None:
+            self._is_jumping = ctler.is_jumping_frame()
+            if self.ensure_jump_frame:
+                ctler.start_jump_frame()
+            else:
+                ctler.end_jump_frame()
+        return ctler
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.controller.before()
-        if self.ensure_jump_frame and not self._is_jumping:
-            self.controller.end_jump_frame()
+        ctler = self.controller
+        if self.ensure_jump_frame is not None:
+            if self._is_jumping:
+                ctler.start_jump_frame()
+            else:
+                ctler.end_jump_frame()
         if not self._is_connected:
-            self.controller.end()
+            ctler.end()
+        else:
+            ctler.start()
