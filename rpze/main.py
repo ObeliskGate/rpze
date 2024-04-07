@@ -1,5 +1,4 @@
 # -*- coding: utf_8 -*-
-import csv
 
 from src.rpze.basic.inject import InjectedGame
 from src.rpze.basic.inject import enter_ize

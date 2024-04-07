@@ -1,3 +1,7 @@
+# -*- coding: utf_8 -*-
+"""
+ize 漏阳光相关函数
+"""
 from ..basic.gridstr import gridstr, get_grid_str
 from ..structs.game_board import GameBoard, get_board
 from ..structs.plant import Plant, PlantType

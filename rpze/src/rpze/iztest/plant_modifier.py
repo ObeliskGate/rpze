@@ -1,3 +1,7 @@
+# -*- coding: utf_8 -*-
+"""
+ize 对植物常见的操控方式
+"""
 import random
 import typing
 

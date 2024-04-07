@@ -41,7 +41,13 @@
     <Compile Include="src\rpze\flow\flow.py" />
     <Compile Include="src\rpze\flow\utils.py" />
     <Compile Include="src\rpze\flow\__init__.py" />
+    <Compile Include="src\rpze\iztest\cond_funcs.py" />
+    <Compile Include="src\rpze\iztest\consts.py" />
     <Compile Include="src\rpze\iztest\iztest.py" />
+    <Compile Include="src\rpze\iztest\operations.py" />
+    <Compile Include="src\rpze\iztest\plant_modifier.py" />
+    <Compile Include="src\rpze\iztest\sun_num_utils.py" />
+    <Compile Include="src\rpze\iztest\__init__.py" />
     <Compile Include="src\rpze\structs\game_board.py" />
     <Compile Include="src\rpze\structs\griditem.py" />
     <Compile Include="src\rpze\structs\obj_base.py" />

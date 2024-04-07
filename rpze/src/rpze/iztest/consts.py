@@ -1,3 +1,7 @@
+# -*- coding: utf_8 -*-
+"""
+ize常数, 常见表
+"""
 from ..structs.zombie import ZombieType
 from ..structs.plant import PlantType
 

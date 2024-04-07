@@ -1,4 +1,9 @@
-from ..flow.flow import AwaitableCondFunc, FlowManager, VariablePool
+# -*- coding: utf_8 -*-
+"""
+简化iztest的条件函数
+"""
+from ..flow.utils import VariablePool
+from ..flow.flow import AwaitableCondFunc, FlowManager
 from ..structs.plant import Plant
 
 
