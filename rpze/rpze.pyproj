@@ -38,6 +38,7 @@
     <Compile Include="src\rpze\examples\end_callback_example.py" />
     <Compile Include="src\rpze\examples\iztools_example.py" />
     <Compile Include="src\rpze\examples\pole_jumping_test.py" />
+    <Compile Include="src\rpze\examples\__init__.py" />
     <Compile Include="src\rpze\flow\flow.py" />
     <Compile Include="src\rpze\flow\utils.py" />
     <Compile Include="src\rpze\flow\__init__.py" />
