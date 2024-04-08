@@ -480,9 +480,8 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
             return node_cls(self._array_base_ptr + node_cls.OBJ_SIZE * index, self.controller)
 
         def find(self, *args) -> _T | None:
-            match len(args):
-                case 1:
-                    index = args[0]
+            match args:
+                case (index, ):
                     if isinstance(index, int):
                         try:
                             target = self[index]
@@ -493,16 +492,15 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                         target = self.at(index.index)
                         return target if target.id == index else None
                     raise TypeError("index must be int or ObjId instance")
-                case 2:
-                    idx, rank = args
+                case (idx, rank):
                     try:
                         target = self[idx]
                     except IndexError:
                         return None
                     return target if target.id.rank == rank else None
-                case other:
+                case _:
                     raise ValueError("the function should have 1 or 2 parameters, "
-                                     f"not {other} parameters")
+                                     f"not {len(args)} parameters")
 
         def __getitem__(self, index: int | slice):
             if isinstance(index, int):

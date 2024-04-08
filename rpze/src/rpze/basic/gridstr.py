@@ -18,8 +18,13 @@ def parse_grid_str(grid_str: gridstr) -> tuple[int, int]:
         grid_str: 形如'1-2'的字符串
     Returns:
         (row, col)元组
+    Raises:
+        ValueError: 无法识别的grid_str
     """
-    return int(grid_str.split('-')[0]) - 1, int(grid_str.split('-')[1]) - 1
+    spl = grid_str.split('-')
+    if len(spl) != 2:
+        raise ValueError(f"grid_str with wrong length: {grid_str}")
+    return int(spl[0].strip()) - 1, int(spl[1].strip()) - 1
 
 
 def get_grid_str(row: int, col: int) -> gridstr:

@@ -8,4 +8,3 @@ with InjectedGame(r"C:\space\pvz\Plants vs. Zombies 1.0.0.1051 EN\PlantsVsZombie
     ctler = game.controller
     enter_ize(game)
     botanical_clock(ctler, True)
-
