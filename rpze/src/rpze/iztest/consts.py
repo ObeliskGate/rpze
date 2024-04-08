@@ -2,6 +2,8 @@
 """
 ize常数, 常见表
 """
+from enum import Enum, auto
+
 from ..structs.zombie import ZombieType
 from ..structs.plant import PlantType
 
@@ -77,3 +79,22 @@ zombie_abbr_to_type: dict[str, ZombieType] = {
     "ww": ZombieType.dancing, "mj": ZombieType.dancing
 }
 """僵尸缩写到僵尸类型的字典"""
+
+
+class Theme(Enum):
+    HOTCHPOTCH = auto()
+    """综合"""
+    KERNELS = auto()
+    """控制"""
+    INSTANTS = auto()
+    """即死"""
+    PEAS = auto()
+    """输出"""
+    POTATOES = auto()
+    """爆炸"""
+    STARFRUITS = auto()
+    """倾斜"""
+    MAGNETS = auto()
+    """穿刺"""
+    SCAREDIES = auto()
+    """恢复"""
