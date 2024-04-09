@@ -31,6 +31,7 @@
   <ItemGroup>
     <Compile Include="main.py" />
     <Compile Include="src\rpze\basic\asm.py" />
+    <Compile Include="src\rpze\basic\exception.py" />
     <Compile Include="src\rpze\basic\gridstr.py" />
     <Compile Include="src\rpze\basic\inject.py" />
     <Compile Include="src\rpze\basic\__init__.py" />

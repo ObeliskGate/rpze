@@ -6,16 +6,14 @@
 void Memory::getRemoteMemoryAddress()
 {
 	if (!isShmPrepared())
-	{
-		throw std::exception("getRemoteMemoryAddress: main loop not prepared");
-	}
+		throw MemoryException("getRemoteMemoryAddress: main loop not prepared", pid);
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY_PTR;
 	untilGameExecuted();
 	if (executeResult() == ExecuteResult::SUCCESS)
 	{
 		remoteMemoryAddress = *static_cast<volatile uint32_t*>(getReadWriteVal());
 	}
-	else throw std::exception("getRemoteMemoryAddress: unexpected behavior");
+	else throw MemoryException("getRemoteMemoryAddress: unexpected behavior", pid);
 }
 
 Memory::Memory(DWORD pid)
@@ -25,13 +23,13 @@ Memory::Memory(DWORD pid)
 	if (hMemory == NULL)
 	{
 		std::cerr << "find shared memory failed: " << GetLastError() << std::endl;
-		throw std::exception("find shared memory failed");
+		throw MemoryException("find shared memory failed", pid);
 	}
 	pBuf = MapViewOfFile(hMemory, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
 	if (pBuf == NULL)
 	{
 		std::cerr << "create shared memory failed: " << GetLastError() << std::endl;
-		throw std::exception("create shared memory failed");
+		throw MemoryException("create shared memory failed", pid);
 	}
 	std::cout << "find shared memory success" << std::endl;
 
@@ -41,7 +39,7 @@ Memory::Memory(DWORD pid)
 	this->hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 	if (!hPvz)
 	{
-		throw std::exception("cannot find game process!");
+		throw MemoryException("cannot find game process!", pid);
 	}
 	globalState() = HookState::CONNECTED;
 	startControl();
@@ -68,7 +66,7 @@ std::optional<volatile void*> Memory::_readMemory(uint32_t size, const uint32_t*
 	untilGameExecuted(); 
 	if (executeResult() == ExecuteResult::SUCCESS) return getReadWriteVal();
 	if (executeResult() == ExecuteResult::FAIL) return {};
-	throw std::exception("_readMemory: unexpected behavior");
+	throw MemoryException("_readMemory: unexpected behavior", this->pid);
 }
 
 bool Memory::_writeMemory(const void* pVal, uint32_t size, const uint32_t* offsets, uint32_t len)
@@ -81,23 +79,23 @@ bool Memory::_writeMemory(const void* pVal, uint32_t size, const uint32_t* offse
 	untilGameExecuted();
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
 	if (executeResult() == ExecuteResult::FAIL) return false;
-	throw std::exception("_writeMemory: unexpected behavior");
+	throw MemoryException("_writeMemory: unexpected behavior", this->pid);
 }
 
 void Memory::before() const
 {
 	while (isBlocked())
 	{
-		if (globalState() == HookState::NOT_CONNECTED) throw std::exception("before: hook not connected");
+		if (globalState() == HookState::NOT_CONNECTED) 
+			throw MemoryException("before: hook not connected", this->pid);
 	}
 }
 
 void Memory::skipFrames(size_t num) const
 {
 	if (!isShmPrepared())
-	{
-		throw std::exception("before: main loop hook not connected");
-	}
+		throw MemoryException("before: main loop hook not connected", this->pid);
+	
 	for (size_t i = 0; i < num; i++)
 	{
 		next();
@@ -108,13 +106,9 @@ void Memory::skipFrames(size_t num) const
 bool Memory::startJumpFrame()
 {
 	if (!isShmPrepared())
-	{
-		throw std::exception("startJumpFrame: main loop hook not prepared");
-	}
+		throw MemoryException("startJumpFrame: main loop hook not prepared", this->pid);
 	if (!boardPtr())
-	{
-		throw std::exception("startJumpFrame: board ptr not found");
-	}
+		throw MemoryException("startJumpFrame: board ptr not found", this->pid);
 	if (jumpingFrame) return false;
 	jumpingFrame = true;
 	pCurrentPhaseCode = &jumpingPhaseCode();
@@ -128,9 +122,8 @@ bool Memory::startJumpFrame()
 bool Memory::endJumpFrame()
 {
 	if (!isShmPrepared())
-	{
-		throw std::exception("endJumpFrame: main loop hook not prepared");
-	}
+throw MemoryException("endJumpFrame: main loop hook not prepared", this->pid);
+	
 	if (!jumpingFrame) return false;
 	jumpingFrame = false;
 	pCurrentPhaseCode = &phaseCode();
@@ -146,14 +139,14 @@ void Memory::untilGameExecuted() const
 	while (getCurrentPhaseCode() != PhaseCode::WAIT)
 	{
 		if (globalState() == HookState::NOT_CONNECTED) 
-			throw std::exception("untilGameExecuted: hook not connected");
+			throw MemoryException("untilGameExecuted: hook not connected", this->pid);
 	}
 }
 
 std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const uint32_t* offsets, uint32_t len)
 {
-	if (size > BUFFER_SIZE) throw std::exception("readBytes: too many bytes");
-	if (len > OFFSET_LENGTH) throw std::exception("readBytes: too many offsets");
+	if (size > BUFFER_SIZE) throw std::invalid_argument("readBytes: too many bytes");
+	if (len > OFFSET_LENGTH) throw std::invalid_argument("readBytes: too many offsets");
 	if (!isShmPrepared())
 	{
 		auto remotePtr = getRemotePtr<char[]>(offsets, len);
@@ -171,8 +164,8 @@ std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const ui
 
 bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len)
 {
-	if (size > BUFFER_SIZE) throw std::exception("writeBytes: too many bytes");
-	if (len > OFFSET_LENGTH) throw std::exception("writeBytes: too many offsets");
+	if (size > BUFFER_SIZE) throw std::invalid_argument("writeBytes: too many bytes");
+	if (len > OFFSET_LENGTH) throw std::invalid_argument("writeBytes: too many offsets");
 	if (!isShmPrepared())
 	{
 		auto remotePtr = getRemotePtr<char[]>(offsets, len);
@@ -186,19 +179,18 @@ bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, 
 bool Memory::runCode(const char* codes, size_t len) const
 {
 	if (len > SHARED_MEMORY_SIZE)
-	{
-		throw std::exception("runCode: too many codes");
-	}
+		throw std::invalid_argument("runCode: too many codes");
+	
 	if (!isShmPrepared())
 	{
-		throw std::exception("runCode: main loop not prepared");
+		throw MemoryException("runCode: main loop not prepared", this->pid);
 	}
 	memcpy(getAsmPtr(), codes, len);
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
 	untilGameExecuted();
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
 	if (executeResult() == ExecuteResult::FAIL) return false;
-	throw std::exception("runCode: unexpected behavior");
+	throw MemoryException("runCode: unexpected behavior", this->pid);
 }
 
 void Memory::startControl()

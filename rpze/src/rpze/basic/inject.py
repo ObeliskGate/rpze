@@ -9,7 +9,8 @@ import time
 from typing import overload, Iterable
 
 from . import asm
-from ..rp_extend import Controller
+from .exception import PvzStateError
+from ..rp_extend import Controller, ControllerError
 from ..structs.game_board import GameBoard, get_board
 
 
@@ -122,7 +123,7 @@ class InjectedGame:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.controller.end()
-        if self._close_when_exit:
+        if self._close_when_exit and exc_type is not ControllerError:
             close_by_pids((self.controller.pid,))
 
     def enter_level(self, level_num: int, look_for_saved_game: bool = False) -> GameBoard:
@@ -135,7 +136,7 @@ class InjectedGame:
         Returns:
             GameBoard对象
         Raises:
-            RuntimeError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
+            RpBaseException: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
         """
         code = f"""
             push esi;
@@ -190,9 +191,9 @@ class InjectedGame:
             ret = get_board(ctler)
             
         if self.controller.result_i32:
-            raise RuntimeError("this function should be used at loading screen, "
-                               "main selector screen, challenge selector screen or in the game"
-                               f"while the current screen num is {self.controller.result_i32}")
+            raise PvzStateError("this function should be used at loading screen, "
+                                "main selector screen, challenge selector screen or in the game"
+                                f"while the current screen num is {self.controller.result_i32}")
         return ret
 
 

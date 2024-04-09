@@ -10,7 +10,8 @@ from .griditem import GriditemList, Griditem, GriditemType
 from .plant import PlantList, Plant, PlantType
 from .projectile import ProjectileList
 from ..basic import asm
-from ..rp_extend import Controller
+from ..basic.exception import PvzStateError
+from ..rp_extend import Controller, RpBaseException
 from .zombie import ZombieList, ZombieType, Zombie
 
 
@@ -362,15 +363,16 @@ def get_board(controller: Controller | None = None) -> GameBoard:
     Returns:
         当前游戏主界面对象
     Raises:
-        RuntimeError: Board对象不存在时抛出
+        RpBaseException: 没有缓存的GameBoard对象时抛出
+        PvzStateError: 游戏Board不存在时抛出
     """
     if controller is None:
         if len(__game_board_cache) == 0:
-            raise RuntimeError("no cached GameBoard object!")
+            raise RpBaseException("no cached GameBoard object!")
         return next(reversed(__game_board_cache.values()))  # 最后一个元素
     valid, p_board = controller.get_p_board()
     if not p_board:  # 期待Board对象存在, 用异常不用Optional
-        raise RuntimeError("Board object doesn't exist!")
+        raise PvzStateError("Board object doesn't exist!")
     key = controller.pid
     if __game_board_cache.get(key) is None:  # 无缓存: 加入, 判删
         ret = GameBoard(p_board, controller)

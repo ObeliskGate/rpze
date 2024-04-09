@@ -8,6 +8,12 @@ PYBIND11_MODULE(rp_extend, m)
 		.value("ZOMBIE_PICK_RANDOM_SPEED", HookPosition::ZOMBIE_PICK_RANDOM_SPEED)
 		.value("CHALLENGE_I_ZOMBIE_SCORE_BRAIN", HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN);
 
+	PYBIND11_CONSTINIT static py::gil_safe_call_once_and_store<py::object> base_exc_storage;
+	base_exc_storage.call_once_and_store_result(
+		[&m] { return py::exception<void>(m, "RpBaseException"); });
+
+	py::register_exception<MemoryException>(m, "ControllerError", base_exc_storage.get_stored());
+
 	py::class_<Controller>(m, "Controller")
 		.def(py::init<DWORD>())
 		.def("__eq__", &Controller::operator==)

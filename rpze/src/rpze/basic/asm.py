@@ -6,6 +6,7 @@ from functools import lru_cache
 
 import keystone as ks
 
+from .exception import AsmError
 from ..rp_extend import Controller
 
 
@@ -37,5 +38,8 @@ def decode(code: str, addr: int = 0) -> bytes:
     Returns:
         解码后的字节码
     """
-    asm = __keystone_assembler.asm(code, addr, True)[0]
+    try:
+        asm = __keystone_assembler.asm(code, addr, True)[0]
+    except ks.KsError as ke:
+        raise AsmError(f"assembly error") from ke
     return asm

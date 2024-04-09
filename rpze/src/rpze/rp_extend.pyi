@@ -1,8 +1,6 @@
 # -*- coding: utf_8 -*- 
 from __future__ import annotations
 
-__all__ = ['HookPosition', 'Controller']
-
 from enum import Enum
 from typing import Self
 
@@ -12,6 +10,10 @@ class HookPosition(Enum):
     ZOMBIE_PICK_RANDOM_SPEED = 1  # deprecated
     CHALLENGE_I_ZOMBIE_SCORE_BRAIN = 2
     
+
+class RpBaseException(Exception): ...
+
+class ControllerError(RpBaseException): ...
 
 class Controller:
     # game controller

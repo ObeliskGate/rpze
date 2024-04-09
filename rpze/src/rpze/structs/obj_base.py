@@ -8,6 +8,7 @@ import typing
 from enum import IntEnum
 
 from ..basic import asm
+from ..basic.exception import PvzStateError
 from ..rp_extend import Controller
 
 
@@ -406,7 +407,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         Returns:
             返回自己
         Raises:
-            RuntimeError: 不是所有对象都被回收时候抛出
+            PvzStateError: 当有对象未回收时抛出
         """
 
     @abc.abstractmethod
@@ -520,7 +521,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
 
         def reset_stack(self):
             if self.obj_num:
-                raise RuntimeError(f"cannot reset stack when there are still {self.obj_num} objects alive")
+                raise PvzStateError(f"cannot reset stack when there are still {self.obj_num} objects alive")
             next_idx = self.next_index
             self.next_index = 0
             length = self.max_length

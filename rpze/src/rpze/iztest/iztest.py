@@ -15,7 +15,7 @@ from ..flow.utils import until
 from ..flow.flow import FlowFactory, TickRunnerResult, FlowManager
 from ..basic.gridstr import parse_grid_str, gridstr
 from ..basic.inject import ConnectedContext
-from ..rp_extend import Controller, HookPosition
+from ..rp_extend import Controller, HookPosition, RpBaseException
 from ..structs.game_board import GameBoard, get_board
 from ..structs.griditem import Griditem
 from ..structs.plant import PlantType, Plant
@@ -355,10 +355,10 @@ class IzTest:
         Returns:
             返回自己
         Raises:
-            RuntimeError: 已经设置过flow_factory时抛出
+            RpBaseException: 已经设置过flow_factory时抛出
         """
         if self._flow_factory_set:
-            raise RuntimeError("cannot set flow factory twice!")
+            raise RpBaseException("cannot set flow factory twice!")
         self._flow_factory_set = True
 
         @self.flow_factory.connect(until(0), only_once=True, priority=place_priority)

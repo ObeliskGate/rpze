@@ -3,6 +3,7 @@
 ize 漏阳光相关函数
 """
 from ..basic.gridstr import gridstr, get_grid_str
+from ..rp_extend import RpBaseException
 from ..structs.game_board import GameBoard, get_board
 from ..structs.plant import Plant, PlantType
 
@@ -20,7 +21,7 @@ def get_sunflower_remaining_sun(sunflower: Plant) -> int:
     Returns:
         向日葵剩余阳光值
     Raises:
-        RuntimeError: 出现未知的行为时
+        RpBaseException: 出现未知的行为时
     """
     if sunflower.is_dead:
         return 0
@@ -35,7 +36,7 @@ def get_sunflower_remaining_sun(sunflower: Plant) -> int:
             hi = mid - 1
         else:
             lo = mid + 1
-    raise RuntimeError("unexpected behaviour!")
+    raise RpBaseException("unexpected behaviour!")
 
 
 def get_all_remaining_suns(board: GameBoard | None = None) -> dict[gridstr, int]:

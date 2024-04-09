@@ -1,6 +1,7 @@
 #pragma once
 #include "stdafx.h"
 #include "Enums.h"
+#include "MemoryException.h"
 
 class Memory
 {
@@ -209,7 +210,7 @@ template<typename T>
 std::optional<T> Memory::readMemory(const uint32_t* offsets, uint32_t len)
 {
 	static_assert(sizeof(T) <= BUFFER_SIZE);
-	if (len > OFFSET_LENGTH) throw std::exception("readMemory:offsets too long");
+	if (len > OFFSET_LENGTH) throw std::invalid_argument("readMemory:offsets too long");
 	if (!hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets, len);
 	auto p = _readMemory(sizeof(T), offsets, len);
 	if (!p.has_value()) return {};
@@ -220,7 +221,7 @@ template<typename T>
 bool Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len)
 {
 	static_assert(sizeof(T) <= BUFFER_SIZE);
-	if (len > OFFSET_LENGTH) throw std::exception("writeMemory: offsets too long");
+	if (len > OFFSET_LENGTH) throw std::invalid_argument("writeMemory: offsets too long");
 	if (!hookConnected(HookPosition::MAIN_LOOP)) return _writeRemoteMemory(std::forward<T>(val), offsets, len);
 	return _writeMemory(&val, sizeof(T), offsets, len);
 }
