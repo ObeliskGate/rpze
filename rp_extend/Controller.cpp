@@ -37,6 +37,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("open_hook", &Controller::open_hook)
 		.def("close_hook", &Controller::close_hook)
 		.def("hook_connected", &Controller::hook_connected, py::arg("hook") = HookPosition::MAIN_LOOP)
+		.def("global_connected", &Controller::global_connected)
 
 		.def("read_bytes", &Controller::read_bytes)
 		.def("write_bytes", &Controller::write_bytes)

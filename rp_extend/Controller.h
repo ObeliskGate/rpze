@@ -22,6 +22,8 @@ public:
 
 	bool hook_connected(HookPosition pos = HookPosition::MAIN_LOOP) const { return mem.hookConnected(pos); }
 
+	bool global_connected() const { return mem.globalConnected(); }
+
 	void next_frame() const { mem.next(); }
 
 	void before() const { mem.before(); }

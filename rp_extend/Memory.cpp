@@ -86,8 +86,8 @@ void Memory::before() const
 {
 	while (isBlocked())
 	{
-		if (globalState() == HookState::NOT_CONNECTED) 
-			throw MemoryException("before: hook not connected", this->pid);
+		if (!globalConnected())
+			throw MemoryException("before: global not connected", this->pid);
 	}
 }
 
@@ -138,8 +138,8 @@ void Memory::untilGameExecuted() const
 {
 	while (getCurrentPhaseCode() != PhaseCode::WAIT)
 	{
-		if (globalState() == HookState::NOT_CONNECTED) 
-			throw MemoryException("untilGameExecuted: hook not connected", this->pid);
+		if (!globalConnected())
+			throw MemoryException("untilGameExecuted: global hook not connected", this->pid);
 	}
 }
 

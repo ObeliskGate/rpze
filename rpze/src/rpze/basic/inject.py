@@ -137,7 +137,8 @@ class InjectedGame:
         Returns:
             GameBoard对象
         Raises:
-            RpBaseException: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
+            PvzStateError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
+            ControllerError: 若Controller对象未连接游戏则抛出
         """
         code = f"""
             push esi
@@ -185,6 +186,8 @@ class InjectedGame:
             if ctler.read_bool([0x6a9ec0, 0x76c]):
                 ctler.end()
                 while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
+                    if not ctler.global_connected():
+                        raise ControllerError("global hook not connected")
                     time.sleep(0.1)
                 ctler.start()
             asm.run(code, ctler)

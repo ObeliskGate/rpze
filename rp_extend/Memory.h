@@ -50,8 +50,6 @@ class Memory
 	// 读写内存时 要读写的内存的位数
 	volatile uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
 
-
-# undef max  // sb macro
 public:
 	static constexpr uint32_t BUFFER_OFFSET = 1024 * 4;
 	static constexpr uint32_t BUFFER_SIZE = SHARED_MEMORY_SIZE - BUFFER_OFFSET;
@@ -161,7 +159,9 @@ public:
 
 	void closeHook(HookPosition hook);
 
-	bool hookConnected(HookPosition hook) const { return globalState() == HookState::CONNECTED && hookStateArr()[getHookIndex(hook)] == HookState::CONNECTED; }
+	bool hookConnected(HookPosition hook) const { return globalConnected() && hookStateArr()[getHookIndex(hook)] == HookState::CONNECTED; }
+
+	bool globalConnected() const { return globalState() == HookState::CONNECTED; }
 
 	uint32_t getWrittenAddress() const { return remoteMemoryAddress + RESULT_OFFSET; }
 
