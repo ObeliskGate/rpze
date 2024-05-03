@@ -97,4 +97,4 @@ class Theme(Enum):
     MAGNETS = auto()
     """穿刺"""
     SCAREDIES = auto()
-    """恢复"""
+    """回复"""

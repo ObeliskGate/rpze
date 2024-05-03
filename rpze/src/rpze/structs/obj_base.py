@@ -467,7 +467,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
             super().__init__(base_ptr, ctler)
             self._array_base_ptr = ctler.read_u32([base_ptr])
             self._code = f"""
-                push esi;
+                push esi
                 mov esi, [0x6a9ec0];
                 mov {node_cls.ITERATOR_P_BOARD_REG}, [esi + 0x768]
                 mov esi, {self.controller.result_address};

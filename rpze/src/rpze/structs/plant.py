@@ -166,7 +166,7 @@ class Plant(ObjNode):
         
         胆小的规律较为复杂:
             - 胆小在launch_cd == 0的时候检测身边僵尸以决定自己是不是缩头
-            - 胆小攻击基本规律同上,   同样在== 1时打出子弹
+            - 胆小攻击基本规律同上, 同样在== 1时打出子弹
             - 在不是正常站立时, 胆小个人每帧更新generate_cd = 150
         因而, 胆小在常态情况时每帧判断一次周围僵尸决定缩头, 但在攻击前兆时不判断.
         之前零度误认为胆小索敌成功到发射为25也可能源于此, 实际上还是取24更为合适.
@@ -195,9 +195,9 @@ class Plant(ObjNode):
         令自己死亡
         """
         code = f"""
-            push {self.base_ptr};
-            call {0x4679b0};  // Plant::Die
-            ret;"""
+            push {self.base_ptr}
+            call {0x4679b0}  // Plant::Die
+            ret"""
         asm.run(code, self.controller)
 
 
@@ -215,30 +215,30 @@ class PlantList(ob.obj_list(Plant)):
             对应位置编号最小的植物, 找不到返回None
         """
         code = f"""
-            push esi;
-            push edi;
-            mov esi, {self.controller.result_address};
-            xor eax, eax;
-            mov [esi], eax;
-            mov eax, [0x6a9ec0];
+            push esi
+            push edi
+            mov esi, {self.controller.result_address}
+            xor eax, eax
+            mov [esi], eax
+            mov eax, [0x6a9ec0]
             mov edi, [eax + 0x768]
 
             LIterate:
-                mov {Plant.ITERATOR_P_BOARD_REG}, edi;
-                call {Plant.ITERATOR_FUNC_ADDRESS};  // Board::IteratePlant
-                test al, al;
-                jz LNoResult;
-                mov eax, [esi];  // eax = Plant*
-                cmp dword ptr [eax + {Plant.row.offset}], {row};
-                jne LIterate;
-                cmp dword ptr [eax + {Plant.col.offset}], {col};
-                jne LIterate;
-                pop edi;
-                pop esi;
-                ret;
+                mov {Plant.ITERATOR_P_BOARD_REG}, edi
+                call {Plant.ITERATOR_FUNC_ADDRESS}  // Board::IteratePlant
+                test al, al
+                jz LNoResult
+                mov eax, [esi]  // eax = Plant*
+                cmp dword ptr [eax + {Plant.row.offset}], {row}
+                jne LIterate
+                cmp dword ptr [eax + {Plant.col.offset}], {col}
+                jne LIterate
+                pop edi
+                pop esi
+                ret
 
             LNoResult:
-                xor eax, eax;
+                xor eax, eax
                 mov [esi], eax;
                 pop edi;
                 pop esi;

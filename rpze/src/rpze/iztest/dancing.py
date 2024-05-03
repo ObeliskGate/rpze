@@ -5,11 +5,10 @@ mj相关操控
 from collections.abc import Callable
 from enum import Enum
 from typing import SupportsIndex, Literal, TypeAlias, Self, overload
-from contextlib import ContextDecorator
 
-from ..rp_extend import Controller, ControllerError
 from .iztest import IzTest
 from ..flow.flow import FlowManager, TickRunnerResult, CondFunc, AwaitableCondFunc
+from ..rp_extend import ControllerError
 from ..structs.game_board import GameBoard, get_board
 from ..structs.zombie import Zombie, ZombieStatus
 
@@ -75,10 +74,9 @@ def get_clock(board: GameBoard | None = None) -> int:
     获取当前时钟
 
     Args:
-        board: 游戏板对象, 默认为None
-
+        board: 游戏板对象, 默认None为使用get_board()
     Returns:
-
+        当前时钟
     """
     if board is None:
         board = get_board()
@@ -89,6 +87,14 @@ def get_clock(board: GameBoard | None = None) -> int:
 
 
 def get_dancing_status(board: GameBoard | None = None) -> ZombieStatus:
+    """
+    获取当前时钟对应的dancing状态
+
+    Args:
+        board: 游戏板对象, 默认None为使用get_board()
+    Returns:
+        当前时钟对应的僵尸状态
+    """
     clock = get_clock(board) // 20
     match clock:
         case t if t <= 11:
@@ -106,15 +112,29 @@ def get_dancing_status(board: GameBoard | None = None) -> ZombieStatus:
 
 
 class DancingPhase(Enum):
+    """
+    mj相位, self.value表示该相位下的**一个**时钟值
+    """
     TRYING_CALLING_PARTNER = 240  # 12 * 20
     DANCING = 260  # 13 * 20
     MOVING = 0
 
 
 DancingPhaseLiteral: TypeAlias = DancingPhase | Literal["summon", "dance", "move", "s", "d", "m"]
+"""mj相位字面量"""
 
 
-def to_phase(literal: DancingPhaseLiteral) -> DancingPhase:
+def to_dancing_phase(literal: DancingPhaseLiteral) -> DancingPhase:
+    """
+    将字面量转换为DancingPhase
+
+    Args:
+        literal: 字面量
+    Returns:
+        转换后的DancingPhase对象
+    Raises
+        ValueError: 如果literal不是有效的相位字面量
+    """
     match literal:
         case "summon" | "s" | DancingPhase.TRYING_CALLING_PARTNER:
             return DancingPhase.TRYING_CALLING_PARTNER
@@ -127,6 +147,16 @@ def to_phase(literal: DancingPhaseLiteral) -> DancingPhase:
 
 
 def dancing_status_to_phase(status: ZombieStatus) -> DancingPhase:
+    """
+    将僵尸状态转换为DancingPhase
+
+    Args:
+        status: 僵尸状态
+    Returns:
+        转换后的DancingPhase对象
+    Raises:
+        ValueError: 如果status不是mj特有的状态
+    """
     match status:
         case ZombieStatus.dancing_walking:
             return DancingPhase.MOVING
@@ -139,16 +169,28 @@ def dancing_status_to_phase(status: ZombieStatus) -> DancingPhase:
             raise ValueError(f"{status} is not a dancing phase")
 
 
+def get_dancing_phase(board: GameBoard | None = None) -> DancingPhase:
+    """
+    获取当前时钟对应的DancingPhase
+
+    Args:
+        board: 游戏板对象, 默认None为使用get_board()
+    Returns:
+        当前时钟对应的DancingPhase
+    """
+    return dancing_status_to_phase(get_dancing_status(board))
+
+
 class _DmTr(Callable):
-    def __init__(self, controller: Controller):
-        self.ctler: Controller = controller
+    def __init__(self, iz_test: IzTest):
+        self.iz_test = iz_test
         self.current_phase: DancingPhase | None = None  # None表示不控制
         self.next_phase: DancingPhase | None = None  # None表示没有"下一个"状态
         self.cond_to_next: CondFunc = lambda _: True
 
     def keep_phase(self, _: FlowManager):
         cp = self.current_phase
-        board = get_board(self.ctler)
+        board = get_board(self.iz_test.controller)
         if cp.value != get_clock(board):
             board.mj_clock = cp.value
 
@@ -178,34 +220,75 @@ class _DmTr(Callable):
         self.current_phase = phase
 
     def stop_controlling(self, phase: DancingPhase):
-        get_board(self.ctler).mj_clock = phase.value
+        get_board(self.iz_test.controller).mj_clock = phase.value
         self.current_phase = None
         self.next_phase = None
 
 
-class DancingManipulator(ContextDecorator):
+class DancingManipulator:
+    """
+    mj相位控制器, 即, "女仆秘籍"
+
+    Attributes:
+        start_phase: with语句开始时的相位
+        end_phase: with语句结束时的相位
+    """
     def __init__(self, tr: _DmTr,
                  start_phase: DancingPhaseLiteral,
-                 end_phase: DancingPhaseLiteral):
-        self.start_phase: DancingPhase = to_phase(start_phase)
-        self.end_phase: DancingPhase = to_phase(end_phase)
+                 end_phase: DancingPhaseLiteral):  # protected interface
+        self.start_phase: DancingPhase = to_dancing_phase(start_phase)
+        self.end_phase: DancingPhase = to_dancing_phase(end_phase)
         self._tr: _DmTr = tr
 
-    def next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc = lambda _: True):
+    def next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc = lambda _: True) -> Self:
+        """
+        设置下一个相位
+
+        Args:
+            phase: 下一个相位
+            condition: 到下一个相位的条件, 默认为恒真, 即直接进入下一个相位
+        Returns:
+            self
+        """
         self._tr.cond_to_next = condition
-        self._tr.next_phase = to_phase(phase)
+        self._tr.next_phase = to_dancing_phase(phase)
+        return self
 
     async def until_next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc):
+        """
+        等待到下一个相位, 用于flow内部
+
+        使用中等效于:
+        >>> async def flow(_):
+        ...     await AwaitableCondFunc(condition)
+        ...     self.next_phase(phase)
+
+        Args:
+            phase: 下一个相位
+            condition: 到下一个相位的条件
+        """
         await AwaitableCondFunc(condition)
         self.next_phase(phase)
 
     def stop(self, end_phase: DancingPhaseLiteral):
+        """
+        停止控制
+
+        Args:
+            end_phase: 停止控制时的相位
+        """
         if self._tr.is_controlling:
-            self._tr.stop_controlling(to_phase(end_phase))
+            self._tr.stop_controlling(to_dancing_phase(end_phase))
 
     def start(self, first_phase: DancingPhaseLiteral):
+        """
+        开始控制
+
+        Args:
+            first_phase: 开始控制时的相位
+        """
         if not self._tr.is_controlling:
-            self._tr.start_controlling(to_phase(first_phase))
+            self._tr.start_controlling(to_dancing_phase(first_phase))
 
     def __enter__(self) -> Self:
         self.start(self.start_phase)
@@ -221,7 +304,18 @@ def get_dancing_manipulator(iz_test: IzTest,
                             start_phase: DancingPhaseLiteral = DancingPhase.MOVING,
                             end_phase: DancingPhaseLiteral = DancingPhase.MOVING,
                             priority: int | None = None) -> DancingManipulator:
-    dm_tr = _DmTr(iz_test.controller)
+    """
+    获取一个DancingManipulator
+
+    Args:
+        iz_test: 和DancingManipulator对应的IzTest对象
+        start_phase: 开始时的相位
+        end_phase: 结束时的相位
+        priority: DancingManipulator的优先级, 默认为默认优先级
+    Returns:
+        构造的DancingManipulator对象
+    """
+    dm_tr = _DmTr(iz_test)
     if priority is None:
         iz_test.flow_factory.add_tick_runner()(dm_tr)
     else:  # more simple method here?

@@ -58,10 +58,10 @@ class Griditem(ob.ObjNode):
         令自己死亡
         """
         code = f"""
-            push esi;
-            mov esi, {self.base_ptr};
+            push esi
+            mov esi, {self.base_ptr}
             call {0x44D000}  // Griditem::GriditemDie
-            ret;"""
+            ret"""
         asm.run(code, self.controller)
 
 
@@ -74,28 +74,28 @@ class GriditemList(ob.obj_list(Griditem)):
             申请出的Griditem对象
         """
         code = f"""
-            push esi;
-            mov esi, {self.base_ptr};
-            call {0x41E1C0};  // DataArray<GridItem>::DataArrayAlloc
-            mov [{self.controller.result_address}], eax;
-            pop esi;
-            ret;"""
+            push esi
+            mov esi, {self.base_ptr}
+            call {0x41E1C0}  // DataArray<GridItem>::DataArrayAlloc
+            mov [{self.controller.result_address}], eax
+            pop esi
+            ret"""
         asm.run(code, self.controller)
         return Griditem(self.controller.result_u32, self.controller)
 
     def free_all(self) -> Self:
         code = f"""
-                push edi;
-                push esi;
-                mov eax, [0x6a9ec0];
-                mov edi, [eax + 0x768];
+                push edi
+                push esi
+                mov eax, [0x6a9ec0]
+                mov edi, [eax + 0x768]
                 mov esi, {self.controller.result_address}
-                xor edx, edx;
-                mov [esi], edx;
+                xor edx, edx
+                mov [esi], edx
                 LIterate:
-                    mov {Griditem.ITERATOR_P_BOARD_REG}, edi;
-                    call {Griditem.ITERATOR_FUNC_ADDRESS};  // Board::IterateGriditem
-                    test al, al;
+                    mov {Griditem.ITERATOR_P_BOARD_REG}, edi
+                    call {Griditem.ITERATOR_FUNC_ADDRESS}  // Board::IterateGriditem
+                    test al, al
                     jz LFreeAll;
                     mov esi, [esi];
                     call {0x44D000};  // Griditem::GriditemDie

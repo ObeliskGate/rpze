@@ -70,19 +70,19 @@ class Projectile(ob.ObjNode):
         令自己死亡
         """
         code = f"""
-            mov eax, {self.base_ptr};
-            call {0x46EB20};  // Projectile::Die
-            ret;"""
+            mov eax, {self.base_ptr}
+            call {0x46EB20}  // Projectile::Die
+            ret"""
         asm.run(code, self.controller)
 
 
 class ProjectileList(ob.obj_list(Projectile)):
     def free_all(self) -> Self:
         code = f"""
-                push edi;   
-                push esi;
-                mov eax, [0x6a9ec0];
-                mov edi, [eax + 0x768];
+                push edi   
+                push esi
+                mov eax, [0x6a9ec0]
+                mov edi, [eax + 0x768]
                 mov esi, {self.controller.result_address};
                 xor edx, edx;
                 mov [esi], edx;

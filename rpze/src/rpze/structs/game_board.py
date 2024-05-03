@@ -74,10 +74,10 @@ class GameBoard(ob.ObjBase):
         if not (p_c := self._p_challenge):
             raise ValueError("Challenge object doesn't exist!")
         code = f"""
-            mov eax, {p_c};
-            push {plant.base_ptr};
-            call {0x42A530}; // Challenge::IZombieSetupPlant
-            ret;"""
+            mov eax, {p_c}
+            push {plant.base_ptr}
+            call {0x42A530} // Challenge::IZombieSetupPlant
+            ret"""
         asm.run(code, self.controller)
 
     def get_plants_on_lawn(self, row: int, col: int) -> \
@@ -92,10 +92,10 @@ class GameBoard(ob.ObjBase):
             (底座, 南瓜, 飞行, 常规)元组, 对应位置没有植物则返回None.
         """
         code = f"""
-            push ebx;
-            mov ebx, {(ctler := self.controller).result_address};
-            push {row};
-            push {col};
+            push ebx
+            mov ebx, {(ctler := self.controller).result_address}
+            push {row}
+            push {col}
             mov edx, {self.base_ptr};
             call {0x40d2a0};
             pop ebx;

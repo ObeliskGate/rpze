@@ -230,34 +230,34 @@ class Zombie(ob.ObjNode):
         令僵尸消失，移除僵尸附件和动画，同时处理除掉落外的僵尸消失相关事件（会触发过关奖品掉落的判定）。
         """
         code = f"""
-            mov ecx, {self.base_ptr};
-            call {0x530510}; // Zombie::DieNoLoot
-            ret;"""
+            mov ecx, {self.base_ptr}
+            call {0x530510} // Zombie::DieNoLoot
+            ret"""
         asm.run(code, self.controller)
 
 
 class ZombieList(ob.obj_list(Zombie)):
     def free_all(self) -> Self:
         code = f"""
-            push edi;
-            push esi;
-            mov eax, [0x6a9ec0];
-            mov edi, [eax + 0x768];
-            mov esi, {self.controller.result_address};
-            xor edx, edx;
-            mov [esi], edx;
+            push edi
+            push esi
+            mov eax, [0x6a9ec0]
+            mov edi, [eax + 0x768]
+            mov esi, {self.controller.result_address}
+            xor edx, edx
+            mov [esi], edx
             LIterate:
-                mov {Zombie.ITERATOR_P_BOARD_REG}, edi;
-                call {Zombie.ITERATOR_FUNC_ADDRESS};  // Board::IterateZombie
-                test al, al;
-                jz LFreeAll;
+                mov {Zombie.ITERATOR_P_BOARD_REG}, edi
+                call {Zombie.ITERATOR_FUNC_ADDRESS}  // Board::IterateZombie
+                test al, al
+                jz LFreeAll
                 mov ecx, [esi]
-                call {0x530510};  // Zombie::DieNoLoot
-                jmp LIterate;
+                call {0x530510}  // Zombie::DieNoLoot
+                jmp LIterate
                 
             LFreeAll:
                 mov edi, {self.base_ptr}
-                call {0x41e4d0};  // DataArray<Zombie>::DataArrayFreeAll
+                call {0x41e4d0}  // DataArray<Zombie>::DataArrayFreeAll
                 pop esi;
                 pop edi;
                 ret;"""

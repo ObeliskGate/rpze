@@ -142,14 +142,14 @@ class FlowManager:
         self._is_destructed = False
         self._flow_coro_list: list[list] = [[lambda _: True, i(self)] for i in flows]
 
-        def __flow_tick_runner(self_: FlowManager) -> TickRunnerResult | None:
+        def _flow_tick_runner(self_: FlowManager) -> TickRunnerResult | None:
             if not (fcl := self_._flow_coro_list):
                 return TickRunnerResult.DONE
             pop_list = []
             for idx, (cond_func, flow) in enumerate(fcl):
                 try:
                     b = cond_func(self_)
-                except Exception as e:
+                except BaseException as e:
                     flow.throw(e)
                     continue
                 if b:
@@ -167,7 +167,7 @@ class FlowManager:
 
         _counter = count()
         tick_runner_list = [(-priority, next(_counter), it) for priority, it in tick_runners]
-        tick_runner_list.append((-flow_priority, next(_counter), __flow_tick_runner))
+        tick_runner_list.append((-flow_priority, next(_counter), _flow_tick_runner))
         tick_runner_list.sort()
         # -priority让priority越大优先级别越高
         self.tick_runners: list[TickRunner] = [i[2] for i in tick_runner_list]
@@ -234,14 +234,14 @@ class FlowManager:
         """
 
         def _decorator(tr: TickRunner) -> TickRunner:
-            def __decorated_tick_runner(fm: FlowManager):
+            def _decorated_tick_runner(fm: FlowManager):
                 if cond(fm):
                     ret = tr(fm)
                     if ret is None:
                         return TickRunnerResult.DONE if only_once else None
                     return ret
 
-            self.add()(__decorated_tick_runner)
+            self.add()(_decorated_tick_runner)
             return tr
 
         return _decorator
@@ -353,14 +353,14 @@ class FlowFactory:
         """
 
         def _decorator(tr: TickRunner) -> TickRunner:
-            def __decorated_tick_runner(fm: FlowManager):
+            def _decorated_tick_runner(fm: FlowManager):
                 if cond(fm):
                     ret = tr(fm)
                     if ret is None:
                         return TickRunnerResult.DONE if only_once else None
                     return ret
 
-            self.add_tick_runner(priority)(__decorated_tick_runner)
+            self.add_tick_runner(priority)(_decorated_tick_runner)
             return tr
 
         return _decorator

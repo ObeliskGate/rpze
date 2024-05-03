@@ -6,6 +6,7 @@ import os
 import signal
 import subprocess
 import time
+from contextlib import ContextDecorator
 from typing import overload, Iterable
 
 from . import asm
@@ -139,43 +140,43 @@ class InjectedGame:
             RpBaseException: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
         """
         code = f"""
-            push esi;
-            mov esi, [{0x6a9ec0}];
-            mov eax, [esi + {0x7fc}];
-            test eax, eax;
-            jz LCompleteLoading;
-            cmp eax, 1;  // main screen
-            je LDeleteGameSelector;
-            cmp eax, 7;  // challenge selector screen
-            je LDeleteChallengeScreen;
-            mov edx, [esi + {0x768}];
-            test edx, edx;  // have Board
-            jnz LNewBoard;
+            push esi
+            mov esi, [{0x6a9ec0}]
+            mov eax, [esi + {0x7fc}]
+            test eax, eax
+            jz LCompleteLoading
+            cmp eax, 1  // main screen
+            je LDeleteGameSelector
+            cmp eax, 7  // challenge selector screen
+            je LDeleteChallengeScreen
+            mov edx, [esi + {0x768}]
+            test edx, edx  // have Board
+            jnz LNewBoard
             LError:
-            mov [{self.controller.result_address}], eax;
-            pop esi;
-            ret;
+            mov [{self.controller.result_address}], eax
+            pop esi
+            ret
             
             LDeleteChallengeScreen:
-            call 0x44fd00;  // LawnApp::KillChallengeScreen(esi = LawnApp* this)
-            jmp LPreNewGame;
+            call {0x44fd00}  // LawnApp::KillChallengeScreen(esi = LawnApp* this)
+            jmp LPreNewGame
             
             LNewBoard:
             mov cl, [edx + {0x5760}]
-            mov [esi + {0x88c}], cl
-            jmp LPreNewGame;
+            mov [esi + {0x88c}], cl  // deal with yeti
+            jmp LPreNewGame
             
             LCompleteLoading:
-            mov ecx, esi;
-            call {0x452cb0}; // LawnApp::LoadingCompleted(ecx = LawnApp* this)
+            mov ecx, esi
+            call {0x452cb0} // LawnApp::LoadingCompleted(ecx = LawnApp* this)
             
             LDeleteGameSelector:
-            call {0x44f9e0}; // LawnApp::KillGameSelector(esi = LawnApp* this)
+            call {0x44f9e0} // LawnApp::KillGameSelector(esi = LawnApp* this)
             
             LPreNewGame:
-            push {int(look_for_saved_game)};
+            push {int(look_for_saved_game)}
             push {level_num};
-            call 0x44f560;  // LawnApp::PreNewGame
+            call {0x44f560};  // LawnApp::PreNewGame
             xor eax, eax;
             mov [{self.controller.result_address}], eax;
             pop esi;
@@ -213,7 +214,7 @@ def enter_ize(game: InjectedGame) -> GameBoard:
     return board
 
 
-class ConnectedContext:
+class ConnectedContext(ContextDecorator):
     """
     创造已连接游戏的上下文
 
@@ -241,6 +242,8 @@ class ConnectedContext:
         return ctler
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is ControllerError:
+            return
         ctler = self.controller
         if self.ensure_jump_frame is not None:
             if self._is_jumping:
