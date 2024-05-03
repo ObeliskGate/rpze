@@ -36,15 +36,16 @@
     <Compile Include="src\rpze\basic\inject.py" />
     <Compile Include="src\rpze\basic\__init__.py" />
     <Compile Include="src\rpze\examples\botanical_clock.py" />
+    <Compile Include="src\rpze\examples\dancing_example.py" />
     <Compile Include="src\rpze\examples\end_callback_example.py" />
     <Compile Include="src\rpze\examples\iztools_example.py" />
     <Compile Include="src\rpze\examples\pole_jumping_test.py" />
-    <Compile Include="src\rpze\examples\__init__.py" />
     <Compile Include="src\rpze\flow\flow.py" />
     <Compile Include="src\rpze\flow\utils.py" />
     <Compile Include="src\rpze\flow\__init__.py" />
     <Compile Include="src\rpze\iztest\cond_funcs.py" />
     <Compile Include="src\rpze\iztest\consts.py" />
+    <Compile Include="src\rpze\iztest\dancing.py" />
     <Compile Include="src\rpze\iztest\iztest.py" />
     <Compile Include="src\rpze\iztest\operations.py" />
     <Compile Include="src\rpze\iztest\plant_modifier.py" />

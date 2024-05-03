@@ -204,6 +204,8 @@ class Zombie(ob.ObjNode):
 
     butter_cd = ob.property_i32(0xb0, "黄油固定倒计时")
 
+    freeze_cd = ob.property_i32(0xb4, "冻结倒计时")
+
     is_dead = ob.property_bool(0xec, '是否"彻底"死亡, 即濒死时此条为False')
 
     is_not_dying = ob.property_bool(0xba, "不在濒死状态时为True")

@@ -51,4 +51,4 @@ def get_all_remaining_suns(board: GameBoard | None = None) -> dict[gridstr, int]
     if board is None:
         board = get_board()
     return {get_grid_str(sf.row, sf.col): get_sunflower_remaining_sun(sf)
-            for sf in ~board.plant_list if sf.type_ == PlantType.sunflower}
+            for sf in ~board.plant_list if sf.type_ is PlantType.sunflower}

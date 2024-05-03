@@ -448,6 +448,7 @@ class IzTest:
                             if self.game_board.frame_duration != 10 else frame_duration
                     ctler.skip_frames()
                 self._last_test_ended = False
+                _flow_manager.end()
                 if print_interval and self._test_time % print_interval == 0:
                     print(f"ended {self._test_time} of {self.repeat_time}, "
                           f"success rate: {self._success_count / self._test_time:.2%}, "

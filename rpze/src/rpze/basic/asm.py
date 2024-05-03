@@ -41,5 +41,5 @@ def decode(code: str, addr: int = 0) -> bytes:
     try:
         asm = __keystone_assembler.asm(code, addr, True)[0]
     except ks.KsError as ke:
-        raise AsmError(f"assembly error") from ke
+        raise AsmError(f"assembly error, code: {code}") from ke
     return asm

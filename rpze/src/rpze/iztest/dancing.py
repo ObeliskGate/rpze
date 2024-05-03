@@ -1,0 +1,229 @@
+# -*- coding: utf_8 -*-
+"""
+mj相关操控
+"""
+from collections.abc import Callable
+from enum import Enum
+from typing import SupportsIndex, Literal, TypeAlias, Self, overload
+from contextlib import ContextDecorator
+
+from ..rp_extend import Controller, ControllerError
+from .iztest import IzTest
+from ..flow.flow import FlowManager, TickRunnerResult, CondFunc, AwaitableCondFunc
+from ..structs.game_board import GameBoard, get_board
+from ..structs.zombie import Zombie, ZombieStatus
+
+BackupPos: TypeAlias = Literal["w", "s", "a", "d"]
+"""伴舞相对位置, w上, s下, a前, d后"""
+
+
+@overload
+def partner(mj: Zombie, item: SupportsIndex | BackupPos) -> Zombie | None:
+    """
+    获得mj的伴舞位置
+
+    Args:
+        mj: 目标mj
+        item: 伴舞位置, 支持下标和字符串; 使用下表时按照伴舞位置的顺序, 0上, 1下, 2前, 3后
+    Returns:
+        伴舞位置的Zombie对象, 如果没有则返回None
+    Raises:
+        ValueError: 如果item不是有效位置
+    """
+
+
+@overload
+def partner(mj: Zombie, item: str) -> tuple[Zombie | None, ...]:
+    """
+    获得mj的伴舞位置
+
+    Args:
+        mj: 目标mj
+        item: 伴舞位置字符串, 按顺序返回
+
+    Returns:
+        一个元组, 按item中顺序返回伴舞位置的Zombie对象, 如果没有则返回None
+    Examples:
+        >>> partner(mj, "ws") == tuple(partner(mj, "w"), partner(mj, "s"))
+        True
+        >>> front, back = partner(mj, "ad")  # 获得前后伴舞
+    """
+
+
+def partner(mj: Zombie, item):
+    zlist = get_board(mj.controller).zombie_list
+    partners = [zlist.find(id_) for id_ in mj.partner_ids]
+    if isinstance(item, SupportsIndex):
+        return partners[item]
+    if len(item) != 1:
+        return tuple(partner(mj, i) for i in item)
+    match item:
+        case "w":
+            return partners[0]
+        case "s":
+            return partners[1]
+        case "a":
+            return partners[2]
+        case "d":
+            return partners[3]
+        case _:
+            raise ValueError(f"{item} is not a valid partner pos")
+
+
+def get_clock(board: GameBoard | None = None) -> int:
+    """
+    获取当前时钟
+
+    Args:
+        board: 游戏板对象, 默认为None
+
+    Returns:
+
+    """
+    if board is None:
+        board = get_board()
+    if (clock := board.mj_clock) >= 0:
+        return clock % 460
+    else:
+        return -(-clock % 460)  # c/c++ %
+
+
+def get_dancing_status(board: GameBoard | None = None) -> ZombieStatus:
+    clock = get_clock(board) // 20
+    match clock:
+        case t if t <= 11:
+            return ZombieStatus.dancing_walking
+        case 12:
+            return ZombieStatus.dancing_armrise1  # 尝试召唤伙伴相位
+        case 13 | 14 | 15:
+            return ZombieStatus.dancing_armrise3
+        case 16 | 17 | 18:
+            return ZombieStatus.dancing_armrise2
+        case 19 | 20 | 21:
+            return ZombieStatus.dancing_armrise5
+        case _:
+            return ZombieStatus.dancing_armrise4
+
+
+class DancingPhase(Enum):
+    TRYING_CALLING_PARTNER = 240  # 12 * 20
+    DANCING = 260  # 13 * 20
+    MOVING = 0
+
+
+DancingPhaseLiteral: TypeAlias = DancingPhase | Literal["summon", "dance", "move", "s", "d", "m"]
+
+
+def to_phase(literal: DancingPhaseLiteral) -> DancingPhase:
+    match literal:
+        case "summon" | "s" | DancingPhase.TRYING_CALLING_PARTNER:
+            return DancingPhase.TRYING_CALLING_PARTNER
+        case "dance" | "d" | DancingPhase.DANCING:
+            return DancingPhase.DANCING
+        case "move" | "m" | DancingPhase.MOVING:
+            return DancingPhase.MOVING
+        case _:
+            raise ValueError(f"{literal} is not a dancing phase literal")
+
+
+def dancing_status_to_phase(status: ZombieStatus) -> DancingPhase:
+    match status:
+        case ZombieStatus.dancing_walking:
+            return DancingPhase.MOVING
+        case ZombieStatus.dancing_armrise1:
+            return DancingPhase.TRYING_CALLING_PARTNER
+        case ZombieStatus.dancing_armrise2 | ZombieStatus.dancing_armrise3 | \
+             ZombieStatus.dancing_armrise4 | ZombieStatus.dancing_armrise5:
+            return DancingPhase.DANCING
+        case _:
+            raise ValueError(f"{status} is not a dancing phase")
+
+
+class _DmTr(Callable):
+    def __init__(self, controller: Controller):
+        self.ctler: Controller = controller
+        self.current_phase: DancingPhase | None = None  # None表示不控制
+        self.next_phase: DancingPhase | None = None  # None表示没有"下一个"状态
+        self.cond_to_next: CondFunc = lambda _: True
+
+    def keep_phase(self, _: FlowManager):
+        cp = self.current_phase
+        board = get_board(self.ctler)
+        if cp.value != get_clock(board):
+            board.mj_clock = cp.value
+
+    def switch_to_next_phase(self, fm: FlowManager):
+        if not self.cond_to_next(fm):
+            return
+        self.current_phase = self.next_phase
+        self.next_phase = None
+        self.cond_to_next = lambda _: True
+
+    def __call__(self, fm: FlowManager) -> TickRunnerResult | None:
+        if self.next_phase is not None:
+            self.switch_to_next_phase(fm)
+        if self.current_phase is not None:
+            self.keep_phase(fm)
+        return None
+
+    @property
+    def waiting_next_phase(self) -> bool:
+        return self.next_phase is not None
+
+    @property
+    def is_controlling(self) -> bool:
+        return self.current_phase is not None
+
+    def start_controlling(self, phase: DancingPhase):
+        self.current_phase = phase
+
+    def stop_controlling(self, phase: DancingPhase):
+        get_board(self.ctler).mj_clock = phase.value
+        self.current_phase = None
+        self.next_phase = None
+
+
+class DancingManipulator(ContextDecorator):
+    def __init__(self, tr: _DmTr,
+                 start_phase: DancingPhaseLiteral,
+                 end_phase: DancingPhaseLiteral):
+        self.start_phase: DancingPhase = to_phase(start_phase)
+        self.end_phase: DancingPhase = to_phase(end_phase)
+        self._tr: _DmTr = tr
+
+    def next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc = lambda _: True):
+        self._tr.cond_to_next = condition
+        self._tr.next_phase = to_phase(phase)
+
+    async def until_next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc):
+        await AwaitableCondFunc(condition)
+        self.next_phase(phase)
+
+    def stop(self, end_phase: DancingPhaseLiteral):
+        if self._tr.is_controlling:
+            self._tr.stop_controlling(to_phase(end_phase))
+
+    def start(self, first_phase: DancingPhaseLiteral):
+        if not self._tr.is_controlling:
+            self._tr.start_controlling(to_phase(first_phase))
+
+    def __enter__(self) -> Self:
+        self.start(self.start_phase)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is ControllerError:
+            return
+        self.stop(self.end_phase)
+
+
+def get_dancing_manipulator(iz_test: IzTest,
+                            start_phase: DancingPhaseLiteral = DancingPhase.MOVING,
+                            end_phase: DancingPhaseLiteral = DancingPhase.MOVING,
+                            priority: int | None = None) -> DancingManipulator:
+    dm_tr = _DmTr(iz_test.controller)
+    if priority is None:
+        iz_test.flow_factory.add_tick_runner()(dm_tr)
+    else:  # more simple method here?
+        iz_test.flow_factory.add_tick_runner(priority)(dm_tr)
+    return DancingManipulator(dm_tr, start_phase, end_phase)

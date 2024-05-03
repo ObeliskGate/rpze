@@ -1,6 +1,4 @@
-# -*- coding: utf_8 -*- 
-from __future__ import annotations
-
+# -*- coding: utf_8 -*-
 from enum import Enum
 from typing import Self
 

@@ -192,8 +192,8 @@ def property_int_enum(offset: int, cls: type[IntEnum], doc: str):
     def _get(self: ObjBase) -> cls:
         return cls(self.controller.read_i32([self.base_ptr + offset]))
 
-    def _set(self: ObjBase, value: cls):
-        self.controller.write_i32(int(value), [self.base_ptr + offset])
+    def _set(self: ObjBase, value: IntEnum):
+        self.controller.write_i32(value.value, [self.base_ptr + offset])
 
     return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 
@@ -202,7 +202,7 @@ def property_obj(offset: int, cls: type[ObjBase], doc: str):
     def _get(self: ObjBase) -> cls:
         return cls(self.controller.read_i32([self.base_ptr + offset]), self.controller)
 
-    def _set(self: ObjBase, value: cls):
+    def _set(self: ObjBase, value: ObjBase):
         if self.controller != value.controller:
             raise ValueError("cannot assign an object from another controller")
         self.controller.write_i32(value.base_ptr, [self.base_ptr + offset])
@@ -317,7 +317,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         """
 
     @typing.overload
-    def __getitem__(self, index: int, /) -> _T:
+    def __getitem__(self, index: typing.SupportsIndex, /) -> _T:
         """
         返回index对应下标的元素
 
@@ -363,11 +363,11 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         return self.__invert__()
 
     @typing.overload
-    def find(self, index: int | ObjId, /) -> _T | None:
+    def find(self, index: typing.SupportsIndex | ObjId, /) -> _T | None:
         """
         通过index查找对象
 
-        用int查找时, 未回收对象返回T.
+        用SupportsIndex查找时, 未回收对象返回T.
         用ObjId查找时, 在对应index位置对象rank相同时返回T.
 
         Args:
@@ -483,7 +483,8 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
         def find(self, *args) -> _T | None:
             match args:
                 case (index, ):
-                    if isinstance(index, int):
+                    if isinstance(index, typing.SupportsIndex):
+                        index = index.__index__()
                         try:
                             target = self[index]
                         except IndexError:
@@ -503,8 +504,9 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                     raise ValueError("the function should have 1 or 2 parameters, "
                                      f"not {len(args)} parameters")
 
-        def __getitem__(self, index: int | slice):
-            if isinstance(index, int):
+        def __getitem__(self, index: typing.SupportsIndex | slice):
+            if isinstance(index, typing.SupportsIndex):
+                index = index.__index__()
                 i = index if index >= 0 else index + len(self)
                 if i >= len(self) or i < 0:
                     raise IndexError("sequence index out of range")
