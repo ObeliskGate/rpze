@@ -240,19 +240,16 @@ class DancingManipulator:
         self.end_phase: DancingPhase = to_dancing_phase(end_phase)
         self._tr: _DmTr = tr
 
-    def next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc = lambda _: True) -> Self:
+    def next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc = lambda _: True):
         """
         设置下一个相位
 
         Args:
             phase: 下一个相位
             condition: 到下一个相位的条件, 默认为恒真, 即直接进入下一个相位
-        Returns:
-            self
         """
         self._tr.cond_to_next = condition
         self._tr.next_phase = to_dancing_phase(phase)
-        return self
 
     async def until_next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc):
         """

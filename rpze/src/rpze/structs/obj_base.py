@@ -8,7 +8,7 @@ import typing
 from enum import IntEnum
 
 from ..basic import asm
-from ..basic.exception import PvzStateError
+from ..basic.exception import PvzStatusError
 from ..rp_extend import Controller
 
 
@@ -74,6 +74,7 @@ class OffsetProperty(property):
     def __init__(self, fget, fset, fdel, doc, offset):
         super().__init__(fget, fset, fdel, None)
         self.__doc__ = doc
+        self.__objclass__ = ObjBase
         self.offset = offset
 
 
@@ -189,7 +190,7 @@ def property_f64(offset: int, doc: str):
 
 
 def property_int_enum(offset: int, cls: type[IntEnum], doc: str):
-    def _get(self: ObjBase) -> cls:
+    def _get(self: ObjBase):
         return cls(self.controller.read_i32([self.base_ptr + offset]))
 
     def _set(self: ObjBase, value: IntEnum):
@@ -199,7 +200,7 @@ def property_int_enum(offset: int, cls: type[IntEnum], doc: str):
 
 
 def property_obj(offset: int, cls: type[ObjBase], doc: str):
-    def _get(self: ObjBase) -> cls:
+    def _get(self: ObjBase):
         return cls(self.controller.read_i32([self.base_ptr + offset]), self.controller)
 
     def _set(self: ObjBase, value: ObjBase):
@@ -231,22 +232,12 @@ class ObjId(ObjBase):
             val: 另一个ObjId对象或(index, rank)一样的可解包对象
         Returns:
             "表示相同对象"返回True
-        Raises:
-            TypeError: val不是ObjId对象或可解包对象
-            ValueError: 可解包不是两个元素
         """
         if isinstance(val, ObjId):
             return ((self.controller.read_u32([self.base_ptr]) ==
                      val.controller.read_u32([val.base_ptr]))
                     and self.controller == val.controller)
-        try:
-            index, rank = val
-        except TypeError as te:
-            raise TypeError("ObjId can only compare with another ObjId or"
-                            "an unpack-able object like (index, rank), "
-                            f"not {type(val).__name__} instance") from te
-        except ValueError as ve:
-            raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
+        index, rank = val
         return self.controller.read_u32([self.base_ptr]) == ((rank << 16) | index)
 
     def __ne__(self, val: typing.Self | tuple[int, int]) -> bool:
@@ -407,7 +398,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         Returns:
             返回自己
         Raises:
-            PvzStateError: 当有对象未回收时抛出
+            PvzStatusError: 当有对象未回收时抛出
         """
 
     @abc.abstractmethod
@@ -523,7 +514,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
 
         def reset_stack(self):
             if self.obj_num:
-                raise PvzStateError(f"cannot reset stack when there are still {self.obj_num} objects alive")
+                raise PvzStatusError(f"cannot reset stack when there are still {self.obj_num} objects alive")
             next_idx = self.next_index
             self.next_index = 0
             length = self.max_length

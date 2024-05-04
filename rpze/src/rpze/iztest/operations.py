@@ -2,12 +2,31 @@
 """
 iztest常见操作
 """
+from .consts import plant_abbr_to_type, zombie_abbr_to_type
 from ..basic.gridstr import parse_grid_str
+from ..basic.inject import ConnectedContext, enter_level
 from ..flow.utils import delay
+from ..rp_extend import Controller
+from ..structs.game_board import get_board, GameBoard
 from ..structs.plant import Plant
 from ..structs.zombie import Zombie
-from ..structs.game_board import get_board, GameBoard
-from .consts import plant_abbr_to_type, zombie_abbr_to_type
+
+
+def enter_ize(ctler: Controller) -> GameBoard:
+    """
+    进入ize关卡.
+
+    Args:
+        ctler: 被注入的游戏对象
+    Returns:
+        进入的关卡, GameBoard对象
+    """
+    with ConnectedContext(ctler) as ctler:
+        enter_level(ctler, 70)
+        board = get_board(ctler)
+        board.remove_cutscene_zombie()
+        ctler.skip_frames()
+    return board
 
 
 def place(place_str: str, board: GameBoard | None = None) -> Zombie | Plant | None:

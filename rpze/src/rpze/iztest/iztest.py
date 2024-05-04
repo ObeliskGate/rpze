@@ -9,11 +9,12 @@ from msvcrt import kbhit, getwch
 from random import randint
 from typing import TypeAlias, Self, overload
 
+from .operations import enter_ize
 from .consts import plant_abbr_to_type, zombie_abbr_to_type
 from .plant_modifier import randomize_generate_cd
 from ..flow.utils import until
 from ..flow.flow import FlowFactory, TickRunnerResult, FlowManager
-from ..basic.gridstr import parse_grid_str, gridstr
+from ..basic.gridstr import parse_grid_str, GridStr
 from ..basic.inject import ConnectedContext
 from ..rp_extend import Controller, HookPosition, RpBaseException
 from ..structs.game_board import GameBoard, get_board
@@ -132,12 +133,12 @@ class _IzGround:
         """
 
     @overload
-    def __getitem__(self, item: gridstr) -> Plant | Griditem | None:
+    def __getitem__(self, item: GridStr) -> Plant | Griditem | None:
         """
-        通过gridstr获得测试开始时对应位置的植物或脑子.
+        通过GridStr获得测试开始时对应位置的植物或脑子.
 
         Args:
-            item: gridstr
+            item: GridStr位置
         Returns:
             若没有对象或种植对象已死亡返回None, 否则返回该植物/脑子.
         Examples:
@@ -167,7 +168,6 @@ class IzTest:
         mj_init_phase: mj初始相位. None表示随机
         target_plants_pos: 目标植物的位置列表. 元素为(row, col)
         target_brains_pos: 目标脑子的位置列表. 元素为row
-        game_board: 游戏GameBoard对象.
         controller: 测试使用的Controller对象.
         flow_factory: 生成测试逻辑的FlowFactory对象.
         reset_generate_cd: 是否重置植物的generate_cd, 即, iztools"开启攻击间隔处理"为True
@@ -196,7 +196,6 @@ class IzTest:
         self.mj_init_phase: int | None = None
         self.target_plants_pos: list[tuple[int, int]] = []
         self.target_brains_pos: list[int] = []
-        self.game_board: GameBoard = get_board(controller)
         self.controller: Controller = controller
         self.flow_factory: FlowFactory = FlowFactory()
         self.reset_generate_cd: bool = reset_generate_cd
@@ -214,6 +213,11 @@ class IzTest:
         self._test_time: int = 0  # 测试次数
 
         self._flow_factory_set: bool = False  # 用于判断是否设置了flow_factory
+
+    @property
+    def game_board(self) -> GameBoard:
+        """游戏GameBoard对象"""
+        return get_board(self.controller)
 
     def init_by_str(self, iztools_str: str) -> Self:
         """
@@ -423,6 +427,8 @@ class IzTest:
         Returns:
             (测试概率, 使用时间)元组
         """
+        if self.controller.read_i32([0x6a9ec0, 0x7f8]) != 70:  # gLawnApp->mGameMode == ize
+            enter_ize(self.controller)
         start_time = time.time()
         last_time = start_time
         ctler = self.controller

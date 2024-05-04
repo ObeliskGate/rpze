@@ -28,8 +28,6 @@ Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
 """await AwaitableCondFunc函数的async def函数"""
 TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult | None]
 """帧运行函数, 无返回值表示继续执行, 返回TickRunnerResult表示特殊行为"""
-PriorityTickRunner: TypeAlias = tuple[int, TickRunner]
-"""带权重的帧运行函数"""
 
 
 def _await_generator(t):
@@ -75,6 +73,18 @@ class AwaitableCondFunc(Callable, Awaitable):
         """
         return AwaitableCondFunc(lambda fm: self.func(fm) and other(fm))
 
+    def __rand__(self, other: CondFunc) -> Self:
+        """
+        重载&运算符, 使得对象可以用&运算符, 像逻辑和运算一样连接
+
+        Args:
+            other: 另一个CondFunc对象
+
+        Returns:
+            一个新的AwaitableCondFunc对象. 该对象的func为other.func and self.func
+        """
+        return AwaitableCondFunc(lambda fm: other(fm) and self.func(fm))
+
     def __or__(self, other: CondFunc) -> Self:
         """
         重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
@@ -85,6 +95,17 @@ class AwaitableCondFunc(Callable, Awaitable):
             一个新的AwaitableCondFunc对象. 该对象的func为self.func or other.func
         """
         return AwaitableCondFunc(lambda fm: self.func(fm) or other(fm))
+
+    def __ror__(self, other: CondFunc) -> Self:
+        """
+        重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
+
+        Args:
+            other: 另一个CondFunc对象
+        Returns:
+            一个新的AwaitableCondFunc对象. 该对象的func为other.func or self.func
+        """
+        return AwaitableCondFunc(lambda fm: other(fm) or self.func(fm))
 
     def __invert__(self) -> Self:
         """
@@ -125,14 +146,14 @@ class FlowManager:
     """
 
     def __init__(self,
-                 tick_runners: list[PriorityTickRunner],
+                 tick_runners: list[tuple[int, TickRunner]],
                  destructors: list[tuple[int, Callable[[Self], None]]],
                  flows: list[Flow],
                  flow_priority: int,
                  flow_destructor_priority: int):
         """
         Args:
-            tick_runners: tick_runner列表, 以PriorityTickRunner形式提供以便排序
+            tick_runners: tick_runner列表, 以(priority, tick_runner)形式提供以便排序
             destructors: 析构列表, 在调用self.end()时执行, 以(priority, func)形式提供以便排序
             flows: flow列表
             flow_priority: flows执行优先级
@@ -151,7 +172,7 @@ class FlowManager:
                     b = cond_func(self_)
                 except BaseException as e:
                     flow.throw(e)
-                    continue
+                    continue  # 如果能处理异常则继续执行
                 if b:
                     try:
                         fcl[idx][0] = flow.send(None)
@@ -221,8 +242,7 @@ class FlowManager:
 
         return _decorator
 
-    def connect(self, cond: CondFunc, only_once: bool = False) \
-            -> Callable[[TickRunner], TickRunner]:
+    def connect(self, cond: CondFunc, only_once: bool = False) -> Callable[[TickRunner], TickRunner]:
         """
         运行时把tick_runner绑定到cond上的方法, 与add使用方法相同
         
@@ -298,7 +318,7 @@ class FlowFactory:
 
     def __init__(self):
         self.flow_list: list[Flow] = []
-        self.tick_runner_list: list[PriorityTickRunner] = []
+        self.tick_runner_list: list[tuple[int, TickRunner]] = []
         self.destructor_list: list[tuple[int, Callable[[FlowManager], None]]] = []
 
     def add_flow(self) -> Callable[[Flow], Flow]:

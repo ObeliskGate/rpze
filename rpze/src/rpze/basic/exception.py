@@ -5,7 +5,7 @@
 from ..rp_extend import RpBaseException
 
 
-class PvzStateError(RpBaseException):
+class PvzStatusError(RpBaseException):
     """
     pvz状态异常
 

@@ -2,7 +2,7 @@
 """
 ize 漏阳光相关函数
 """
-from ..basic.gridstr import gridstr, get_grid_str
+from ..basic.gridstr import GridStr, get_grid_str
 from ..rp_extend import RpBaseException
 from ..structs.game_board import GameBoard, get_board
 from ..structs.plant import Plant, PlantType
@@ -39,7 +39,7 @@ def get_sunflower_remaining_sun(sunflower: Plant) -> int:
     raise RpBaseException("unexpected behaviour!")
 
 
-def get_all_remaining_suns(board: GameBoard | None = None) -> dict[gridstr, int]:
+def get_all_remaining_suns(board: GameBoard | None = None) -> dict[GridStr, int]:
     """
     获取所有向日葵剩余阳光
 
