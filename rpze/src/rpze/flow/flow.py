@@ -2,12 +2,10 @@
 """
 流程控制相关的函数和类
 """
-from collections.abc import Callable, Awaitable, Coroutine, Generator
+from collections.abc import Callable, Coroutine
 from enum import Enum, auto
 from itertools import count
 from typing import TypeAlias, Self
-
-from .utils import VariablePool
 
 
 class TickRunnerResult(Enum):
@@ -28,112 +26,6 @@ Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
 """await AwaitableCondFunc函数的async def函数"""
 TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult | None]
 """帧运行函数, 无返回值表示继续执行, 返回TickRunnerResult表示特殊行为"""
-
-
-def _await_generator(t):
-    yield t
-
-
-class AwaitableCondFunc(Callable, Awaitable):
-    """
-    包装CondFunc为Awaitable对象.
-
-    Attributes:
-        func: 内层CondFunc函数
-    """
-    __slots__ = ("func",)
-
-    def __init__(self, func: CondFunc):
-        self.func: CondFunc = func
-
-    def __call__(self, fm: "FlowManager") -> bool:
-        """
-        调用内层func. 确保AwaitableCondFunc自己也为CondFunc函数.
-        """
-        return self.func(fm)
-
-    def __await__(self) -> Generator[CondFunc, None, None]:
-        """
-        让AwaitableCondFunc对象可以await.
-
-        Returns:
-            生成器对象. 唯一一个生成结果为self.func.
-        """
-        return _await_generator(self.func)
-
-    def __and__(self, other: CondFunc) -> Self:
-        """
-        重载&运算符, 使得对象可以用&运算符, 像逻辑和运算一样连接
-
-        Args:
-            other: 另一个CondFunc对象
-
-        Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为self.func and other.func
-        """
-        return AwaitableCondFunc(lambda fm: self.func(fm) and other(fm))
-
-    def __rand__(self, other: CondFunc) -> Self:
-        """
-        重载&运算符, 使得对象可以用&运算符, 像逻辑和运算一样连接
-
-        Args:
-            other: 另一个CondFunc对象
-
-        Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为other.func and self.func
-        """
-        return AwaitableCondFunc(lambda fm: other(fm) and self.func(fm))
-
-    def __or__(self, other: CondFunc) -> Self:
-        """
-        重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
-
-        Args:
-            other: 另一个CondFunc对象
-        Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为self.func or other.func
-        """
-        return AwaitableCondFunc(lambda fm: self.func(fm) or other(fm))
-
-    def __ror__(self, other: CondFunc) -> Self:
-        """
-        重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
-
-        Args:
-            other: 另一个CondFunc对象
-        Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为other.func or self.func
-        """
-        return AwaitableCondFunc(lambda fm: other(fm) or self.func(fm))
-
-    def __invert__(self) -> Self:
-        """
-        重载~运算符, 使得对象可以用~运算符, 像逻辑非运算一样.
-
-        Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为not self.func
-        """
-        return AwaitableCondFunc(lambda fm: not self.func(fm))
-
-    def after(self, delay_time: int) -> Self:
-        """
-        生成一个 在满足原条件后过delay_time帧返回True的对象.
-        Args:
-            delay_time: 延迟时间
-        Returns:
-            一个新的AwaitableCondFunc对象.
-        """
-
-        def _cond_func(fm: FlowManager, p=VariablePool(event_time=None)) -> bool:
-            if p.event_time is None and self.func(fm):
-                p.event_time = fm.time
-            if p.event_time is not None and p.event_time + delay_time <= fm.time:
-                return True
-            return False
-
-        return AwaitableCondFunc(_cond_func)
-
 
 class FlowManager:
     """

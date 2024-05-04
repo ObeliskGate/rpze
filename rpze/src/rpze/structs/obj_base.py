@@ -37,7 +37,7 @@ class ObjBase(abc.ABC):
         self.base_ptr = base_ptr
         self.controller = ctler
 
-    OBJ_SIZE: int = NotImplemented
+    OBJ_SIZE: typing.ClassVar[int] = NotImplemented
     """对应pvz类在pvz中的大小, 必须在所有非抽象子类中赋值"""
 
     def __eq__(self, other: typing.Self) -> bool:
@@ -259,10 +259,10 @@ class ObjNode(ObjBase, abc.ABC):
         super().__init__(base_ptr, ctler)
         self.id = ObjId(base_ptr + self.OBJ_SIZE - 4, ctler)
 
-    ITERATOR_FUNC_ADDRESS: int = NotImplemented
+    ITERATOR_FUNC_ADDRESS: typing.ClassVar[int] = NotImplemented
     """返回pvz中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
-    ITERATOR_P_BOARD_REG: str = "edx"
+    ITERATOR_P_BOARD_REG: typing.ClassVar[str] = "edx"
     """迭代对象函数用于存储Board指针的寄存器, reanimation和粒子系统为eax, 其他为edx"""
 
     is_dead: OffsetProperty = NotImplemented

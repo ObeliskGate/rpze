@@ -7,7 +7,8 @@ from enum import Enum
 from typing import SupportsIndex, Literal, TypeAlias, Self, overload
 
 from .iztest import IzTest
-from ..flow.flow import FlowManager, TickRunnerResult, CondFunc, AwaitableCondFunc
+from ..flow.flow import FlowManager, TickRunnerResult, CondFunc
+from ..flow.utils import AwaitableCondFunc
 from ..rp_extend import ControllerError
 from ..structs.game_board import GameBoard, get_board
 from ..structs.zombie import Zombie, ZombieStatus
@@ -257,7 +258,7 @@ class DancingManipulator:
 
         使用中等效于:
         >>> async def flow(_):
-        ...     await AwaitableCondFunc(condition)
+        ...     await until(condition)
         ...     self.next_phase(phase)
 
         Args:

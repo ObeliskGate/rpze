@@ -3,34 +3,39 @@
 iztools 全场测试功能模拟
 """
 import time
-from collections import namedtuple
 from collections.abc import Callable
 from msvcrt import kbhit, getwch
 from random import randint
-from typing import TypeAlias, Self, overload
+from typing import TypeAlias, Self, overload, NamedTuple
 
-from .operations import enter_ize
 from .consts import plant_abbr_to_type, zombie_abbr_to_type
+from .operations import enter_ize
 from .plant_modifier import randomize_generate_cd
-from ..flow.utils import until
-from ..flow.flow import FlowFactory, TickRunnerResult, FlowManager
 from ..basic.gridstr import parse_grid_str, GridStr
 from ..basic.inject import ConnectedContext
+from ..flow.flow import FlowFactory, TickRunnerResult, FlowManager
+from ..flow.utils import until
 from ..rp_extend import Controller, HookPosition, RpBaseException
 from ..structs.game_board import GameBoard, get_board
 from ..structs.griditem import Griditem
 from ..structs.plant import PlantType, Plant
+from ..structs.zombie import ZombieType
 
-PlaceZombieOp = namedtuple("PlaceZombieOp", ["type_", "time", "row", "col"])
-"""
-描述僵尸放置操作的对象
 
-Attributes:
-    type_ (ZombieType) : 要放置的僵尸类型
-    time (int) : 放置的时间
-    row (int) : 放置的行, 从0开始
-    col (int) : 放置的列, 从0开始
-"""  # Pycharm这里不显示docstring的Attributes
+class PlaceZombieOp(NamedTuple):
+    """
+    描述僵尸放置操作的对象
+
+    Attributes:
+        type_: 要放置的僵尸类型
+        time: 放置的时间
+        row: 放置的行, 从0开始
+        col: 放置的列, 从0开始
+    """
+    type_: ZombieType
+    time: int
+    row: int
+    col: int
 
 PlantTypeList: TypeAlias = list[list[PlantType | None]]
 

@@ -6,6 +6,28 @@ Remote Python, Zombie Endless(or endless rp?)
 
 [主库](https://github.com/ObeliskGate/rpze.git)位于GitHub.
 
+## 使用
+`pip install rpze`下载, 下载后通过`python -m rpze --path "your\path\to\pvz.exe"`验证安装, 详情见主库readme.
+
+一个简单的完整rpze脚本示例如下:
+```python
+from rpze.iztest import *
+
+with InjectedGame(r"your\path\to\pvz.exe") as game:
+    iz_test = IzTest(game.controller).init_by_str('''
+                 1000 -1
+                 3-0 4-0 5-0 3-3
+                 .....
+                 .....
+                 bs3_c
+                 b2ljh
+                 blyl_
+                 cg   cg   xg   ww
+                 0    1    300  700
+                 4-6  4-6  4-6  4-6''')
+    print(iz_test.start_test(True))
+```
+
 ## 结构
 总体分成五个包:
 - `rp_extend`: 对控制pvz游戏本地运作的基本操作的封装

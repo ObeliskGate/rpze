@@ -2,8 +2,8 @@
 """
 简化iztest的条件函数
 """
-from ..flow.utils import VariablePool
-from ..flow.flow import AwaitableCondFunc, FlowManager
+from ..flow.utils import VariablePool, AwaitableCondFunc
+from ..flow.flow import FlowManager
 from ..structs.plant import Plant
 
 
@@ -29,7 +29,7 @@ def until_plant_die(plant: Plant) -> AwaitableCondFunc:
 
 def until_plant_last_shoot(plant: Plant) -> AwaitableCondFunc:
     """
-    生成一个 等到植物"本段最后一次连续攻击" 的函数.
+    生成一个 等到植物"本段最后一次连续攻击"的函数.
 
     Args:
         plant: 要判断的植物
