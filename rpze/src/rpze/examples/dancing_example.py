@@ -67,8 +67,8 @@ def dancing_example(ctler: Controller, jump_frame=False):
                     dm.next_phase("move")
                     break
                 await dm.until_next_phase(
-                    "summon",
-                    lambda _: mj.status is not ZombieStatus.dancing_summoning)
+                    "summon", lambda _:
+                    mj.status is not ZombieStatus.dancing_summoning)
             await dm.until_next_phase("summon", lambda _: mj.x < 120)  # 走到二列停下来召唤吃1-1小喷
             await dm.until_next_phase("move", lambda _: iz_test.ground["1-1"] is None)  # 1-1死了收官
 

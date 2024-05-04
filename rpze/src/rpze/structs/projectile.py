@@ -83,23 +83,23 @@ class ProjectileList(ob.obj_list(Projectile)):
                 push esi
                 mov eax, [0x6a9ec0]
                 mov edi, [eax + 0x768]
-                mov esi, {self.controller.result_address};
-                xor edx, edx;
-                mov [esi], edx;
+                mov esi, {self.controller.result_address}
+                xor edx, edx
+                mov [esi], edx
                 LIterate:
-                    mov {Projectile.ITERATOR_P_BOARD_REG}, edi;
-                    call {Projectile.ITERATOR_FUNC_ADDRESS};  // Board::IterateProjectile
-                    test al, al;
-                    jz LFreeAll;
+                    mov {Projectile.ITERATOR_P_BOARD_REG}, edi
+                    call {Projectile.ITERATOR_FUNC_ADDRESS}  // Board::IterateProjectile
+                    test al, al
+                    jz LFreeAll
                     mov eax, [esi]
-                    call {0x46EB20};  // Projectile::Die
-                    jmp LIterate;
+                    call {0x46EB20}  // Projectile::Die
+                    jmp LIterate
                     
                 LFreeAll:
                     mov edi, {self.base_ptr}
-                    call {0x41e600};  // DataArray<Zombie>::DataArrayFreeAll
-                    pop esi;
-                    pop edi;
-                    ret;"""
+                    call {0x41e600}  // DataArray<Zombie>::DataArrayFreeAll
+                    pop esi
+                    pop edi
+                    ret"""
         asm.run(code, self.controller)
         return self

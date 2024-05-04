@@ -75,7 +75,7 @@ def get_clock(board: GameBoard | None = None) -> int:
     获取当前时钟
 
     Args:
-        board: 游戏板对象, 默认None为使用get_board()
+        board: 默认None为使用get_board()
     Returns:
         当前时钟
     """
@@ -87,16 +87,15 @@ def get_clock(board: GameBoard | None = None) -> int:
         return -(-clock % 460)  # c/c++ %
 
 
-def get_dancing_status(board: GameBoard | None = None) -> ZombieStatus:
+def get_dancing_status(clock: int) -> ZombieStatus:
     """
-    获取当前时钟对应的dancing状态
+    获取时钟对应的dancing状态
 
     Args:
-        board: 游戏板对象, 默认None为使用get_board()
+        clock: 时钟时间
     Returns:
         当前时钟对应的僵尸状态
     """
-    clock = get_clock(board) // 20
     match clock:
         case t if t <= 11:
             return ZombieStatus.dancing_walking
@@ -179,7 +178,7 @@ def get_dancing_phase(board: GameBoard | None = None) -> DancingPhase:
     Returns:
         当前时钟对应的DancingPhase
     """
-    return dancing_status_to_phase(get_dancing_status(board))
+    return dancing_status_to_phase(get_dancing_status(get_clock(board)))
 
 
 class _DmTr(Callable):

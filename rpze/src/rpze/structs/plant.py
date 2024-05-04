@@ -94,7 +94,7 @@ class PlantStatus(IntEnum):
     cactus_tall_idle = 0x20
     cactus_get_short = 0x21
     tangle_kelp_grab = 0x22
-    cob_cannon_unaramed_idle = 0x23
+    cob_cannon_unarmed_idle = 0x23
     cob_cannon_charge = 0x24
     cob_cannon_launch = 0x25
     cob_cannon_armed_idle = 0x26
@@ -239,10 +239,10 @@ class PlantList(ob.obj_list(Plant)):
 
             LNoResult:
                 xor eax, eax
-                mov [esi], eax;
-                pop edi;
-                pop esi;
-                ret;"""
+                mov [esi], eax
+                pop edi
+                pop esi
+                ret"""
         asm.run(code, self.controller)
         if (result := self.controller.result_u32) != 0:
             return Plant(result, self.controller)
@@ -250,27 +250,27 @@ class PlantList(ob.obj_list(Plant)):
 
     def free_all(self) -> typing.Self:
         code = f"""
-            push esi;
-            push edi;
-            mov eax, [0x6a9ec0];
-            mov edi, [eax + 0x768];
-            mov esi, {self.controller.result_address};
-            xor edx, edx;
-            mov [esi], edx;  // mov [esi], 0 is invalid
+            push esi
+            push edi
+            mov eax, [0x6a9ec0]
+            mov edi, [eax + 0x768]
+            mov esi, {self.controller.result_address}
+            xor edx, edx
+            mov [esi], edx  // mov [esi], 0 is invalid
             LIterate:
-                mov {Plant.ITERATOR_P_BOARD_REG}, edi;
-                call {Plant.ITERATOR_FUNC_ADDRESS};  // Board::IteratePlant
-                test al, al;
-                jz LFreeAll;
-                push dword ptr [esi];
-                call {0x4679b0};  // Plant::Die
-                jmp LIterate;
+                mov {Plant.ITERATOR_P_BOARD_REG}, edi
+                call {Plant.ITERATOR_FUNC_ADDRESS}  // Board::IteratePlant
+                test al, al
+                jz LFreeAll
+                push dword ptr [esi]
+                call {0x4679b0}  // Plant::Die
+                jmp LIterate
                 
             LFreeAll:
-                mov eax, {self.base_ptr};
-                call {0x41E590}; // DataArray<Plant>::DataArrayFreeAll
-                pop edi;
-                pop esi;
-                ret;"""
+                mov eax, {self.base_ptr}
+                call {0x41E590} // DataArray<Plant>::DataArrayFreeAll
+                pop edi
+                pop esi
+                ret"""
         asm.run(code, self.controller)
         return self

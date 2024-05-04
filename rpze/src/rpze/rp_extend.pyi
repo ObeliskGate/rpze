@@ -5,7 +5,7 @@ from typing import Self
 
 class HookPosition(Enum):
     MAIN_LOOP = 0
-    ZOMBIE_PICK_RANDOM_SPEED = 1  # deprecated
+    ZOMBIE_PICK_RANDOM_SPEED = 1  # useless
     CHALLENGE_I_ZOMBIE_SCORE_BRAIN = 2
     
 

@@ -210,15 +210,15 @@ def enter_level(controller: Controller, level_num: int, look_for_saved_game: boo
         
         LCompleteLoading:
         mov ecx, esi
-        call {0x452cb0} // LawnApp::LoadingCompleted(ecx = LawnApp* this)
+        call {0x452cb0}  // LawnApp::LoadingCompleted(ecx = LawnApp* this)
         
         LDeleteGameSelector:
-        call {0x44f9e0} // LawnApp::KillGameSelector(esi = LawnApp* this)
+        call {0x44f9e0}  // LawnApp::KillGameSelector(esi = LawnApp* this)
         
         LPreNewGame:
         push {int(look_for_saved_game)}
-        push {level_num};
-        call {0x44f560};  // LawnApp::PreNewGame
+        push {level_num}
+        call {0x44f560}  // LawnApp::PreNewGame
         xor eax, eax;
         mov [{controller.result_address}], eax;
         pop esi;

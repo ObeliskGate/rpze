@@ -96,17 +96,17 @@ class GriditemList(ob.obj_list(Griditem)):
                     mov {Griditem.ITERATOR_P_BOARD_REG}, edi
                     call {Griditem.ITERATOR_FUNC_ADDRESS}  // Board::IterateGriditem
                     test al, al
-                    jz LFreeAll;
-                    mov esi, [esi];
-                    call {0x44D000};  // Griditem::GriditemDie
-                    mov esi, {self.controller.result_address};
-                    jmp LIterate;
+                    jz LFreeAll
+                    mov esi, [esi]
+                    call {0x44D000}  // Griditem::GriditemDie
+                    mov esi, {self.controller.result_address}
+                    jmp LIterate
                     
                 LFreeAll:
                     mov eax, {self.base_ptr}
-                    call {0x41E7D0};  // DataArray<Griditem>::DataArrayFreeAll
-                    pop esi;
-                    pop edi;
-                    ret;"""
+                    call {0x41E7D0}  // DataArray<Griditem>::DataArrayFreeAll
+                    pop esi
+                    pop edi
+                    ret"""
         asm.run(code, self.controller)
         return self

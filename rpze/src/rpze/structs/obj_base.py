@@ -459,13 +459,13 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
             self._array_base_ptr = ctler.read_u32([base_ptr])
             self._code = f"""
                 push esi
-                mov esi, [0x6a9ec0];
+                mov esi, [0x6a9ec0]
                 mov {node_cls.ITERATOR_P_BOARD_REG}, [esi + 0x768]
-                mov esi, {self.controller.result_address};
-                call {node_cls.ITERATOR_FUNC_ADDRESS};
-                mov [esi + 4], al;
-                pop esi;
-                ret;"""  # 可恶的reg优化
+                mov esi, {self.controller.result_address}
+                call {node_cls.ITERATOR_FUNC_ADDRESS}
+                mov [esi + 4], al
+                pop esi
+                ret"""  # 可恶的reg优化
             self._iterate_func_asm = None
 
         def at(self, index: int) -> _T:

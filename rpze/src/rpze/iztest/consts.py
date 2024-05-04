@@ -4,8 +4,8 @@ ize常数, 常见表
 """
 from enum import Enum, auto
 
-from ..structs.zombie import ZombieType
 from ..structs.plant import PlantType
+from ..structs.zombie import ZombieType
 
 ize_plant_types: set[PlantType] = {
     PlantType.pea_shooter,

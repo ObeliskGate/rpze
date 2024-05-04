@@ -9,10 +9,10 @@ from . import obj_base as ob
 from .griditem import GriditemList, Griditem, GriditemType
 from .plant import PlantList, Plant, PlantType
 from .projectile import ProjectileList
+from .zombie import ZombieList, ZombieType, Zombie
 from ..basic import asm
 from ..basic.exception import PvzStatusError
 from ..rp_extend import Controller, RpBaseException
-from .zombie import ZombieList, ZombieType, Zombie
 
 
 class GameBoard(ob.ObjBase):
@@ -96,10 +96,10 @@ class GameBoard(ob.ObjBase):
             mov ebx, {(ctler := self.controller).result_address}
             push {row}
             push {col}
-            mov edx, {self.base_ptr};
-            call {0x40d2a0};
-            pop ebx;
-            ret;"""
+            mov edx, {self.base_ptr}
+            call {0x40d2a0}
+            pop ebx
+            ret"""
         asm.run(code, ctler)
         view = ctler.result_mem[:16].cast("I")  # 以单个元素为u32格式读取前16字节
         return tuple(None if it == 0 else Plant(it, ctler) for it in view)
@@ -118,14 +118,14 @@ class GameBoard(ob.ObjBase):
             种植成功的植物对象
         """
         code = f'''
-            push -1;
-            push {int(type_)};
-            push {row};
-            push {col};
-            mov eax, {self.base_ptr};
-            call {0x40CE20};  // Board::NewPlant
-            mov [{self.controller.result_address}], eax;
-            ret;'''
+            push -1
+            push {int(type_)}
+            push {row}
+            push {col}
+            mov eax, {self.base_ptr}
+            call {0x40CE20}  // Board::NewPlant
+            mov [{self.controller.result_address}], eax
+            ret'''
         asm.run(code, self.controller)
         return Plant(self.controller.result_u32, self.controller)
 
@@ -146,16 +146,16 @@ class GameBoard(ob.ObjBase):
             raise ValueError("Challenge object doesn't exist!")
         next_idx = self.plant_list.next_index
         code = f"""
-            push ebx;
-            push edi;
-            mov ebx, {row};
-            push {col};
-            push {int(type_)};
-            mov edi, {p_c};
-            call {0x42a660}; // Challenge::IZombiePlacePlantInSquare 
-            pop edi;
-            pop ebx;
-            ret;"""
+            push ebx
+            push edi
+            mov ebx, {row}
+            push {col}
+            push {int(type_)}
+            mov edi, {p_c}
+            call {0x42a660} // Challenge::IZombiePlacePlantInSquare 
+            pop edi
+            pop ebx
+            ret"""
         asm.run(code, self.controller)
         return self.plant_list.find(next_idx)
 
@@ -176,12 +176,12 @@ class GameBoard(ob.ObjBase):
             raise ValueError("Challenge object doesn't exist!")
         ret_idx = self.zombie_list.next_index
         code = f'''
-            mov eax, {row};
-            push {col};
-            push {int(type_)};
-            mov ecx, {p_c};
-            call {0x42a0f0};  // Challenge::IZombiePlaceZombie
-            ret;'''
+            mov eax, {row}
+            push {col}
+            push {int(type_)}
+            mov ecx, {p_c}
+            call {0x42a0f0}  // Challenge::IZombiePlaceZombie
+            ret'''
         asm.run(code, self.controller)
         return self.zombie_list.at(ret_idx)
 
@@ -196,9 +196,9 @@ class GameBoard(ob.ObjBase):
             对应的列数, 0开始
         """
         code = f"""
-            push edi;
-            mov edi, {y};
-            mov eax, {x};
+            push edi
+            mov edi, {y}
+            mov eax, {x}
             mov ecx, {self.base_ptr};
             call {0x41c4c0};  // Board::PixelToGridX 
             mov [{self.controller.result_address}], eax;

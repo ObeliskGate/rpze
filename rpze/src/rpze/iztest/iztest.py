@@ -37,6 +37,7 @@ class PlaceZombieOp(NamedTuple):
     row: int
     col: int
 
+
 PlantTypeList: TypeAlias = list[list[PlantType | None]]
 
 
@@ -49,7 +50,7 @@ def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantType
     Args:
         plant_type_str: 与izt要求相同的植物列表字符串.
     Returns:
-        两个5 * 5列表, 分别表示第一轮, 第二轮种植的植物. 空白值由None(而非PlantType.none)填充
+        两个5 * 5列表, 分别表示第一轮, 第二轮种植的植物. 空白值由None填充
     Raises:
         ValueError: plant_type_string格式错误时抛出
     """

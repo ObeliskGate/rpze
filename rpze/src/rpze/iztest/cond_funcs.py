@@ -2,8 +2,8 @@
 """
 简化iztest的条件函数
 """
-from ..flow.utils import VariablePool, AwaitableCondFunc
 from ..flow.flow import FlowManager
+from ..flow.utils import VariablePool, AwaitableCondFunc
 from ..structs.plant import Plant
 
 

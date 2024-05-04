@@ -258,8 +258,8 @@ class ZombieList(ob.obj_list(Zombie)):
             LFreeAll:
                 mov edi, {self.base_ptr}
                 call {0x41e4d0}  // DataArray<Zombie>::DataArrayFreeAll
-                pop esi;
-                pop edi;
-                ret;"""
+                pop esi
+                pop edi
+                ret"""
         asm.run(code, self.controller)
         return self
