@@ -36,12 +36,14 @@ def open_game(game_path: str, num: int = 1) -> list[int]:
     return ret
 
 
-def inject(pids: Iterable[int]) -> list[Controller]:
+def inject(pids: Iterable[int],
+           stdout=subprocess.DEVNULL) -> list[Controller]:
     """
     对pids中的每一个进程注入dll
     
     Args:
         pids: 所有process id
+        stdout: inject程序标准输出流, 默认丢弃
     Returns:
         所有进程的Controller对象组成的列表
     """
@@ -51,9 +53,7 @@ def inject(pids: Iterable[int]) -> list[Controller]:
     s = f'..\\bin\\rp_injector.exe \"{dll_path}\" '
     s += ' '.join(str(i) for i in pids)
     try:
-        subprocess.run(s)
-    except Exception as e:
-        raise e
+        subprocess.run(s, stdout=stdout)
     finally:
         os.chdir(current_dir)
     return [Controller(pid) for pid in pids]

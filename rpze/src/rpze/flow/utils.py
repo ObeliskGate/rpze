@@ -57,6 +57,7 @@ class VariablePool:  # thanks Reisen
         t, d = self.get_all_attrs()
         return f"<{t}, {d}>"
 
+
 def _await_generator(t):
     yield t
 
@@ -160,6 +161,7 @@ class AwaitableCondFunc(Callable, Awaitable):
             return False
 
         return AwaitableCondFunc(_cond_func)
+
 
 @overload
 def until(time: int, /) -> AwaitableCondFunc:

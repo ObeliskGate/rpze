@@ -7,7 +7,7 @@ from enum import Enum
 from typing import SupportsIndex, Literal, TypeAlias, Self, overload
 
 from .iztest import IzTest
-from ..flow.flow import FlowManager, TickRunnerResult, CondFunc
+from ..flow.flow import FlowManager, TickRunnerResult, CondFunc, FlowFactory
 from ..flow.utils import AwaitableCondFunc
 from ..rp_extend import ControllerError
 from ..structs.game_board import GameBoard, get_board
@@ -162,8 +162,8 @@ def dancing_status_to_phase(status: ZombieStatus) -> DancingPhase:
             return DancingPhase.MOVING
         case ZombieStatus.dancing_armrise1:
             return DancingPhase.TRYING_CALLING_PARTNER
-        case ZombieStatus.dancing_armrise2 | ZombieStatus.dancing_armrise3 | \
-             ZombieStatus.dancing_armrise4 | ZombieStatus.dancing_armrise5:
+        case ZombieStatus.dancing_armrise2 | ZombieStatus.dancing_armrise3 | (
+             ZombieStatus.dancing_armrise4) | ZombieStatus.dancing_armrise5:
             return DancingPhase.DANCING
         case _:
             raise ValueError(f"{status} is not a dancing phase")
@@ -227,7 +227,10 @@ class _DmTr(Callable):
 
 class DancingManipulator:
     """
-    mj相位控制器, 即, "女仆秘籍"
+    mj相位控制器, 即, "女仆秘籍".
+
+    与avz不同, DancingManipulator目前依托于一个TickRunner控制mj时钟工作.
+    构造函数为protected接口.
 
     Attributes:
         start_phase: with语句开始时的相位
@@ -300,7 +303,7 @@ class DancingManipulator:
 def get_dancing_manipulator(iz_test: IzTest,
                             start_phase: DancingPhaseLiteral = DancingPhase.MOVING,
                             end_phase: DancingPhaseLiteral = DancingPhase.MOVING,
-                            priority: int | None = None) -> DancingManipulator:
+                            priority: int = FlowFactory.add_tick_runner.__defaults__[0] + 1) -> DancingManipulator:
     """
     获取一个DancingManipulator
 
@@ -308,13 +311,11 @@ def get_dancing_manipulator(iz_test: IzTest,
         iz_test: 和DancingManipulator对应的IzTest对象
         start_phase: 开始时的相位
         end_phase: 结束时的相位
-        priority: DancingManipulator的优先级, 默认为默认优先级
+        priority: DancingManipulator依托的TickRunner优先级.
+            默认为add默认值 + 1以确保默认时DancingManipulator在本cs生效
     Returns:
         构造的DancingManipulator对象
     """
     dm_tr = _DmTr(iz_test)
-    if priority is None:
-        iz_test.flow_factory.add_tick_runner()(dm_tr)
-    else:  # more simple method here?
-        iz_test.flow_factory.add_tick_runner(priority)(dm_tr)
+    iz_test.flow_factory.add_tick_runner(priority)(dm_tr)
     return DancingManipulator(dm_tr, start_phase, end_phase)

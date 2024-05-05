@@ -22,16 +22,15 @@ Memory::Memory(DWORD pid)
 	hMemory = OpenFileMappingW(FILE_MAP_ALL_ACCESS, FALSE, fileName.c_str());
 	if (hMemory == NULL)
 	{
-		std::cerr << "find shared memory failed: " << GetLastError() << std::endl;
-		throw MemoryException("find shared memory failed", pid);
+		throw MemoryException(
+			("find shared memory failed: " + std::to_string(GetLastError())).c_str(), pid);
 	}
 	pBuf = MapViewOfFile(hMemory, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
 	if (pBuf == NULL)
 	{
-		std::cerr << "create shared memory failed: " << GetLastError() << std::endl;
-		throw MemoryException("create shared memory failed", pid);
+		throw MemoryException(
+			("create shared memory failed: " + std::to_string(GetLastError())).c_str(), pid);
 	}
-	std::cout << "find shared memory success" << std::endl;
 
 	pCurrentPhaseCode = &phaseCode();
 	pCurrentRunState = &runState();

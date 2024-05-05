@@ -59,7 +59,7 @@ class PlantType(IntEnum):
     gold_magnet = 0x2D
     spikerock = 0x2E
     cob_cannon = 0x2F
-    imitater = 0x30
+    imitator = 0x30
 
 
 class PlantStatus(IntEnum):
@@ -101,7 +101,7 @@ class PlantStatus(IntEnum):
     kernelpult_launch_butter = 0x27
     umbrella_leaf_block = 0x28
     umbrella_leaf_shrink = 0x29
-    imitater_explode = 0x2A
+    imitator_explode = 0x2A
     flower_pot_placed = 0x2F
     lily_pad_placed = 0x30
 

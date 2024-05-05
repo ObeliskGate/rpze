@@ -27,6 +27,7 @@ Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
 TickRunner: TypeAlias = Callable[["FlowManager"], TickRunnerResult | None]
 """帧运行函数, 无返回值表示继续执行, 返回TickRunnerResult表示特殊行为"""
 
+
 class FlowManager:
     """
     运行Flow和TickRunner函数的对象
