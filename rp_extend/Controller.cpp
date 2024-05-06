@@ -84,12 +84,13 @@ PYBIND11_MODULE(rp_extend, m)
 
 }
 
-uint32_t Controller::set_offset_arr_of_py_list(const py::list& offsets)
+uint32_t Controller::set_offset_arr_of_py_iterable(const py::iterable& offsets)
 {
-	auto len_ = static_cast<uint32_t>(offsets.size()); 
-	for (uint32_t i = 0; i < len_; ++i)
+	uint32_t len_ = 0; 
+	for (auto&& it : offsets)
 	{
-		offset_buffer[i] = py::cast<uint32_t>(offsets[i]); 
+		offset_buffer[len_] = it.cast<uint32_t>();
+		len_++;
 	}
 	return len_;
 }
@@ -104,17 +105,17 @@ bool Controller::run_code(const py::bytes& codes) const
 	return mem.runCode(sw.data(), sw.size());
 }
 
-py::object Controller::read_bytes(uint32_t size, const py::list& offsets)
+py::object Controller::read_bytes(uint32_t size, const py::args& offsets)
 {
-	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto len_ = set_offset_arr_of_py_iterable(offsets);
 	auto ret = mem.readBytes(size, offset_buffer, len_);
 	if (ret.has_value()) return py::bytes(ret->get(), size);
 	return py::none();
 }
 
-bool Controller::write_bytes(const py::bytes& in, const py::list& offsets)
+bool Controller::write_bytes(const py::bytes& in, const py::args& offsets)
 {
 	auto sw = std::string_view(in);
-	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto len_ = set_offset_arr_of_py_iterable(offsets);
 	return mem.writeBytes(sw.data(), static_cast<uint32_t>(sw.size()), offset_buffer, len_);
 }

@@ -9,7 +9,7 @@ class Controller
 	Memory mem;
 	uint32_t offset_buffer[128] = {};
 
-	uint32_t set_offset_arr_of_py_list(const py::list& offsets);
+	uint32_t set_offset_arr_of_py_iterable(const py::iterable& offsets);
 
 public:
 	py::memoryview result_mem;
@@ -37,10 +37,10 @@ public:
 	bool end_jump_frame() { return mem.endJumpFrame(); }
 
 	template <typename T>
-	std::optional<T> read_memory(const py::list& offsets);
+	std::optional<T> read_memory(const py::args& offsets);
 
 	template <typename T>
-	bool write_memory(T&& val, const py::list& offsets);
+	bool write_memory(T&& val, const py::args& offsets);
 	
 	inline bool run_code(const py::bytes& codes) const;
 
@@ -66,22 +66,22 @@ public:
 	template<typename T>
 	void set_result(T val);
 
-	py::object read_bytes(uint32_t size, const py::list& offsets);
+	py::object read_bytes(uint32_t size, const py::args& offsets);
 
-	bool write_bytes(const py::bytes& in, const py::list& offsets);
+	bool write_bytes(const py::bytes& in, const py::args& offsets);
 };
 
 template <typename T>
-std::optional<T> Controller::read_memory(const py::list& offsets)
+std::optional<T> Controller::read_memory(const py::args& offsets)
 {
-	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto len_ = set_offset_arr_of_py_iterable(offsets);
 	return mem.readMemory<T>(offset_buffer, len_);
 }
 
 template <typename T>
-bool Controller::write_memory(T&& val, const py::list& offsets)
+bool Controller::write_memory(T&& val, const py::args& offsets)
 {
-	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto len_ = set_offset_arr_of_py_iterable(offsets);
 	return mem.writeMemory<T>(std::forward<T>(val), offset_buffer, len_);
 }
 

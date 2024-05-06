@@ -47,20 +47,20 @@ class GameBoard(ob.ObjBase):
     @property
     def mj_clock(self) -> int:
         """mj时钟"""
-        return self.controller.read_i32([0x6a9ec0, 0x838])  # 我真看不懂为什么mj时钟在LawnApp底下啊
+        return self.controller.read_i32(0x6a9ec0, 0x838)  # 我真看不懂为什么mj时钟在LawnApp底下啊
 
     @mj_clock.setter
     def mj_clock(self, value: int) -> None:
-        self.controller.write_i32(value, [0x6a9ec0, 0x838])
+        self.controller.write_i32(value, 0x6a9ec0, 0x838)
 
     @property
     def frame_duration(self) -> int:
         """帧时长, 以ms为单位"""
-        return self.controller.read_i32([0x6a9ec0, 0x454])
+        return self.controller.read_i32(0x6a9ec0, 0x454)
 
     @frame_duration.setter
     def frame_duration(self, value: int) -> None:
-        self.controller.write_i32(value, [0x6a9ec0, 0x454])
+        self.controller.write_i32(value, 0x6a9ec0, 0x454)
 
     def iz_setup_plant(self, plant: Plant) -> Self:
         """

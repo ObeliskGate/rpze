@@ -434,7 +434,7 @@ class IzTest:
         Returns:
             (测试概率, 使用时间)元组
         """
-        if self.controller.read_i32([0x6a9ec0, 0x7f8]) != 70:  # gLawnApp->mGameMode == ize
+        if self.controller.read_i32(0x6a9ec0, 0x7f8) != 70:  # gLawnApp->mGameMode == ize
             enter_ize(self.controller)
         start_time = time.time()
         last_time = start_time
