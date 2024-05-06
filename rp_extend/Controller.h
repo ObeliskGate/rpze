@@ -9,7 +9,19 @@ class Controller
 	Memory mem;
 	uint32_t offset_buffer[128] = {};
 
-	uint32_t set_offset_arr_of_py_iterable(const py::tuple& offsets);
+	template <typename T>
+	std::enable_if_t<
+		std::is_base_of_v<py::tuple, T> ||
+		std::is_base_of_v<py::list, T>, uint32_t>
+		set_offset_arr_of_py_sequence(const T& offsets)
+	{
+		auto len_ = static_cast<uint32_t>(offsets.size());
+		for (size_t i = 0; i < len_; i++)
+		{
+			offset_buffer[i] = offsets[i].cast<uint32_t>();
+		}
+		return len_;
+	}
 
 public:
 	py::memoryview result_mem;
@@ -74,14 +86,14 @@ public:
 template <typename T>
 std::optional<T> Controller::read_memory(const py::args& offsets)
 {
-	auto len_ = set_offset_arr_of_py_iterable(offsets);
+	auto len_ = set_offset_arr_of_py_sequence(offsets);
 	return mem.readMemory<T>(offset_buffer, len_);
 }
 
 template <typename T>
 bool Controller::write_memory(T&& val, const py::args& offsets)
 {
-	auto len_ = set_offset_arr_of_py_iterable(offsets);
+	auto len_ = set_offset_arr_of_py_sequence(offsets);
 	return mem.writeMemory<T>(std::forward<T>(val), offset_buffer, len_);
 }
 
