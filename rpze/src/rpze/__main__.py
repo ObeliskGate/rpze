@@ -1,3 +1,7 @@
+# -*- coding: utf_8 -*-
+"""
+验证安装用
+"""
 import argparse
 
 if __name__ == "__main__":

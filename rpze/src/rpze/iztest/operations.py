@@ -14,12 +14,12 @@ from ..structs.zombie import Zombie
 
 def enter_ize(ctler: Controller) -> GameBoard:
     """
-    进入ize关卡.
+    进入ize关卡并处理残留的选卡僵尸
 
     Args:
         ctler: 被注入的游戏对象
     Returns:
-        进入的关卡, GameBoard对象
+        进入关卡的GameBoard对象
     """
     with ConnectedContext(ctler) as ctler:
         enter_level(ctler, 70)

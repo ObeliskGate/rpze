@@ -11,7 +11,6 @@ class PvzStatusError(RpBaseException):
 
     当pvz游戏状态不满足要求时抛出.
     """
-    pass
 
 
 class AsmError(RpBaseException):  # 作为keystone error包装使用, 万一哪天换汇编器了
@@ -20,4 +19,3 @@ class AsmError(RpBaseException):  # 作为keystone error包装使用, 万一哪�
 
     当汇编码执行出现问题时抛出.
     """
-    pass

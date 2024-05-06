@@ -239,7 +239,7 @@ class IzTest:
         Args:
             iztools_str: iztools输入字符串
         Returns:
-            返回自己
+            self
         Raises:
             ValueError: 输入字符串格式错误时抛出
         Examples:
@@ -339,7 +339,8 @@ class IzTest:
         if self.game_board.zombie_list.obj_num == 0:
             return self.end(False)
 
-    def check_tests_end(self) -> Callable[[Callable[[int, int], float | None]], Callable[[int, int], float | None]]:
+    def check_tests_end(self) \
+            -> Callable[[Callable[[int, int], float | None]], Callable[[int, int], float | None]]:
         """
         装饰器, 设置判断是否结束测试的回调函数
 
@@ -363,7 +364,7 @@ class IzTest:
             place_priority: 初始化及放置僵尸tick runner的优先级, 默认为10
             check_end_priority: 判断输赢tick runner的优先级, 默认为-10
         Returns:
-            返回自己
+            self
         Raises:
             RpBaseException: 已经设置过flow_factory时抛出
         """

@@ -50,7 +50,7 @@ class GameBoard(ob.ObjBase):
         return self.controller.read_i32([0x6a9ec0, 0x838])  # 我真看不懂为什么mj时钟在LawnApp底下啊
 
     @mj_clock.setter
-    def mj_clock(self, value: int):
+    def mj_clock(self, value: int) -> None:
         self.controller.write_i32(value, [0x6a9ec0, 0x838])
 
     @property
@@ -59,15 +59,17 @@ class GameBoard(ob.ObjBase):
         return self.controller.read_i32([0x6a9ec0, 0x454])
 
     @frame_duration.setter
-    def frame_duration(self, value: int):
+    def frame_duration(self, value: int) -> None:
         self.controller.write_i32(value, [0x6a9ec0, 0x454])
 
-    def iz_setup_plant(self, plant: Plant):
+    def iz_setup_plant(self, plant: Plant) -> Self:
         """
         对植物进行IZ模式调整, 如纸板化, 土豆出土
 
         Args:
             plant: 要调整的植物
+        Returns:
+            self
         Raises:
             ValueError: Challenge对象不存在时抛出
         """
@@ -79,6 +81,7 @@ class GameBoard(ob.ObjBase):
             call {0x42A530} // Challenge::IZombieSetupPlant
             ret"""
         asm.run(code, self.controller)
+        return self
 
     def get_plants_on_lawn(self, row: int, col: int) -> \
             tuple[Plant | None, Plant | None, Plant | None, Plant | None]:
@@ -321,7 +324,7 @@ class GameBoard(ob.ObjBase):
         删除所有标记为回收的游戏对象
 
         Returns:
-            返回自己
+            self
         """
         code = f"""
             push esi;
@@ -337,7 +340,7 @@ class GameBoard(ob.ObjBase):
         移除选卡界面的僵尸
 
         Returns:
-            返回自己
+            self
         """
         code = f"""
             push ebx;

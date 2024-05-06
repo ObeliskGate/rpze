@@ -190,19 +190,19 @@ def until(cond_func: CondFunc, /) -> AwaitableCondFunc:
     """
 
 
-def until(arg):
+def until(arg) -> AwaitableCondFunc:
     if callable(arg):
         return AwaitableCondFunc(arg)
     if isinstance(arg, bool):
-        warnings.warn("until(bool) is usually not what you want, use until(lambda _: bool) instead.",
-                      SyntaxWarning,
-                      stacklevel=2)
+        warnings.warn(
+            "until(bool) is usually not what you want, use until(lambda _: bool) instead.",
+            SyntaxWarning, stacklevel=2)
     return AwaitableCondFunc(lambda fm: fm.time >= arg)
 
 
 def delay(time: int) -> AwaitableCondFunc:
     """
-    生成一个 延迟time帧后返回True 的函数
+    生成一个 延迟time帧后返回True的函数
 
     Args:
         time: 延迟用时间

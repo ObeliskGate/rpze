@@ -33,7 +33,7 @@ def randomize_generate_cd(plant: Plant) -> Plant:
 
 
 @typing.overload
-def set_puff_x_offset(puff: Plant, offset: int):
+def set_puff_x_offset(puff: Plant, offset: int) -> None:
     """
     为小喷设置x偏移
 
@@ -50,7 +50,7 @@ def set_puff_x_offset(puff: Plant, offset: int):
 
 
 @typing.overload
-def set_puff_x_offset(puff: Plant, offset: typing.Iterable[int]):
+def set_puff_x_offset(puff: Plant, offset: typing.Iterable[int]) -> None:
     """
     为小喷设置x偏移
 

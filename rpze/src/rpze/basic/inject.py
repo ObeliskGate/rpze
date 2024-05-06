@@ -6,7 +6,7 @@ import os
 import signal
 import subprocess
 import time
-from contextlib import ContextDecorator
+from contextlib import ContextDecorator, AbstractContextManager
 from typing import overload, Iterable
 
 from . import asm
@@ -27,12 +27,14 @@ def open_game(game_path: str, num: int = 1) -> list[int]:
     abs_path = os.path.abspath(game_path)
     route, exe_name = os.path.split(abs_path)
     current_directory = os.getcwd()
-    os.chdir(route)
     ret = [0] * num
-    for i in range(num):
-        process = subprocess.Popen(f"\"{exe_name}\"")
-        ret[i] = process.pid
-    os.chdir(current_directory)
+    try:
+        os.chdir(route)
+        for i in range(num):
+            process = subprocess.Popen(f"\"{exe_name}\"")
+            ret[i] = process.pid
+    finally:
+        os.chdir(current_directory)
     return ret
 
 
@@ -48,11 +50,11 @@ def inject(pids: Iterable[int],
         所有进程的Controller对象组成的列表
     """
     current_dir = os.getcwd()
-    os.chdir(os.path.dirname(__file__))
-    dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
-    s = f'..\\bin\\rp_injector.exe \"{dll_path}\" '
-    s += ' '.join(str(i) for i in pids)
     try:
+        os.chdir(os.path.dirname(__file__))
+        dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
+        s = f'..\\bin\\rp_injector.exe \"{dll_path}\" '
+        s += ' '.join(str(i) for i in pids)
         subprocess.run(s, stdout=stdout)
     finally:
         os.chdir(current_dir)
@@ -70,7 +72,7 @@ def close_by_pids(pids: Iterable[int]) -> None:
         os.kill(pid, signal.SIGTERM)
 
 
-class InjectedGame:
+class InjectedGame(AbstractContextManager):
     """
     描述被注入游戏的类
 
@@ -117,9 +119,6 @@ class InjectedGame:
             self.controller: Controller = arg
         else:
             raise TypeError("the parameter should be int, str or Controller instance")
-
-    def __enter__(self):
-        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.controller.end()
@@ -169,13 +168,13 @@ class ConnectedContext(ContextDecorator):
             ctler.start()
 
 
-def enter_level(controller: Controller, level_num: int, look_for_saved_game: bool = False):
+def enter_level(controller: Controller, game_mode: int, look_for_saved_game: bool = False) -> None:
     """
-    进入游戏, 返回GameBoard对象.
+    进入游戏关卡
 
     Args:
         controller: 目标游戏的controller
-        level_num: 关卡对应数字
+        game_mode: 关卡对应数字
         look_for_saved_game: 是否尝试读档, **请切记默认情况会毁坏你原有的关卡存档!**
     Raises:
         PvzStatusError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
@@ -217,7 +216,7 @@ def enter_level(controller: Controller, level_num: int, look_for_saved_game: boo
         
         LPreNewGame:
         push {int(look_for_saved_game)}
-        push {level_num}
+        push {game_mode}
         call {0x44f560}  // LawnApp::PreNewGame
         xor eax, eax;
         mov [{controller.result_address}], eax;

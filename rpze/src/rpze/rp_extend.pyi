@@ -1,4 +1,5 @@
 # -*- coding: utf_8 -*-
+# extend module of game controller
 from enum import Enum
 from typing import Self
 
@@ -17,7 +18,7 @@ class Controller:
     # game controller
     
     # in the description of this class:
-    #     connected := using start(), which means open_hook(HookPosition.MAIN_LOOP) is True
+    #     connected := using start(), which means hook_connected(HookPosition.MAIN_LOOP) is True
     #     prepared := hook connected and before() used properly
     
 
@@ -52,7 +53,7 @@ class Controller:
     def before(self) -> None: ...  # required before every frame after start() control
     def next_frame(self) -> None: ...  # let the game continue to the next frame
     def start(self) -> None: ...  # start control and get prepared; do nothing when connected
-    def end(self) -> None: ...  # end control and jumping frame if necessary; do nothing when not connected
+    def end(self) -> None: ...  # end control (and jumping frame if necessary); do nothing when not connected
     
     def start_jump_frame(self) -> bool: ...
     # assert prepared and has board

@@ -11,6 +11,9 @@ from ..basic import asm
 
 
 class PlantType(IntEnum):
+    """
+    植物类型
+    """
     pea_shooter = 0x0
     sunflower = 0x1
     cherry_bomb = 0x2
@@ -63,6 +66,9 @@ class PlantType(IntEnum):
 
 
 class PlantStatus(IntEnum):
+    """
+    植物状态
+    """
     idle = 0x0
     wait = 0x1
     work = 0x2
@@ -107,6 +113,9 @@ class PlantStatus(IntEnum):
 
 
 class Plant(ObjNode):
+    """
+    植物对象
+    """
     ITERATOR_FUNC_ADDRESS = 0x41c950
 
     OBJ_SIZE = 0x14c
@@ -190,7 +199,7 @@ class Plant(ObjNode):
             return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
         return "dead plant"
 
-    def die(self):
+    def die(self) -> None:
         """
         令自己死亡
         """
@@ -202,6 +211,9 @@ class Plant(ObjNode):
 
 
 class PlantList(ob.obj_list(Plant)):
+    """
+    植物DataArray
+    """
     def get_by_grid(self, row: int, col: int) -> Plant | None:
         """
         通过row, col找到对应植物

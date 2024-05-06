@@ -10,6 +10,9 @@ from ..basic import asm
 
 
 class GriditemType(IntEnum):
+    """
+    场地物品类型
+    """
     none = 0
     grave = 0x1
     crater = 0x2
@@ -22,7 +25,7 @@ class GriditemType(IntEnum):
 
 class Griditem(ob.ObjNode):
     """
-    场地物品, 包括脑子, 梯子等
+    场地物品. 包括脑子, 梯子等
     """
     OBJ_SIZE = 0xEC
 
@@ -48,12 +51,12 @@ class Griditem(ob.ObjNode):
 
     y = ob.property_f32(0x28, "y坐标")
 
-    def __str__(self):
+    def __str__(self) -> str:
         if not self.is_dead:
             return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
         return "dead griditem"
 
-    def die(self):
+    def die(self) -> None:
         """
         令自己死亡
         """
@@ -66,6 +69,9 @@ class Griditem(ob.ObjNode):
 
 
 class GriditemList(ob.obj_list(Griditem)):
+    """
+    场地物品DataArray
+    """
     def alloc_item(self) -> Griditem:
         """
         从内存数组中申请新的griditem对象

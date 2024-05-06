@@ -396,7 +396,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         在所有对象都被回收时调用. 让本对象之后申请对象从0开始申请
 
         Returns:
-            返回自己
+            self
         Raises:
             PvzStatusError: 当有对象未回收时抛出
         """
@@ -407,7 +407,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         删除存活的所有对象.
 
         Returns:
-            返回自己
+            self
         """
 
     def set_next_idx(self, idx: int) -> typing.Self:
@@ -420,7 +420,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         Args:
             idx: 下一个对象的编号
         Returns:
-            返回自己.
+            self
         Raises:
             ValueError: idx不合法或idx所在对象未回收时抛出.
         """
@@ -450,7 +450,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
             self._current_ptr = self._controller.result_u32
             return node_cls(self._current_ptr, self._controller)
 
-        def __iter__(self):
+        def __iter__(self) -> typing.Self:
             return self
 
     class _ObjListImplement(ObjList[_T], abc.ABC):
@@ -473,9 +473,8 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
 
         def find(self, *args) -> _T | None:
             match args:
-                case (index, ):
+                case (index,):
                     if isinstance(index, typing.SupportsIndex):
-                        index = index.__index__()
                         try:
                             target = self[index]
                         except IndexError:
@@ -512,9 +511,10 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                 self._iterate_func_asm = asm.decode(self._code, self.controller.asm_address)
             return _ObjIterator(self.controller, self._iterate_func_asm)
 
-        def reset_stack(self):
+        def reset_stack(self) -> typing.Self:
             if self.obj_num:
-                raise PvzStatusError(f"cannot reset stack when there are still {self.obj_num} objects alive")
+                raise PvzStatusError(
+                    f"cannot reset stack when there are still {self.obj_num} objects alive")
             next_idx = self.next_index
             self.next_index = 0
             length = self.max_length

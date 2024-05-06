@@ -3,6 +3,7 @@
 mj相关操控
 """
 from collections.abc import Callable
+from contextlib import AbstractContextManager
 from enum import Enum
 from typing import SupportsIndex, Literal, TypeAlias, Self, overload
 
@@ -83,8 +84,7 @@ def get_clock(board: GameBoard | None = None) -> int:
         board = get_board()
     if (clock := board.mj_clock) >= 0:
         return clock % 460
-    else:
-        return -(-clock % 460)  # c/c++ %
+    return -(-clock % 460)  # c/c++ %
 
 
 def get_dancing_status(clock: int) -> ZombieStatus:
@@ -188,13 +188,13 @@ class _DmTr(Callable):
         self.next_phase: DancingPhase | None = None  # None表示没有"下一个"状态
         self.cond_to_next: CondFunc = lambda _: True
 
-    def keep_phase(self, _: FlowManager):
+    def keep_phase(self, _: FlowManager) -> None:
         cp = self.current_phase
         board = get_board(self.iz_test.controller)
         if cp.value != get_clock(board):
             board.mj_clock = cp.value
 
-    def switch_to_next_phase(self, fm: FlowManager):
+    def switch_to_next_phase(self, fm: FlowManager) -> None:
         if not self.cond_to_next(fm):
             return
         self.current_phase = self.next_phase
@@ -216,16 +216,16 @@ class _DmTr(Callable):
     def is_controlling(self) -> bool:
         return self.current_phase is not None
 
-    def start_controlling(self, phase: DancingPhase):
+    def start_controlling(self, phase: DancingPhase) -> None:
         self.current_phase = phase
 
-    def stop_controlling(self, phase: DancingPhase):
+    def stop_controlling(self, phase: DancingPhase) -> None:
         get_board(self.iz_test.controller).mj_clock = phase.value
         self.current_phase = None
         self.next_phase = None
 
 
-class DancingManipulator:
+class DancingManipulator(AbstractContextManager):
     """
     mj相位控制器, 即, "女仆秘籍".
 
@@ -243,7 +243,8 @@ class DancingManipulator:
         self.end_phase: DancingPhase = to_dancing_phase(end_phase)
         self._tr: _DmTr = tr
 
-    def next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc = lambda _: True):
+    def next_phase(self, phase: DancingPhaseLiteral,
+                   condition: CondFunc = lambda _: True) -> None:
         """
         设置下一个相位
 
@@ -270,7 +271,7 @@ class DancingManipulator:
         await AwaitableCondFunc(condition)
         self.next_phase(phase)
 
-    def stop(self, end_phase: DancingPhaseLiteral):
+    def stop(self, end_phase: DancingPhaseLiteral) -> None:
         """
         停止控制
 
@@ -280,19 +281,21 @@ class DancingManipulator:
         if self._tr.is_controlling:
             self._tr.stop_controlling(to_dancing_phase(end_phase))
 
-    def start(self, first_phase: DancingPhaseLiteral):
+    def start(self, first_phase: DancingPhaseLiteral) -> Self:
         """
         开始控制
 
         Args:
             first_phase: 开始控制时的相位
+        Returns:
+            self
         """
         if not self._tr.is_controlling:
             self._tr.start_controlling(to_dancing_phase(first_phase))
+        return self
 
     def __enter__(self) -> Self:
-        self.start(self.start_phase)
-        return self
+        return self.start(self.start_phase)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is ControllerError:
@@ -303,7 +306,8 @@ class DancingManipulator:
 def get_dancing_manipulator(iz_test: IzTest,
                             start_phase: DancingPhaseLiteral = DancingPhase.MOVING,
                             end_phase: DancingPhaseLiteral = DancingPhase.MOVING,
-                            priority: int = FlowFactory.add_tick_runner.__defaults__[0] + 1) -> DancingManipulator:
+                            priority: int = FlowFactory.add_tick_runner.__defaults__[0] + 1) \
+        -> DancingManipulator:
     """
     获取一个DancingManipulator
 

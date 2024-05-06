@@ -34,7 +34,7 @@ class FlowManager:
 
     Attributes:
         tick_runners: 所有TickRunner组成的函数, 运行时按顺序执行
-        destructor_list: 所有析构函数组成的函数, 在end()时按顺序执行
+        destructors: 所有析构函数组成的函数, 在end()时按顺序执行
         time: 每执行一次do自增1
     """
 
@@ -56,7 +56,7 @@ class FlowManager:
         self._is_destructed = False
         self._flow_coro_list: list[list] = [[lambda _: True, i(self)] for i in flows]
 
-        def _flow_tick_runner(self_: FlowManager) -> TickRunnerResult | None:
+        def _flow_tick_runner(self_: "FlowManager") -> TickRunnerResult | None:
             if not (fcl := self_._flow_coro_list):
                 return TickRunnerResult.DONE
             pop_list = []
@@ -86,14 +86,14 @@ class FlowManager:
         # -priority让priority越大优先级别越高
         self.tick_runners: list[TickRunner] = [i[2] for i in tick_runner_list]
 
-        def _flow_destructor(self_: FlowManager):
+        def _flow_destructor(self_: "FlowManager"):
             for flow in self_._flow_coro_list:
                 flow[1].close()
 
         destructor_list = [(-priority, next(_counter), it) for priority, it in destructors]
         destructor_list.append((-flow_destructor_priority, next(_counter), _flow_destructor))
         destructor_list.sort()
-        self.destructor_list: list[Callable[[FlowManager], None]] = [i[2] for i in destructor_list]
+        self.destructors: list[Callable[["FlowManager"], None]] = [i[2] for i in destructor_list]
 
     def add(self) -> Callable[[TickRunner], TickRunner]:
         """
@@ -104,12 +104,12 @@ class FlowManager:
         Examples:
             >>> flow_manager: FlowManager = ...
             >>> @flow_manager.add()
-            ... def tr(fm: FlowManager) -> TickRunnerResult:
+            ... def tr(fm: "FlowManager") -> TickRunnerResult:
             ...     ...
             为装饰器形式使用
 
-            >>> flow_manager: FlowManager = ...
-            >>> def tr(fm: FlowManager) -> TickRunnerResult:
+            >>> flow_manager: "FlowManager" = ...
+            >>> def tr(fm: "FlowManager") -> TickRunnerResult:
             ...     ...
             >>> flow_manager.add()(tr)
             为函数形式使用
@@ -121,7 +121,8 @@ class FlowManager:
 
         return _decorator
 
-    def add_destructor(self) -> Callable[[Callable[[Self], None]], Callable[[Self], None]]:
+    def add_destructor(self) \
+            -> Callable[[Callable[["FlowManager"], None]], Callable[["FlowManager"], None]]:
         """
         添加destructor的方法, 与FlowManager.add使用方法相同
 
@@ -129,13 +130,14 @@ class FlowManager:
             一个新的destructor函数
         """
 
-        def _decorator(d: Callable[[FlowManager], None]) -> Callable[[FlowManager], None]:
-            self.destructor_list.append(d)
+        def _decorator(d: Callable[["FlowManager"], None]) -> Callable[["FlowManager"], None]:
+            self.destructors.append(d)
             return d
 
         return _decorator
 
-    def connect(self, cond: CondFunc, only_once: bool = False) -> Callable[[TickRunner], TickRunner]:
+    def connect(self, cond: CondFunc, only_once: bool = False) \
+            -> Callable[[TickRunner], TickRunner]:
         """
         运行时把tick_runner绑定到cond上的方法, 与add使用方法相同
         
@@ -147,7 +149,7 @@ class FlowManager:
         """
 
         def _decorator(tr: TickRunner) -> TickRunner:
-            def _decorated_tick_runner(fm: FlowManager):
+            def _decorated_tick_runner(fm: "FlowManager"):
                 if cond(fm):
                     ret = tr(fm)
                     if ret is None:
@@ -190,12 +192,12 @@ class FlowManager:
                     return _end(TickRunnerResult.BREAK_ONCE)
         return _end(None)
 
-    def end(self):
+    def end(self) -> None:
         """
         结束运行时执行析构函数
         """
         self._is_destructed = True
-        for d in self.destructor_list:
+        for d in self.destructors:
             d(self)
 
 
@@ -278,7 +280,8 @@ class FlowFactory:
 
         return _decorator
 
-    def build_manager(self, flow_priority: int = 0, flow_destructor_priority: int = 0) -> FlowManager:
+    def build_manager(self, flow_priority: int = 0, flow_destructor_priority: int = 0) \
+            -> FlowManager:
         """
         生成FlowManager的方法
 
