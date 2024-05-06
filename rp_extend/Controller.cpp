@@ -84,13 +84,12 @@ PYBIND11_MODULE(rp_extend, m)
 
 }
 
-uint32_t Controller::set_offset_arr_of_py_iterable(const py::iterable& offsets)
+uint32_t Controller::set_offset_arr_of_py_iterable(const py::tuple& offsets)
 {
-	uint32_t len_ = 0; 
+	auto len_ = static_cast<uint32_t>(offsets.size());
 	for (auto&& it : offsets)
 	{
 		offset_buffer[len_] = it.cast<uint32_t>();
-		len_++;
 	}
 	return len_;
 }

@@ -9,7 +9,7 @@ class Controller
 	Memory mem;
 	uint32_t offset_buffer[128] = {};
 
-	uint32_t set_offset_arr_of_py_iterable(const py::iterable& offsets);
+	uint32_t set_offset_arr_of_py_iterable(const py::tuple& offsets);
 
 public:
 	py::memoryview result_mem;
