@@ -122,7 +122,9 @@ class InjectedGame(AbstractContextManager):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.controller.end()
-        if self._close_when_exit and exc_type is not ControllerError:
+        if (self._close_when_exit and
+                exc_type is not ControllerError and
+                exc_type is not KeyboardInterrupt):
             close_by_pids((self.controller.pid,))
 
 

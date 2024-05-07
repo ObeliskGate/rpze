@@ -81,7 +81,7 @@ zombie_abbr_to_type: dict[str, ZombieType] = {
 """僵尸缩写到僵尸类型的字典"""
 
 
-class Theme(Enum):
+class Layout(Enum):
     HOTCHPOTCH = auto()
     """综合"""
     KERNELS = auto()
