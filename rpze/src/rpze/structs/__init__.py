@@ -1,5 +1,5 @@
-from .game_board import get_board, GameBoard
-from .plant import PlantType, Plant
-from .zombie import ZombieType, Zombie
-from .griditem import GriditemType, Griditem
-from .projectile import ProjectileType, Projectile
+# -*- coding: utf_8 -*-
+"""
+游戏中的数据结构
+"""
+# 本package中数据结构和pvz_emulator命名保持一致

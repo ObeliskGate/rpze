@@ -9,9 +9,10 @@ from . import obj_base as ob
 from .griditem import GriditemList, Griditem, GriditemType
 from .plant import PlantList, Plant, PlantType
 from .projectile import ProjectileList
-from ..basic import asm
-from ..rp_extend import Controller
 from .zombie import ZombieList, ZombieType, Zombie
+from ..basic import asm
+from ..basic.exception import PvzStatusError
+from ..rp_extend import Controller, RpBaseException
 
 
 class GameBoard(ob.ObjBase):
@@ -46,38 +47,41 @@ class GameBoard(ob.ObjBase):
     @property
     def mj_clock(self) -> int:
         """mj时钟"""
-        return self.controller.read_i32([0x6a9ec0, 0x838])  # 我真看不懂为什么mj时钟在LawnApp底下啊
+        return self.controller.read_i32(0x6a9ec0, 0x838)  # 我真看不懂为什么mj时钟在LawnApp底下啊
 
     @mj_clock.setter
-    def mj_clock(self, value: int):
-        self.controller.write_i32(value, [0x6a9ec0, 0x838])
+    def mj_clock(self, value: int) -> None:
+        self.controller.write_i32(value, 0x6a9ec0, 0x838)
 
     @property
     def frame_duration(self) -> int:
         """帧时长, 以ms为单位"""
-        return self.controller.read_i32([0x6a9ec0, 0x454])
+        return self.controller.read_i32(0x6a9ec0, 0x454)
 
     @frame_duration.setter
-    def frame_duration(self, value: int):
-        self.controller.write_i32(value, [0x6a9ec0, 0x454])
+    def frame_duration(self, value: int) -> None:
+        self.controller.write_i32(value, 0x6a9ec0, 0x454)
 
-    def iz_setup_plant(self, plant: Plant):
+    def iz_setup_plant(self, plant: Plant) -> Self:
         """
         对植物进行IZ模式调整, 如纸板化, 土豆出土
 
         Args:
             plant: 要调整的植物
+        Returns:
+            self
         Raises:
             ValueError: Challenge对象不存在时抛出
         """
         if not (p_c := self._p_challenge):
             raise ValueError("Challenge object doesn't exist!")
         code = f"""
-            mov eax, {p_c};
-            push {plant.base_ptr};
-            call {0x42A530}; // Challenge::IZombieSetupPlant
-            ret;"""
+            mov eax, {p_c}
+            push {plant.base_ptr}
+            call {0x42A530} // Challenge::IZombieSetupPlant
+            ret"""
         asm.run(code, self.controller)
+        return self
 
     def get_plants_on_lawn(self, row: int, col: int) -> \
             tuple[Plant | None, Plant | None, Plant | None, Plant | None]:
@@ -91,14 +95,14 @@ class GameBoard(ob.ObjBase):
             (底座, 南瓜, 飞行, 常规)元组, 对应位置没有植物则返回None.
         """
         code = f"""
-            push ebx;
-            mov ebx, {(ctler := self.controller).result_address};
-            push {row};
-            push {col};
-            mov edx, {self.base_ptr};
-            call {0x40d2a0};
-            pop ebx;
-            ret;"""
+            push ebx
+            mov ebx, {(ctler := self.controller).result_address}
+            push {row}
+            push {col}
+            mov edx, {self.base_ptr}
+            call {0x40d2a0}
+            pop ebx
+            ret"""
         asm.run(code, ctler)
         view = ctler.result_mem[:16].cast("I")  # 以单个元素为u32格式读取前16字节
         return tuple(None if it == 0 else Plant(it, ctler) for it in view)
@@ -117,14 +121,14 @@ class GameBoard(ob.ObjBase):
             种植成功的植物对象
         """
         code = f'''
-            push -1;
-            push {int(type_)};
-            push {row};
-            push {col};
-            mov eax, {self.base_ptr};
-            call {0x40CE20};  // Board::NewPlant
-            mov [{self.controller.result_address}], eax;
-            ret;'''
+            push -1
+            push {int(type_)}
+            push {row}
+            push {col}
+            mov eax, {self.base_ptr}
+            call {0x40CE20}  // Board::NewPlant
+            mov [{self.controller.result_address}], eax
+            ret'''
         asm.run(code, self.controller)
         return Plant(self.controller.result_u32, self.controller)
 
@@ -145,16 +149,16 @@ class GameBoard(ob.ObjBase):
             raise ValueError("Challenge object doesn't exist!")
         next_idx = self.plant_list.next_index
         code = f"""
-            push ebx;
-            push edi;
-            mov ebx, {row};
-            push {col};
-            push {int(type_)};
-            mov edi, {p_c};
-            call {0x42a660}; // Challenge::IZombiePlacePlantInSquare 
-            pop edi;
-            pop ebx;
-            ret;"""
+            push ebx
+            push edi
+            mov ebx, {row}
+            push {col}
+            push {int(type_)}
+            mov edi, {p_c}
+            call {0x42a660} // Challenge::IZombiePlacePlantInSquare 
+            pop edi
+            pop ebx
+            ret"""
         asm.run(code, self.controller)
         return self.plant_list.find(next_idx)
 
@@ -175,12 +179,12 @@ class GameBoard(ob.ObjBase):
             raise ValueError("Challenge object doesn't exist!")
         ret_idx = self.zombie_list.next_index
         code = f'''
-            mov eax, {row};
-            push {col};
-            push {int(type_)};
-            mov ecx, {p_c};
-            call {0x42a0f0};  // Challenge::IZombiePlaceZombie
-            ret;'''
+            mov eax, {row}
+            push {col}
+            push {int(type_)}
+            mov ecx, {p_c}
+            call {0x42a0f0}  // Challenge::IZombiePlaceZombie
+            ret'''
         asm.run(code, self.controller)
         return self.zombie_list.at(ret_idx)
 
@@ -195,9 +199,9 @@ class GameBoard(ob.ObjBase):
             对应的列数, 0开始
         """
         code = f"""
-            push edi;
-            mov edi, {y};
-            mov eax, {x};
+            push edi
+            mov edi, {y}
+            mov eax, {x}
             mov ecx, {self.base_ptr};
             call {0x41c4c0};  // Board::PixelToGridX 
             mov [{self.controller.result_address}], eax;
@@ -320,7 +324,7 @@ class GameBoard(ob.ObjBase):
         删除所有标记为回收的游戏对象
 
         Returns:
-            返回自己
+            self
         """
         code = f"""
             push esi;
@@ -336,7 +340,7 @@ class GameBoard(ob.ObjBase):
         移除选卡界面的僵尸
 
         Returns:
-            返回自己
+            self
         """
         code = f"""
             push ebx;
@@ -362,15 +366,16 @@ def get_board(controller: Controller | None = None) -> GameBoard:
     Returns:
         当前游戏主界面对象
     Raises:
-        RuntimeError: Board对象不存在时抛出
+        RpBaseException: 没有缓存的GameBoard对象时抛出
+        PvzStatusError: 游戏Board不存在时抛出
     """
     if controller is None:
         if len(__game_board_cache) == 0:
-            raise RuntimeError("no cached GameBoard object!")
+            raise RpBaseException("no cached GameBoard object!")
         return next(reversed(__game_board_cache.values()))  # 最后一个元素
     valid, p_board = controller.get_p_board()
     if not p_board:  # 期待Board对象存在, 用异常不用Optional
-        raise RuntimeError("Board object doesn't exist!")
+        raise PvzStatusError("Board object doesn't exist!")
     key = controller.pid
     if __game_board_cache.get(key) is None:  # 无缓存: 加入, 判删
         ret = GameBoard(p_board, controller)

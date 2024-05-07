@@ -10,6 +10,9 @@ from ..basic import asm
 
 
 class ProjectileType(IntEnum):
+    """
+    子弹类型
+    """
     pea = 0x0
     snow_pea = 0x1
     cabbage = 0x2
@@ -26,6 +29,9 @@ class ProjectileType(IntEnum):
 
 
 class ProjectileMotionType(IntEnum):
+    """
+    子弹运动类型
+    """
     straight = 0
     parabola = 1
     switch_way = 2
@@ -36,6 +42,9 @@ class ProjectileMotionType(IntEnum):
 
 
 class Projectile(ob.ObjNode):
+    """
+    子弹对象
+    """
     ITERATOR_FUNC_ADDRESS = 0x41C9B0
 
     OBJ_SIZE = 0x94
@@ -65,41 +74,44 @@ class Projectile(ob.ObjNode):
         """香蒲子弹目标僵尸"""
         return ob.ObjId(self.base_ptr + 0x88, self.controller)
 
-    def die(self):
+    def die(self) -> None:
         """
         令自己死亡
         """
         code = f"""
-            mov eax, {self.base_ptr};
-            call {0x46EB20};  // Projectile::Die
-            ret;"""
+            mov eax, {self.base_ptr}
+            call {0x46EB20}  // Projectile::Die
+            ret"""
         asm.run(code, self.controller)
 
 
 class ProjectileList(ob.obj_list(Projectile)):
+    """
+    子弹DataArray
+    """
     def free_all(self) -> Self:
         code = f"""
-                push edi;   
-                push esi;
-                mov eax, [0x6a9ec0];
-                mov edi, [eax + 0x768];
-                mov esi, {self.controller.result_address};
-                xor edx, edx;
-                mov [esi], edx;
+                push edi   
+                push esi
+                mov eax, [0x6a9ec0]
+                mov edi, [eax + 0x768]
+                mov esi, {self.controller.result_address}
+                xor edx, edx
+                mov [esi], edx
                 LIterate:
-                    mov {Projectile.ITERATOR_P_BOARD_REG}, edi;
-                    call {Projectile.ITERATOR_FUNC_ADDRESS};  // Board::IterateProjectile
-                    test al, al;
-                    jz LFreeAll;
+                    mov {Projectile.ITERATOR_P_BOARD_REG}, edi
+                    call {Projectile.ITERATOR_FUNC_ADDRESS}  // Board::IterateProjectile
+                    test al, al
+                    jz LFreeAll
                     mov eax, [esi]
-                    call {0x46EB20};  // Projectile::Die
-                    jmp LIterate;
+                    call {0x46EB20}  // Projectile::Die
+                    jmp LIterate
                     
                 LFreeAll:
                     mov edi, {self.base_ptr}
-                    call {0x41e600};  // DataArray<Zombie>::DataArrayFreeAll
-                    pop esi;
-                    pop edi;
-                    ret;"""
+                    call {0x41e600}  // DataArray<Zombie>::DataArrayFreeAll
+                    pop esi
+                    pop edi
+                    ret"""
         asm.run(code, self.controller)
         return self

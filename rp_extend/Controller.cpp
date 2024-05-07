@@ -8,6 +8,12 @@ PYBIND11_MODULE(rp_extend, m)
 		.value("ZOMBIE_PICK_RANDOM_SPEED", HookPosition::ZOMBIE_PICK_RANDOM_SPEED)
 		.value("CHALLENGE_I_ZOMBIE_SCORE_BRAIN", HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN);
 
+	PYBIND11_CONSTINIT static py::gil_safe_call_once_and_store<py::object> base_exc_storage;
+	base_exc_storage.call_once_and_store_result(
+		[&m] { return py::exception<void>(m, "RpBaseException"); });
+
+	py::register_exception<MemoryException>(m, "ControllerError", base_exc_storage.get_stored());
+
 	py::class_<Controller>(m, "Controller")
 		.def(py::init<DWORD>())
 		.def("__eq__", &Controller::operator==)
@@ -31,6 +37,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("open_hook", &Controller::open_hook)
 		.def("close_hook", &Controller::close_hook)
 		.def("hook_connected", &Controller::hook_connected, py::arg("hook") = HookPosition::MAIN_LOOP)
+		.def("global_connected", &Controller::global_connected)
 
 		.def("read_bytes", &Controller::read_bytes)
 		.def("write_bytes", &Controller::write_bytes)
@@ -77,16 +84,6 @@ PYBIND11_MODULE(rp_extend, m)
 
 }
 
-uint32_t Controller::set_offset_arr_of_py_list(const py::list& offsets)
-{
-	auto len_ = static_cast<uint32_t>(offsets.size()); 
-	for (uint32_t i = 0; i < len_; ++i)
-	{
-		offset_buffer[i] = py::cast<uint32_t>(offsets[i]); 
-	}
-	return len_;
-}
-
 Controller::Controller(DWORD pid) : mem(pid),
 	result_mem(py::memoryview::from_memory(const_cast<void*>(mem.getReturnResult()), Memory::RESULT_SIZE, false))
 { }
@@ -97,17 +94,17 @@ bool Controller::run_code(const py::bytes& codes) const
 	return mem.runCode(sw.data(), sw.size());
 }
 
-py::object Controller::read_bytes(uint32_t size, const py::list& offsets)
+py::object Controller::read_bytes(uint32_t size, const py::args& offsets)
 {
-	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto len_ = set_offset_arr_of_py_sequence(offsets);
 	auto ret = mem.readBytes(size, offset_buffer, len_);
 	if (ret.has_value()) return py::bytes(ret->get(), size);
 	return py::none();
 }
 
-bool Controller::write_bytes(const py::bytes& in, const py::list& offsets)
+bool Controller::write_bytes(const py::bytes& in, const py::args& offsets)
 {
 	auto sw = std::string_view(in);
-	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto len_ = set_offset_arr_of_py_sequence(offsets);
 	return mem.writeBytes(sw.data(), static_cast<uint32_t>(sw.size()), offset_buffer, len_);
 }

@@ -9,7 +9,19 @@ class Controller
 	Memory mem;
 	uint32_t offset_buffer[128] = {};
 
-	uint32_t set_offset_arr_of_py_list(const py::list& offsets);
+	template <typename T>
+	std::enable_if_t<
+		std::is_base_of_v<py::tuple, T> ||
+		std::is_base_of_v<py::list, T>, uint32_t>
+		set_offset_arr_of_py_sequence(const T& offsets)
+	{
+		auto len_ = static_cast<uint32_t>(offsets.size());
+		for (size_t i = 0; i < len_; i++)
+		{
+			offset_buffer[i] = offsets[i].cast<uint32_t>();
+		}
+		return len_;
+	}
 
 public:
 	py::memoryview result_mem;
@@ -21,6 +33,8 @@ public:
 	std::tuple<bool, uint32_t> get_p_board() const { return mem.getPBoard(); }
 
 	bool hook_connected(HookPosition pos = HookPosition::MAIN_LOOP) const { return mem.hookConnected(pos); }
+
+	bool global_connected() const { return mem.globalConnected(); }
 
 	void next_frame() const { mem.next(); }
 
@@ -35,10 +49,10 @@ public:
 	bool end_jump_frame() { return mem.endJumpFrame(); }
 
 	template <typename T>
-	std::optional<T> read_memory(const py::list& offsets);
+	std::optional<T> read_memory(const py::args& offsets);
 
 	template <typename T>
-	bool write_memory(T&& val, const py::list& offsets);
+	bool write_memory(T&& val, const py::args& offsets);
 	
 	inline bool run_code(const py::bytes& codes) const;
 
@@ -64,22 +78,22 @@ public:
 	template<typename T>
 	void set_result(T val);
 
-	py::object read_bytes(uint32_t size, const py::list& offsets);
+	py::object read_bytes(uint32_t size, const py::args& offsets);
 
-	bool write_bytes(const py::bytes& in, const py::list& offsets);
+	bool write_bytes(const py::bytes& in, const py::args& offsets);
 };
 
 template <typename T>
-std::optional<T> Controller::read_memory(const py::list& offsets)
+std::optional<T> Controller::read_memory(const py::args& offsets)
 {
-	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto len_ = set_offset_arr_of_py_sequence(offsets);
 	return mem.readMemory<T>(offset_buffer, len_);
 }
 
 template <typename T>
-bool Controller::write_memory(T&& val, const py::list& offsets)
+bool Controller::write_memory(T&& val, const py::args& offsets)
 {
-	auto len_ = set_offset_arr_of_py_list(offsets);
+	auto len_ = set_offset_arr_of_py_sequence(offsets);
 	return mem.writeMemory<T>(std::forward<T>(val), offset_buffer, len_);
 }
 

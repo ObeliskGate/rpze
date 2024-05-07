@@ -6,11 +6,12 @@ import os
 import signal
 import subprocess
 import time
+from contextlib import ContextDecorator, AbstractContextManager
 from typing import overload, Iterable
 
 from . import asm
-from ..rp_extend import Controller
-from ..structs.game_board import GameBoard, get_board
+from .exception import PvzStatusError
+from ..rp_extend import Controller, ControllerError
 
 
 def open_game(game_path: str, num: int = 1) -> list[int]:
@@ -26,33 +27,35 @@ def open_game(game_path: str, num: int = 1) -> list[int]:
     abs_path = os.path.abspath(game_path)
     route, exe_name = os.path.split(abs_path)
     current_directory = os.getcwd()
-    os.chdir(route)
     ret = [0] * num
-    for i in range(num):
-        process = subprocess.Popen(f"\"{exe_name}\"")
-        ret[i] = process.pid
-    os.chdir(current_directory)
+    try:
+        os.chdir(route)
+        for i in range(num):
+            process = subprocess.Popen(f"\"{exe_name}\"")
+            ret[i] = process.pid
+    finally:
+        os.chdir(current_directory)
     return ret
 
 
-def inject(pids: Iterable[int]) -> list[Controller]:
+def inject(pids: Iterable[int],
+           stdout=subprocess.DEVNULL) -> list[Controller]:
     """
     对pids中的每一个进程注入dll
     
     Args:
         pids: 所有process id
+        stdout: inject程序标准输出流, 默认丢弃
     Returns:
         所有进程的Controller对象组成的列表
     """
     current_dir = os.getcwd()
-    os.chdir(os.path.dirname(__file__))
-    dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
-    s = f'..\\bin\\rp_injector.exe \"{dll_path}\" '
-    s += ' '.join(str(i) for i in pids)
     try:
-        subprocess.run(s)
-    except Exception as e:
-        raise e
+        os.chdir(os.path.dirname(__file__))
+        dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
+        s = f'..\\bin\\rp_injector.exe \"{dll_path}\" '
+        s += ' '.join(str(i) for i in pids)
+        subprocess.run(s, stdout=stdout)
     finally:
         os.chdir(current_dir)
     return [Controller(pid) for pid in pids]
@@ -69,7 +72,7 @@ def close_by_pids(pids: Iterable[int]) -> None:
         os.kill(pid, signal.SIGTERM)
 
 
-class InjectedGame:
+class InjectedGame(AbstractContextManager):
     """
     描述被注入游戏的类
 
@@ -117,102 +120,13 @@ class InjectedGame:
         else:
             raise TypeError("the parameter should be int, str or Controller instance")
 
-    def __enter__(self):
-        return self
-
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.controller.end()
-        if self._close_when_exit:
+        if self._close_when_exit and exc_type is not ControllerError:
             close_by_pids((self.controller.pid,))
 
-    def enter_level(self, level_num: int, look_for_saved_game: bool = False) -> GameBoard:
-        """
-        进入游戏, 返回GameBoard对象.
 
-        Args:
-            level_num: 关卡对应数字
-            look_for_saved_game: 是否尝试读档, **请切记默认情况会毁坏你原有的关卡存档!**
-        Returns:
-            GameBoard对象
-        Raises:
-            RuntimeError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
-        """
-        code = f"""
-            push esi;
-            mov esi, [{0x6a9ec0}];
-            mov eax, [esi + {0x7fc}];
-            test eax, eax;
-            jz LCompleteLoading;
-            cmp eax, 1;  // main screen
-            je LDeleteGameSelector;
-            cmp eax, 7;  // challenge selector screen
-            je LDeleteChallengeScreen;
-            mov edx, [esi + {0x768}];
-            test edx, edx;  // have Board
-            jnz LNewBoard;
-            LError:
-            mov [{self.controller.result_address}], eax;
-            pop esi;
-            ret;
-            
-            LDeleteChallengeScreen:
-            call 0x44fd00;  // LawnApp::KillChallengeScreen(esi = LawnApp* this)
-            jmp LPreNewGame;
-            
-            LNewBoard:
-            mov cl, [edx + {0x5760}]
-            mov [esi + {0x88c}], cl
-            jmp LPreNewGame;
-            
-            LCompleteLoading:
-            mov ecx, esi;
-            call {0x452cb0}; // LawnApp::LoadingCompleted(ecx = LawnApp* this)
-            
-            LDeleteGameSelector:
-            call {0x44f9e0}; // LawnApp::KillGameSelector(esi = LawnApp* this)
-            
-            LPreNewGame:
-            push {int(look_for_saved_game)};
-            push {level_num};
-            call 0x44f560;  // LawnApp::PreNewGame
-            xor eax, eax;
-            mov [{self.controller.result_address}], eax;
-            pop esi;
-            ret;"""
-        with ConnectedContext(self.controller, False) as ctler:
-            if ctler.read_bool([0x6a9ec0, 0x76c]):
-                ctler.end()
-                while not ctler.read_bool([0x6a9ec0, 0x76c, 0xa1]):  # 是否加载成功bool, thanks for ghast
-                    time.sleep(0.1)
-                ctler.start()
-            asm.run(code, ctler)
-            ctler.skip_frames()
-            ret = get_board(ctler)
-            
-        if self.controller.result_i32:
-            raise RuntimeError("this function should be used at loading screen, "
-                               "main selector screen, challenge selector screen or in the game"
-                               f"while the current screen num is {self.controller.result_i32}")
-        return ret
-
-
-def enter_ize(game: InjectedGame) -> GameBoard:
-    """
-    进入ize关卡.
-
-    Args:
-        game: 被注入的游戏对象
-    Returns:
-        进入的关卡, GameBoard对象
-    """
-    with ConnectedContext(game.controller) as ctler:
-        board = game.enter_level(70)
-        board.remove_cutscene_zombie()
-        ctler.skip_frames()
-    return board
-
-
-class ConnectedContext:
+class ConnectedContext(ContextDecorator):
     """
     创造已连接游戏的上下文
 
@@ -240,6 +154,8 @@ class ConnectedContext:
         return ctler
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is ControllerError:
+            return
         ctler = self.controller
         if self.ensure_jump_frame is not None:
             if self._is_jumping:
@@ -250,3 +166,73 @@ class ConnectedContext:
             ctler.end()
         else:
             ctler.start()
+
+
+def enter_level(controller: Controller, game_mode: int, look_for_saved_game: bool = False) -> None:
+    """
+    进入游戏关卡
+
+    Args:
+        controller: 目标游戏的controller
+        game_mode: 关卡对应数字
+        look_for_saved_game: 是否尝试读档, **请切记默认情况会毁坏你原有的关卡存档!**
+    Raises:
+        PvzStatusError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
+        ControllerError: 若Controller对象未连接游戏则抛出
+    """
+    code = f"""
+        push esi
+        mov esi, [{0x6a9ec0}]
+        mov eax, [esi + {0x7fc}]
+        test eax, eax
+        jz LCompleteLoading
+        cmp eax, 1  // main screen
+        je LDeleteGameSelector
+        cmp eax, 7  // challenge selector screen
+        je LDeleteChallengeScreen
+        mov edx, [esi + {0x768}]
+        test edx, edx  // have Board
+        jnz LNewBoard
+        LError:
+        mov [{controller.result_address}], eax
+        pop esi
+        ret
+        
+        LDeleteChallengeScreen:
+        call {0x44fd00}  // LawnApp::KillChallengeScreen(esi = LawnApp* this)
+        jmp LPreNewGame
+        
+        LNewBoard:
+        mov cl, [edx + {0x5760}]
+        mov [esi + {0x88c}], cl  // deal with yeti
+        jmp LPreNewGame
+        
+        LCompleteLoading:
+        mov ecx, esi
+        call {0x452cb0}  // LawnApp::LoadingCompleted(ecx = LawnApp* this)
+        
+        LDeleteGameSelector:
+        call {0x44f9e0}  // LawnApp::KillGameSelector(esi = LawnApp* this)
+        
+        LPreNewGame:
+        push {int(look_for_saved_game)}
+        push {game_mode}
+        call {0x44f560}  // LawnApp::PreNewGame
+        xor eax, eax;
+        mov [{controller.result_address}], eax;
+        pop esi;
+        ret;"""
+    with ConnectedContext(controller, False) as ctler:
+        if ctler.read_bool(0x6a9ec0, 0x76c):
+            ctler.end()
+            while not ctler.read_bool(0x6a9ec0, 0x76c, 0xa1):  # 是否加载成功bool, thanks for ghast
+                if not ctler.global_connected():
+                    raise ControllerError("global hook not connected")
+                time.sleep(0.1)
+            ctler.start()
+        asm.run(code, ctler)
+        ctler.skip_frames()
+    if controller.result_i32:
+        raise PvzStatusError("this function should be used at loading screen, "
+                             "main selector screen, challenge selector screen or in the game"
+                             f"while the current screen num is {controller.result_i32}")

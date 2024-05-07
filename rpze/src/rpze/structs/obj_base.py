@@ -8,6 +8,7 @@ import typing
 from enum import IntEnum
 
 from ..basic import asm
+from ..basic.exception import PvzStatusError
 from ..rp_extend import Controller
 
 
@@ -36,7 +37,7 @@ class ObjBase(abc.ABC):
         self.base_ptr = base_ptr
         self.controller = ctler
 
-    OBJ_SIZE: int = NotImplemented
+    OBJ_SIZE: typing.ClassVar[int] = NotImplemented
     """对应pvz类在pvz中的大小, 必须在所有非抽象子类中赋值"""
 
     def __eq__(self, other: typing.Self) -> bool:
@@ -73,138 +74,139 @@ class OffsetProperty(property):
     def __init__(self, fget, fset, fdel, doc, offset):
         super().__init__(fget, fset, fdel, None)
         self.__doc__ = doc
+        self.__objclass__ = ObjBase
         self.offset = offset
 
 
 # property factories 用于生成ObjBase对象在pvz内的属性
 def property_bool(offset: int, doc: str):
     def _get(self: ObjBase) -> bool:
-        return self.controller.read_bool([self.base_ptr + offset])
+        return self.controller.read_bool(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: bool):
-        self.controller.write_bool(value, [self.base_ptr + offset])
+        self.controller.write_bool(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "bool: " + doc, offset)
 
 
 def property_i8(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
-        return self.controller.read_i8([self.base_ptr + offset])
+        return self.controller.read_i8(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: int):
-        self.controller.write_i8(value, [self.base_ptr + offset])
+        self.controller.write_i8(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_i16(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
-        return self.controller.read_i16([self.base_ptr + offset])
+        return self.controller.read_i16(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: int):
-        self.controller.write_i16(value, [self.base_ptr + offset])
+        self.controller.write_i16(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_i32(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
-        return self.controller.read_i32([self.base_ptr + offset])
+        return self.controller.read_i32(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: int):
-        self.controller.write_i32(value, [self.base_ptr + offset])
+        self.controller.write_i32(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_i64(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
-        return self.controller.read_i64([self.base_ptr + offset])
+        return self.controller.read_i64(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: int):
-        self.controller.write_i64(value, [self.base_ptr + offset])
+        self.controller.write_i64(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_u8(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
-        return self.controller.read_u8([self.base_ptr + offset])
+        return self.controller.read_u8(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: int):
-        self.controller.write_u8(value, [self.base_ptr + offset])
+        self.controller.write_u8(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_u16(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
-        return self.controller.read_u16([self.base_ptr + offset])
+        return self.controller.read_u16(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: int):
-        self.controller.write_u16(value, [self.base_ptr + offset])
+        self.controller.write_u16(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_u32(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
-        return self.controller.read_u32([self.base_ptr + offset])
+        return self.controller.read_u32(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: int):
-        self.controller.write_u32(value, [self.base_ptr + offset])
+        self.controller.write_u32(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_u64(offset: int, doc: str):
     def _get(self: ObjBase) -> int:
-        return self.controller.read_u64([self.base_ptr + offset])
+        return self.controller.read_u64(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: int):
-        self.controller.write_u64(value, [self.base_ptr + offset])
+        self.controller.write_u64(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
 def property_f32(offset: int, doc: str):
     def _get(self: ObjBase) -> float:
-        return self.controller.read_f32([self.base_ptr + offset])
+        return self.controller.read_f32(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: float):
-        self.controller.write_f32(value, [self.base_ptr + offset])
+        self.controller.write_f32(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
 def property_f64(offset: int, doc: str):
     def _get(self: ObjBase) -> float:
-        return self.controller.read_f64([self.base_ptr + offset])
+        return self.controller.read_f64(self.base_ptr + offset)
 
     def _set(self: ObjBase, value: float):
-        self.controller.write_f64(value, [self.base_ptr + offset])
+        self.controller.write_f64(value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
 def property_int_enum(offset: int, cls: type[IntEnum], doc: str):
-    def _get(self: ObjBase) -> cls:
-        return cls(self.controller.read_i32([self.base_ptr + offset]))
+    def _get(self: ObjBase):
+        return cls(self.controller.read_i32(self.base_ptr + offset))
 
-    def _set(self: ObjBase, value: cls):
-        self.controller.write_i32(int(value), [self.base_ptr + offset])
+    def _set(self: ObjBase, value: IntEnum):
+        self.controller.write_i32(value.value, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 
 
 def property_obj(offset: int, cls: type[ObjBase], doc: str):
-    def _get(self: ObjBase) -> cls:
-        return cls(self.controller.read_i32([self.base_ptr + offset]), self.controller)
+    def _get(self: ObjBase):
+        return cls(self.controller.read_i32(self.base_ptr + offset), self.controller)
 
-    def _set(self: ObjBase, value: cls):
+    def _set(self: ObjBase, value: ObjBase):
         if self.controller != value.controller:
             raise ValueError("cannot assign an object from another controller")
-        self.controller.write_i32(value.base_ptr, [self.base_ptr + offset])
+        self.controller.write_i32(value.base_ptr, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 
@@ -230,23 +232,13 @@ class ObjId(ObjBase):
             val: 另一个ObjId对象或(index, rank)一样的可解包对象
         Returns:
             "表示相同对象"返回True
-        Raises:
-            TypeError: val不是ObjId对象或可解包对象
-            ValueError: 可解包不是两个元素
         """
         if isinstance(val, ObjId):
-            return ((self.controller.read_u32([self.base_ptr]) ==
-                     val.controller.read_u32([val.base_ptr]))
+            return ((self.controller.read_u32(self.base_ptr) ==
+                     val.controller.read_u32(val.base_ptr))
                     and self.controller == val.controller)
-        try:
-            index, rank = val
-        except TypeError as te:
-            raise TypeError("ObjId can only compare with another ObjId or"
-                            "an unpack-able object like (index, rank), "
-                            f"not {type(val).__name__} instance") from te
-        except ValueError as ve:
-            raise ValueError("unpack-able val should have 2 elements (index, rank)") from ve
-        return self.controller.read_u32([self.base_ptr]) == ((rank << 16) | index)
+        index, rank = val
+        return self.controller.read_u32(self.base_ptr) == ((rank << 16) | index)
 
     def __ne__(self, val: typing.Self | tuple[int, int]) -> bool:
         return not (self.__eq__(val))
@@ -267,10 +259,10 @@ class ObjNode(ObjBase, abc.ABC):
         super().__init__(base_ptr, ctler)
         self.id = ObjId(base_ptr + self.OBJ_SIZE - 4, ctler)
 
-    ITERATOR_FUNC_ADDRESS: int = NotImplemented
+    ITERATOR_FUNC_ADDRESS: typing.ClassVar[int] = NotImplemented
     """返回pvz中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
-    ITERATOR_P_BOARD_REG: str = "edx"
+    ITERATOR_P_BOARD_REG: typing.ClassVar[str] = "edx"
     """迭代对象函数用于存储Board指针的寄存器, reanimation和粒子系统为eax, 其他为edx"""
 
     is_dead: OffsetProperty = NotImplemented
@@ -303,7 +295,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         Returns:
             最大时对象数
         """
-        return self.controller.read_i32([self.base_ptr + 4])
+        return self.controller.read_i32(self.base_ptr + 4)
 
     def at(self, index: int) -> _T:
         """
@@ -316,7 +308,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         """
 
     @typing.overload
-    def __getitem__(self, index: int, /) -> _T:
+    def __getitem__(self, index: typing.SupportsIndex, /) -> _T:
         """
         返回index对应下标的元素
 
@@ -362,11 +354,11 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         return self.__invert__()
 
     @typing.overload
-    def find(self, index: int | ObjId, /) -> _T | None:
+    def find(self, index: typing.SupportsIndex | ObjId, /) -> _T | None:
         """
         通过index查找对象
 
-        用int查找时, 未回收对象返回T.
+        用SupportsIndex查找时, 未回收对象返回T.
         用ObjId查找时, 在对应index位置对象rank相同时返回T.
 
         Args:
@@ -404,9 +396,9 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         在所有对象都被回收时调用. 让本对象之后申请对象从0开始申请
 
         Returns:
-            返回自己
+            self
         Raises:
-            RuntimeError: 不是所有对象都被回收时候抛出
+            PvzStatusError: 当有对象未回收时抛出
         """
 
     @abc.abstractmethod
@@ -415,7 +407,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         删除存活的所有对象.
 
         Returns:
-            返回自己
+            self
         """
 
     def set_next_idx(self, idx: int) -> typing.Self:
@@ -428,7 +420,7 @@ class ObjList(ObjBase, c_abc.Sequence[_T], abc.ABC):
         Args:
             idx: 下一个对象的编号
         Returns:
-            返回自己.
+            self
         Raises:
             ValueError: idx不合法或idx所在对象未回收时抛出.
         """
@@ -458,32 +450,31 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
             self._current_ptr = self._controller.result_u32
             return node_cls(self._current_ptr, self._controller)
 
-        def __iter__(self):
+        def __iter__(self) -> typing.Self:
             return self
 
     class _ObjListImplement(ObjList[_T], abc.ABC):
         def __init__(self, base_ptr: int, ctler: Controller):
             super().__init__(base_ptr, ctler)
-            self._array_base_ptr = ctler.read_u32([base_ptr])
+            self._array_base_ptr = ctler.read_u32(base_ptr)
             self._code = f"""
-                push esi;
-                mov esi, [0x6a9ec0];
+                push esi
+                mov esi, [0x6a9ec0]
                 mov {node_cls.ITERATOR_P_BOARD_REG}, [esi + 0x768]
-                mov esi, {self.controller.result_address};
-                call {node_cls.ITERATOR_FUNC_ADDRESS};
-                mov [esi + 4], al;
-                pop esi;
-                ret;"""  # 可恶的reg优化
+                mov esi, {self.controller.result_address}
+                call {node_cls.ITERATOR_FUNC_ADDRESS}
+                mov [esi + 4], al
+                pop esi
+                ret"""  # 可恶的reg优化
             self._iterate_func_asm = None
 
         def at(self, index: int) -> _T:
             return node_cls(self._array_base_ptr + node_cls.OBJ_SIZE * index, self.controller)
 
         def find(self, *args) -> _T | None:
-            match len(args):
-                case 1:
-                    index = args[0]
-                    if isinstance(index, int):
+            match args:
+                case (index,):
+                    if isinstance(index, typing.SupportsIndex):
                         try:
                             target = self[index]
                         except IndexError:
@@ -493,19 +484,19 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                         target = self.at(index.index)
                         return target if target.id == index else None
                     raise TypeError("index must be int or ObjId instance")
-                case 2:
-                    idx, rank = args
+                case (idx, rank):
                     try:
                         target = self[idx]
                     except IndexError:
                         return None
                     return target if target.id.rank == rank else None
-                case other:
+                case _:
                     raise ValueError("the function should have 1 or 2 parameters, "
-                                     f"not {other} parameters")
+                                     f"not {len(args)} parameters")
 
-        def __getitem__(self, index: int | slice):
-            if isinstance(index, int):
+        def __getitem__(self, index: typing.SupportsIndex | slice):
+            if isinstance(index, typing.SupportsIndex):
+                index = index.__index__()
                 i = index if index >= 0 else index + len(self)
                 if i >= len(self) or i < 0:
                     raise IndexError("sequence index out of range")
@@ -520,9 +511,10 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                 self._iterate_func_asm = asm.decode(self._code, self.controller.asm_address)
             return _ObjIterator(self.controller, self._iterate_func_asm)
 
-        def reset_stack(self):
+        def reset_stack(self) -> typing.Self:
             if self.obj_num:
-                raise RuntimeError(f"cannot reset stack when there are still {self.obj_num} objects alive")
+                raise PvzStatusError(
+                    f"cannot reset stack when there are still {self.obj_num} objects alive")
             next_idx = self.next_index
             self.next_index = 0
             length = self.max_length

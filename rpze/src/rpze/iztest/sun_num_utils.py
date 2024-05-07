@@ -1,4 +1,9 @@
-from ..basic.gridstr import gridstr, get_grid_str
+# -*- coding: utf_8 -*-
+"""
+ize 漏阳光相关函数
+"""
+from ..basic.gridstr import GridStr, get_grid_str
+from ..rp_extend import RpBaseException
 from ..structs.game_board import GameBoard, get_board
 from ..structs.plant import Plant, PlantType
 
@@ -16,7 +21,7 @@ def get_sunflower_remaining_sun(sunflower: Plant) -> int:
     Returns:
         向日葵剩余阳光值
     Raises:
-        RuntimeError: 出现未知的行为时
+        RpBaseException: 出现未知的行为时
     """
     if sunflower.is_dead:
         return 0
@@ -31,10 +36,10 @@ def get_sunflower_remaining_sun(sunflower: Plant) -> int:
             hi = mid - 1
         else:
             lo = mid + 1
-    raise RuntimeError("unexpected behaviour!")
+    raise RpBaseException("unexpected behaviour!")
 
 
-def get_all_remaining_suns(board: GameBoard | None = None) -> dict[gridstr, int]:
+def get_all_remaining_suns(board: GameBoard | None = None) -> dict[GridStr, int]:
     """
     获取所有向日葵剩余阳光
 
@@ -46,4 +51,4 @@ def get_all_remaining_suns(board: GameBoard | None = None) -> dict[gridstr, int]
     if board is None:
         board = get_board()
     return {get_grid_str(sf.row, sf.col): get_sunflower_remaining_sun(sf)
-            for sf in ~board.plant_list if sf.type_ == PlantType.sunflower}
+            for sf in ~board.plant_list if sf.type_ is PlantType.sunflower}

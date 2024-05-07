@@ -1,7 +1,16 @@
 ﻿#pragma once
 #include "pch.h"
 
-inline static HANDLE __hExecutableHeap = HeapCreate(HEAP_CREATE_ENABLE_EXECUTE, 0, 0);
+class __HeapWrapper
+{
+	HANDLE hHeap;
+public:
+	HANDLE heap() const { return hHeap; }
+	__HeapWrapper(DWORD flOptions) : hHeap(HeapCreate(flOptions, 0, 0)) {}
+	~__HeapWrapper() { HeapDestroy(hHeap); }
+};
+
+inline static __HeapWrapper __hExecutableHeap(HEAP_CREATE_ENABLE_EXECUTE);
 
 template <typename T>
 class ExecutableUniquePtr
@@ -23,7 +32,7 @@ public:
 };
 
 template <typename T>
-ExecutableUniquePtr<T>::ExecutableUniquePtr(size_t size) : ptr(static_cast<T*>(HeapAlloc(__hExecutableHeap, 0, size)))
+ExecutableUniquePtr<T>::ExecutableUniquePtr(size_t size) : ptr(static_cast<T*>(HeapAlloc(__hExecutableHeap.heap(), 0, size)))
 {
 	if (!ptr) throw std::bad_alloc();
 }
@@ -32,7 +41,7 @@ template <typename T>
 ExecutableUniquePtr<T>& ExecutableUniquePtr<T>::operator=(ExecutableUniquePtr&& other) noexcept
 {
 	if (this != &other) {
-		HeapFree(__hExecutableHeap, 0, ptr);
+		HeapFree(__hExecutableHeap.heap(), 0, ptr);
 		ptr = other.ptr;
 		other.ptr = nullptr;
 	}
@@ -42,5 +51,5 @@ ExecutableUniquePtr<T>& ExecutableUniquePtr<T>::operator=(ExecutableUniquePtr&& 
 template <typename T>
 ExecutableUniquePtr<T>::~ExecutableUniquePtr()
 {
-	HeapFree(__hExecutableHeap, 0, ptr);
+	HeapFree(__hExecutableHeap.heap(), 0, ptr);
 }

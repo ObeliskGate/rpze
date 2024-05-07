@@ -53,7 +53,6 @@ public:
 	volatile const uint32_t& memoryNum() const { return getRef<uint32_t>(20); }
 
 
-#undef max
 	static constexpr size_t OFFSETS_LEN = 16;
 	static constexpr uint32_t OFFSET_END = std::numeric_limits<uint32_t>::max();
 	// 读写内存时的偏移, 如{0x6a9ec0, 0x768, OFFSET_END, ...}, 遇到OFFSET_END停止读取

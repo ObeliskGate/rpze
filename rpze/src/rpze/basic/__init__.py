@@ -1,1 +1,4 @@
-from .inject import InjectedGame, enter_ize
+# -*- coding: utf_8 -*-
+"""
+控制游戏基础功能
+"""

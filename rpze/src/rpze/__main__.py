@@ -1,3 +1,7 @@
+# -*- coding: utf_8 -*-
+"""
+验证安装用
+"""
 import argparse
 
 if __name__ == "__main__":
@@ -8,7 +12,7 @@ if __name__ == "__main__":
         print(f"your game path is {p}, "
               f"remember that only 1.0.0.1051_EN on pvz.tools is officially supported")
         try:
-            from .basic import InjectedGame, enter_ize
+            from .basic.inject import InjectedGame
             from .examples.botanical_clock import botanical_clock
         except ImportError as ie:
             raise ImportError("maybe the package is not fully installed?") from ie
@@ -17,5 +21,4 @@ if __name__ == "__main__":
         except (PermissionError, IOError, FileNotFoundError) as e:
             raise IOError("maybe the path is wrong?") from e
         with game:
-            enter_ize(game)
             botanical_clock(game.controller, False)

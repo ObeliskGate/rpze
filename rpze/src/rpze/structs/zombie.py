@@ -9,8 +9,10 @@ from . import obj_base as ob
 from ..basic import asm
 
 
-# 数据结构和pvz_emulator命名保持一致
 class ZombieType(IntEnum):
+    """
+    僵尸类型
+    """
     none = -1
     zombie = 0x0
     flag = 0x1
@@ -40,6 +42,9 @@ class ZombieType(IntEnum):
 
 
 class ZombieStatus(IntEnum):
+    """
+    僵尸状态
+    """
     walking = 0x0
     dying = 0x1
     dying_from_instant_kill = 0x2
@@ -108,6 +113,9 @@ class ZombieStatus(IntEnum):
 
 
 class ZombieAction(IntEnum):
+    """
+    僵尸动作类型
+    """
     none = 0x0
     entering_pool = 0x1
     leaving_pool = 0x2
@@ -118,6 +126,9 @@ class ZombieAction(IntEnum):
 
 
 class ZombieAccessoriesType1(IntEnum):
+    """
+    一类防具类型
+    """
     none = 0x0
     roadcone = 0x1
     bucket = 0x2
@@ -126,6 +137,9 @@ class ZombieAccessoriesType1(IntEnum):
 
 
 class ZombieAccessoriesType2(IntEnum):
+    """
+    二类防具类型
+    """
     none = 0x0
     screen_door = 0x1
     newspaper = 0x2
@@ -133,6 +147,9 @@ class ZombieAccessoriesType2(IntEnum):
 
 
 class Zombie(ob.ObjNode):
+    """
+    僵尸对象
+    """
     ITERATOR_FUNC_ADDRESS = 0x41C8F0
 
     OBJ_SIZE = 0x15c
@@ -204,6 +221,8 @@ class Zombie(ob.ObjNode):
 
     butter_cd = ob.property_i32(0xb0, "黄油固定倒计时")
 
+    freeze_cd = ob.property_i32(0xb4, "冻结倒计时")
+
     is_dead = ob.property_bool(0xec, '是否"彻底"死亡, 即濒死时此条为False')
 
     is_not_dying = ob.property_bool(0xba, "不在濒死状态时为True")
@@ -223,41 +242,44 @@ class Zombie(ob.ObjNode):
             return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"
         return "dead zombie"
 
-    def die_no_loot(self):
+    def die_no_loot(self) -> None:
         """
         令僵尸消失，移除僵尸附件和动画，同时处理除掉落外的僵尸消失相关事件（会触发过关奖品掉落的判定）。
         """
         code = f"""
-            mov ecx, {self.base_ptr};
-            call {0x530510}; // Zombie::DieNoLoot
-            ret;"""
+            mov ecx, {self.base_ptr}
+            call {0x530510} // Zombie::DieNoLoot
+            ret"""
         asm.run(code, self.controller)
 
 
 class ZombieList(ob.obj_list(Zombie)):
+    """
+    僵尸DataArray
+    """
     def free_all(self) -> Self:
         code = f"""
-            push edi;
-            push esi;
-            mov eax, [0x6a9ec0];
-            mov edi, [eax + 0x768];
-            mov esi, {self.controller.result_address};
-            xor edx, edx;
-            mov [esi], edx;
+            push edi
+            push esi
+            mov eax, [0x6a9ec0]
+            mov edi, [eax + 0x768]
+            mov esi, {self.controller.result_address}
+            xor edx, edx
+            mov [esi], edx
             LIterate:
-                mov {Zombie.ITERATOR_P_BOARD_REG}, edi;
-                call {Zombie.ITERATOR_FUNC_ADDRESS};  // Board::IterateZombie
-                test al, al;
-                jz LFreeAll;
+                mov {Zombie.ITERATOR_P_BOARD_REG}, edi
+                call {Zombie.ITERATOR_FUNC_ADDRESS}  // Board::IterateZombie
+                test al, al
+                jz LFreeAll
                 mov ecx, [esi]
-                call {0x530510};  // Zombie::DieNoLoot
-                jmp LIterate;
+                call {0x530510}  // Zombie::DieNoLoot
+                jmp LIterate
                 
             LFreeAll:
                 mov edi, {self.base_ptr}
-                call {0x41e4d0};  // DataArray<Zombie>::DataArrayFreeAll
-                pop esi;
-                pop edi;
-                ret;"""
+                call {0x41e4d0}  // DataArray<Zombie>::DataArrayFreeAll
+                pop esi
+                pop edi
+                ret"""
         asm.run(code, self.controller)
         return self

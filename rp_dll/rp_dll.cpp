@@ -72,8 +72,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 	{
 		__asm
 		{
-			mov edi, 0x6a9ec0
-			mov edi, [edi]
+			mov edi, ds:[0x6a9ec0]
 			inc dword ptr [edi + 0x838] // mjClock++
 			mov esi, [edi + 0x768]
 			mov edx, 0x41BAD0  // Board::ProcessDeleteQueue

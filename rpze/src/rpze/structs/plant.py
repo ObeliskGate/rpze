@@ -8,10 +8,12 @@ from enum import IntEnum
 from . import obj_base as ob
 from .obj_base import ObjNode
 from ..basic import asm
-from ..basic.gridstr import parse_grid_str, gridstr
 
 
 class PlantType(IntEnum):
+    """
+    植物类型
+    """
     pea_shooter = 0x0
     sunflower = 0x1
     cherry_bomb = 0x2
@@ -60,10 +62,13 @@ class PlantType(IntEnum):
     gold_magnet = 0x2D
     spikerock = 0x2E
     cob_cannon = 0x2F
-    imitater = 0x30
+    imitator = 0x30
 
 
 class PlantStatus(IntEnum):
+    """
+    植物状态
+    """
     idle = 0x0
     wait = 0x1
     work = 0x2
@@ -95,19 +100,22 @@ class PlantStatus(IntEnum):
     cactus_tall_idle = 0x20
     cactus_get_short = 0x21
     tangle_kelp_grab = 0x22
-    cob_cannon_unaramed_idle = 0x23
+    cob_cannon_unarmed_idle = 0x23
     cob_cannon_charge = 0x24
     cob_cannon_launch = 0x25
     cob_cannon_armed_idle = 0x26
     kernelpult_launch_butter = 0x27
     umbrella_leaf_block = 0x28
     umbrella_leaf_shrink = 0x29
-    imitater_explode = 0x2A
+    imitator_explode = 0x2A
     flower_pot_placed = 0x2F
     lily_pad_placed = 0x30
 
 
 class Plant(ObjNode):
+    """
+    植物对象
+    """
     ITERATOR_FUNC_ADDRESS = 0x41c950
 
     OBJ_SIZE = 0x14c
@@ -167,7 +175,7 @@ class Plant(ObjNode):
         
         胆小的规律较为复杂:
             - 胆小在launch_cd == 0的时候检测身边僵尸以决定自己是不是缩头
-            - 胆小攻击基本规律同上,   同样在== 1时打出子弹
+            - 胆小攻击基本规律同上, 同样在== 1时打出子弹
             - 在不是正常站立时, 胆小个人每帧更新generate_cd = 150
         因而, 胆小在常态情况时每帧判断一次周围僵尸决定缩头, 但在攻击前兆时不判断.
         之前零度误认为胆小索敌成功到发射为25也可能源于此, 实际上还是取24更为合适.
@@ -191,18 +199,21 @@ class Plant(ObjNode):
             return f"#{self.id.index} {self.type_.name} at {self.row + 1}-{self.col + 1}"
         return "dead plant"
 
-    def die(self):
+    def die(self) -> None:
         """
         令自己死亡
         """
         code = f"""
-            push {self.base_ptr};
-            call {0x4679b0};  // Plant::Die
-            ret;"""
+            push {self.base_ptr}
+            call {0x4679b0}  // Plant::Die
+            ret"""
         asm.run(code, self.controller)
 
 
 class PlantList(ob.obj_list(Plant)):
+    """
+    植物DataArray
+    """
     def get_by_grid(self, row: int, col: int) -> Plant | None:
         """
         通过row, col找到对应植物
@@ -216,78 +227,62 @@ class PlantList(ob.obj_list(Plant)):
             对应位置编号最小的植物, 找不到返回None
         """
         code = f"""
-            push esi;
-            push edi;
-            mov esi, {self.controller.result_address};
-            xor eax, eax;
-            mov [esi], eax;
-            mov eax, [0x6a9ec0];
+            push esi
+            push edi
+            mov esi, {self.controller.result_address}
+            xor eax, eax
+            mov [esi], eax
+            mov eax, [0x6a9ec0]
             mov edi, [eax + 0x768]
 
             LIterate:
-                mov {Plant.ITERATOR_P_BOARD_REG}, edi;
-                call {Plant.ITERATOR_FUNC_ADDRESS};  // Board::IteratePlant
-                test al, al;
-                jz LNoResult;
-                mov eax, [esi];  // eax = Plant*
-                cmp dword ptr [eax + {Plant.row.offset}], {row};
-                jne LIterate;
-                cmp dword ptr [eax + {Plant.col.offset}], {col};
-                jne LIterate;
-                pop edi;
-                pop esi;
-                ret;
+                mov {Plant.ITERATOR_P_BOARD_REG}, edi
+                call {Plant.ITERATOR_FUNC_ADDRESS}  // Board::IteratePlant
+                test al, al
+                jz LNoResult
+                mov eax, [esi]  // eax = Plant*
+                cmp dword ptr [eax + {Plant.row.offset}], {row}
+                jne LIterate
+                cmp dword ptr [eax + {Plant.col.offset}], {col}
+                jne LIterate
+                pop edi
+                pop esi
+                ret
 
             LNoResult:
-                xor eax, eax;
-                mov [esi], eax;
-                pop edi;
-                pop esi;
-                ret;"""
+                xor eax, eax
+                mov [esi], eax
+                pop edi
+                pop esi
+                ret"""
         asm.run(code, self.controller)
         if (result := self.controller.result_u32) != 0:
             return Plant(result, self.controller)
         return None
 
-    @typing.overload
-    def __getitem__(self, grid: gridstr, /) -> Plant | None:
-        """
-        通过grid_str坐标获取植物
-
-        Args:
-            grid: 格子字符串
-        Returns:
-            对应位置编号最小的植物, 找不到返回None
-        """
-
-    def __getitem__(self, item):
-        if isinstance(item, str):
-            return self.get_by_grid(*parse_grid_str(item))
-        return super().__getitem__(item)
-
     def free_all(self) -> typing.Self:
         code = f"""
-            push esi;
-            push edi;
-            mov eax, [0x6a9ec0];
-            mov edi, [eax + 0x768];
-            mov esi, {self.controller.result_address};
-            xor edx, edx;
-            mov [esi], edx;  // mov [esi], 0 is invalid
+            push esi
+            push edi
+            mov eax, [0x6a9ec0]
+            mov edi, [eax + 0x768]
+            mov esi, {self.controller.result_address}
+            xor edx, edx
+            mov [esi], edx  // mov [esi], 0 is invalid
             LIterate:
-                mov {Plant.ITERATOR_P_BOARD_REG}, edi;
-                call {Plant.ITERATOR_FUNC_ADDRESS};  // Board::IteratePlant
-                test al, al;
-                jz LFreeAll;
-                push dword ptr [esi];
-                call {0x4679b0};  // Plant::Die
-                jmp LIterate;
+                mov {Plant.ITERATOR_P_BOARD_REG}, edi
+                call {Plant.ITERATOR_FUNC_ADDRESS}  // Board::IteratePlant
+                test al, al
+                jz LFreeAll
+                push dword ptr [esi]
+                call {0x4679b0}  // Plant::Die
+                jmp LIterate
                 
             LFreeAll:
-                mov eax, {self.base_ptr};
-                call {0x41E590}; // DataArray<Plant>::DataArrayFreeAll
-                pop edi;
-                pop esi;
-                ret;"""
+                mov eax, {self.base_ptr}
+                call {0x41E590} // DataArray<Plant>::DataArrayFreeAll
+                pop edi
+                pop esi
+                ret"""
         asm.run(code, self.controller)
         return self

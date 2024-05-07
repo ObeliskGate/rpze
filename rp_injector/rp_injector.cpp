@@ -38,12 +38,14 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     {
         std::cerr << "create v-memory failed" << std::endl;
         CloseHandle(hProc);
+        VirtualFreeEx(hProc, pMemory, 0, MEM_RELEASE);
         return false;
     }
 
     if (!WriteProcessMemory(hProc, pMemory, dllPath, size, NULL)) {
         std::cerr << "write failed" << std::endl;
         CloseHandle(hProc);
+        VirtualFreeEx(hProc, pMemory, 0, MEM_RELEASE);
         return false;
     }
 
@@ -52,6 +54,7 @@ bool injectDll(DWORD pid, LPCSTR dllPath)
     {
         std::cerr << "create remote thread failed" << std::endl;
         CloseHandle(hProc);
+        VirtualFreeEx(hProc, pMemory, 0, MEM_RELEASE);
         return false;
     }
 
