@@ -70,7 +70,7 @@ def _get_latest_whl(directory):
         return latest_file
     raise RuntimeError("No .whl file found in the directory")
 
-def build(compile=True):
+def build(compile=False):
     os.chdir(os.path.dirname(__file__))
     platform = "x64" if sys.maxsize > 2**32 else "x86"
     if compile:
@@ -98,20 +98,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="rpze build script")
 
     # 添加 --config 参数，带一个可选的值
-    parser.add_argument('--config', nargs='?', help='Configuration file (optional)')
-    # 添加 --build 参数，带一个可选的值
-    parser.add_argument('--build', nargs='?', default="False", help='Build type (optional)')
+    parser.add_argument('--config', nargs='?', const=None, default=NotImplemented, help='Configuration file (optional)')
+    # 添加 --build 参数
+    parser.add_argument('--build', nargs='?', const=False, default=NotImplemented, help='Build type (optional)')
 
     # 解析命令行参数
     args = parser.parse_args()
 
     # 打印参数值
-    if args.config:
+    if args.config is not NotImplemented:
         config(args.config)
     else:
-        print("No config file specified.")
+        print("No config lib file file specified.")
 
-    if args.build:
+    if args.build is not NotImplemented:
         build(bool(args.build))
     else:
-        print("No build type specified.")
+        print("No build specified.")
