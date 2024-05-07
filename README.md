@@ -61,10 +61,8 @@ rpze是一个用于ize测试的框架, 旨在保持一定性能、高精度、�
 
 仅可用MSBuild编译二进制依赖. 本框架使用VS2022.
 
-Python依赖`pip install pybind11 pywin32 keystone-engine setuptools build`  
-执行`python -m pybind11 --includes` 将结果中不带`-I`的两个路径替换到./rp_extend/rp_extend.vcxproj文件中目标buildmode和Platform的`<AdditionalIncludeDirectories>`标签中, 并向该文件对应编译方式中`<AdditionalLibraryDirectories>`标签添加Python安装目录下libs文件夹. 后执行MSBuild命令指定buildmode和Platform生成项目. (可能需要手动添加目标文件夹)
-
-生成二进制依赖后, 在./rpze下执行`python -m build`即可生成对应的whl包.
+Python依赖`pip install pybind11 pywin32 keystone-engine setuptools build`   
+执行`python config.py --config`配置msbuild文件, `--build`打包生成.whl文件, 具体说明见`config.py`
 
 ## 许可
 Copyright © 2024 ObeliskGate

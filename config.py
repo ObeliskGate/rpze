@@ -6,6 +6,7 @@ import os
 import argparse
 
 def config(lib_dir=None):
+    """配置rp_extend的msbuild工程, lib_dir为Python静态库目录"""
     from pybind11 import get_include
     
     os.chdir(os.path.dirname(__file__))
@@ -51,6 +52,7 @@ def config(lib_dir=None):
 
 
 def _get_latest_whl(directory):
+    """找到最新的whl文件"""
     # 初始化变量来追踪最新的文件和时间戳
     latest_time = 0
     latest_file = None
@@ -71,6 +73,7 @@ def _get_latest_whl(directory):
     raise RuntimeError("No .whl file found in the directory")
 
 def build(compile=False):
+    """构建.whl包"""
     os.chdir(os.path.dirname(__file__))
     platform = "x64" if sys.maxsize > 2**32 else "x86"
     if compile:
@@ -98,9 +101,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="rpze build script")
 
     # 添加 --config 参数，带一个可选的值
-    parser.add_argument('--config', nargs='?', const=None, default=NotImplemented, help='Configuration file (optional)')
+    parser.add_argument('--config', nargs='?', const=None, default=NotImplemented, 
+                        help="""Configure rpze project (optional)
+                        
+                        Usage: --config [lib_dir]
+                        lib_dir: directory of Python .lib files (optional)""")
     # 添加 --build 参数
-    parser.add_argument('--build', nargs='?', const=False, default=NotImplemented, help='Build type (optional)')
+    parser.add_argument('--build', nargs='?', const=False, default=NotImplemented, 
+                        help="""Build rpze.whl (optional)
+                        
+                        Usage: --build [val]
+                        when val is not empty, compile the project. (need msbuild)""")
 
     # 解析命令行参数
     args = parser.parse_args()
@@ -109,9 +120,9 @@ if __name__ == "__main__":
     if args.config is not NotImplemented:
         config(args.config)
     else:
-        print("No config lib file file specified.")
+        print("do not configure.")
 
     if args.build is not NotImplemented:
         build(bool(args.build))
     else:
-        print("No build specified.")
+        print("do not build.")
