@@ -105,7 +105,7 @@ class GameBoard(ob.ObjBase):
             ret"""
         asm.run(code, ctler)
         view = ctler.result_mem[:16].cast("I")  # 以单个元素为u32格式读取前16字节
-        return tuple(None if it == 0 else Plant(it, ctler) for it in view)
+        return tuple(None if it == 0 else Plant(it, ctler) for it in view)  # type: ignore
 
     def new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
         """

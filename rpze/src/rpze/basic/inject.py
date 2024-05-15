@@ -21,7 +21,7 @@ def open_game(game_path: str, num: int = 1) -> list[int]:
     Args:
         game_path: 游戏路径, 绝对相对路径均可
         num: 打开的游戏数量
-    Returns:
+    Returns:e
         打开的所有游戏进程process id组成的列表, 长度为num
     """
     abs_path = os.path.abspath(game_path)
