@@ -19,7 +19,7 @@ class SharedMemory
 	T& getRef(const int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
 
 	// 返回用来read或write的指针
-	std::optional<void*> getReadWritePtr() const;
+	void* getReadWritePtr() const;
 
 public:
 	static constexpr uint32_t BUFFER_OFFSET = 1024 * 4;

@@ -32,7 +32,8 @@ public:
 };
 
 template <typename T>
-ExecutableUniquePtr<T>::ExecutableUniquePtr(size_t size) : ptr(static_cast<T*>(HeapAlloc(__hExecutableHeap.heap(), 0, size)))
+ExecutableUniquePtr<T>::ExecutableUniquePtr(size_t size) : ptr(
+	static_cast<T*>(HeapAlloc(__hExecutableHeap.heap(), 0, size)))
 {
 	if (!ptr) throw std::bad_alloc();
 }

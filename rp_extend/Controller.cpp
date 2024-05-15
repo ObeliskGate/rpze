@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "Controller.h"
 
+#include "MemoryException.h"
+
 PYBIND11_MODULE(rp_extend, m)
 {
 	py::enum_<HookPosition>(m, "HookPosition")

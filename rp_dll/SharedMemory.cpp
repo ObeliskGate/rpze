@@ -45,7 +45,7 @@ SharedMemory::~SharedMemory()
 	CloseHandle(hMapFile);
 }
 
-std::optional<void*> SharedMemory::getReadWritePtr() const
+void* SharedMemory::getReadWritePtr() const
 {
 	uint32_t ptr = getOffsets()[0];
 	for (size_t i = 1; i < OFFSETS_LEN; i++)
@@ -56,7 +56,7 @@ std::optional<void*> SharedMemory::getReadWritePtr() const
 		ptr += getOffsets()[i];
 	}
 
-	if (!ptr || ptr == OFFSET_END) return {}; // 后半个是为了解决[0]==OFFSET_END的问题
+	if (!ptr || ptr == OFFSET_END) return nullptr; // 后半个是为了解决[0]==OFFSET_END的问题
 	return reinterpret_cast<void*>(ptr);
 }
 
@@ -82,12 +82,12 @@ bool SharedMemory::readMemory() const
 	do
 	{
 		auto p = getReadWritePtr();
-		if (!p.has_value())
+		if (!p)
 		{
 			b = false;
 			break;
 		}
-		memcpy(getReadWriteVal(), *p, memoryNum());
+		CopyMemory(getReadWriteVal(), p, memoryNum());
 		b = true;
 	} while (false);
 	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
@@ -99,12 +99,12 @@ bool SharedMemory::writeMemory() const
 	bool b;
 	do {
 		auto p = getReadWritePtr();
-		if (!p.has_value())
+		if (!p)
 		{
 			b = false;
 			break;
 		}
-		memcpy(*p, getReadWriteVal(), memoryNum());
+		CopyMemory(p, getReadWriteVal(), memoryNum());
 		b = true;
 	} while (false);
 	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;

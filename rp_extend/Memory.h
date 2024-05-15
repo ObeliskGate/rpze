@@ -1,7 +1,6 @@
 #pragma once
 #include "stdafx.h"
 #include "Enums.h"
-#include "MemoryException.h"
 
 class Memory
 {
@@ -27,7 +26,7 @@ class Memory
 	void getRemoteMemoryAddress();
 
 	template <typename T>
-	std::optional<T*> getRemotePtr(const uint32_t* offsets, uint32_t len);
+	T* getRemotePtr(const uint32_t* offsets, uint32_t len);
 
 	// pvz进程id
 	DWORD pid = 0;
@@ -59,7 +58,7 @@ public:
 	static constexpr uint32_t OFFSET_END = std::numeric_limits<uint32_t>::max();
 private:
 	// 读写内存时的偏移, 如{0x6a9ec0, 0x768, OFFSET_END, ...}, 遇到OFFSET_END停止读取
-	inline uint32_t* getOffsets() { return reinterpret_cast<uint32_t*>(getPtr() + 24); }
+	uint32_t* getOffsets() { return reinterpret_cast<uint32_t*>(getPtr() + 24); }
 
 	// 占位8个字节, 读写内存时 指向值 / 结果的指针
 	void* getReadWriteVal() const { return getPtr() + BUFFER_OFFSET; }
@@ -89,7 +88,7 @@ private:
 
 
 	// 读取内存, 但是没有杂七杂八的检查
-	std::optional<volatile void*> _readMemory(uint32_t size, const uint32_t* offsets, uint32_t len);
+	volatile void* _readMemory(uint32_t size, const uint32_t* offsets, uint32_t len);
 
 	// 写入内存, 但是没有杂七杂八的检查
 	bool _writeMemory(const void* pVal, uint32_t size, const uint32_t* offsets, uint32_t len);
@@ -138,12 +137,13 @@ public:
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>
-	std::optional<T> readMemory(const uint32_t* offsets, uint32_t len);
+	std::optional<std::enable_if_t<std::is_trivial_v<T>, T>>
+		readMemory(const uint32_t* offsets, uint32_t len);
 
 	// **直接**将传入的val写入游戏指定地址
-	// 故请不要传入带有本地指针的对象
 	template<typename T>
-	bool writeMemory(T&& val, const uint32_t* offsets, uint32_t len);
+	std::enable_if_t<std::is_trivial_v<std::remove_reference_t<T>>, bool>
+		writeMemory(T&& val, const uint32_t* offsets, uint32_t len);
 
 	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, const uint32_t* offsets, uint32_t len);
 
@@ -171,7 +171,7 @@ public:
 };
 
 template <typename T>
-std::optional<T*> Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
+T* Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
 {
 	uint64_t basePtr = offsets[0];
 	for (size_t i = 1; i < len; i++)
@@ -181,7 +181,7 @@ std::optional<T*> Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
 			&basePtr, 
 			sizeof(uint32_t), 
 			nullptr);
-		if (!basePtr) return {};
+		if (!basePtr) return nullptr;
 		basePtr += offsets[i];
 	}
 	return reinterpret_cast<T*>(basePtr);
@@ -191,9 +191,9 @@ template <typename T>
 std::optional<T> Memory::_readRemoteMemory(const uint32_t* offsets, uint32_t len)
 {
 	auto remotePtr = getRemotePtr<T>(offsets, len);
-	if (!remotePtr.has_value()) return {};
+	if (!remotePtr) return {};
 	T ret;
-	ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(*remotePtr), &ret, sizeof(T), nullptr);
+	ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(remotePtr), &ret, sizeof(T), nullptr);
 	return ret;
 }
 
@@ -201,24 +201,26 @@ template <typename T>
 bool Memory::_writeRemoteMemory(T&& val, const uint32_t* offsets, uint32_t len)
 {
 	auto remotePtr = getRemotePtr<T>(offsets, len);
-	if (!remotePtr.has_value()) return false;
-	WriteProcessMemory(hPvz, reinterpret_cast<LPVOID>(*remotePtr), &val, sizeof(T), nullptr);
+	if (!remotePtr) return false;
+	WriteProcessMemory(hPvz, reinterpret_cast<LPVOID>(remotePtr), &val, sizeof(T), nullptr);
 	return true;
 }
 
 template<typename T>
-std::optional<T> Memory::readMemory(const uint32_t* offsets, uint32_t len)
+std::optional<std::enable_if_t<std::is_trivial_v<T>, T>>
+	Memory::readMemory(const uint32_t* offsets, uint32_t len)
 {
 	static_assert(sizeof(T) <= BUFFER_SIZE);
-	if (len > OFFSET_LENGTH) throw std::invalid_argument("readMemory:offsets too long");
+	if (len > OFFSET_LENGTH) throw std::invalid_argument("readMemory: offsets too long");
 	if (!hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets, len);
 	auto p = _readMemory(sizeof(T), offsets, len);
-	if (!p.has_value()) return {};
-	return *static_cast<volatile T*>(*p);
+	if (!p) return {};
+	return *static_cast<volatile T*>(p);
 }
 
 template<typename T>
-bool Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len)
+std::enable_if_t<std::is_trivial_v<std::remove_reference_t<T>>, bool>
+	Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len)
 {
 	static_assert(sizeof(T) <= BUFFER_SIZE);
 	if (len > OFFSET_LENGTH) throw std::invalid_argument("writeMemory: offsets too long");

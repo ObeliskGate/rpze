@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Memory.h"
+#include "MemoryException.h"
 
 #define __until(expr) do {} while (!(expr))
 
@@ -25,7 +26,11 @@ Memory::Memory(DWORD pid)
 		throw MemoryException(
 			("find shared memory failed: " + std::to_string(GetLastError())).c_str(), pid);
 	}
-	pBuf = MapViewOfFile(hMemory, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
+	pBuf = MapViewOfFile(hMemory, 
+		FILE_MAP_ALL_ACCESS, 
+		0, 
+		0, 
+		SHARED_MEMORY_SIZE);
 	if (pBuf == NULL)
 	{
 		throw MemoryException(
@@ -56,7 +61,7 @@ Memory::~Memory()
 	CloseHandle(hPvz);
 }
 
-std::optional<volatile void*> Memory::_readMemory(uint32_t size, const uint32_t* offsets, uint32_t len)
+volatile void* Memory::_readMemory(uint32_t size, const uint32_t* offsets, uint32_t len)
 {
 	memoryNum() = size;
 	CopyMemory(getOffsets(), offsets, sizeof(uint32_t) * len);
@@ -64,7 +69,7 @@ std::optional<volatile void*> Memory::_readMemory(uint32_t size, const uint32_t*
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	untilGameExecuted(); 
 	if (executeResult() == ExecuteResult::SUCCESS) return getReadWriteVal();
-	if (executeResult() == ExecuteResult::FAIL) return {};
+	if (executeResult() == ExecuteResult::FAIL) return nullptr;
 	throw MemoryException("_readMemory: unexpected behavior", this->pid);
 }
 
@@ -149,15 +154,15 @@ std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const ui
 	if (!isShmPrepared())
 	{
 		auto remotePtr = getRemotePtr<char[]>(offsets, len);
-		if (!remotePtr.has_value()) return {};
+		if (!remotePtr) return {};
 		auto ret = std::make_unique<char[]>(size);
-		ReadProcessMemory(hPvz, *remotePtr, ret.get(), size, nullptr);
+		ReadProcessMemory(hPvz, remotePtr, ret.get(), size, nullptr);
 		return ret;
 	}
 	auto p = _readMemory(size, offsets, len);
-	if (!p.has_value()) return {};
+	if (!p) return {};
 	auto ret = std::make_unique<char[]>(size);
-	memcpy(ret.get(), const_cast<const void*>(*p), size);
+	CopyMemory(ret.get(), const_cast<const void*>(p), size);
 	return ret;
 }
 
@@ -168,8 +173,8 @@ bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, 
 	if (!isShmPrepared())
 	{
 		auto remotePtr = getRemotePtr<char[]>(offsets, len);
-		if (!remotePtr.has_value()) return false;
-		WriteProcessMemory(hPvz, *remotePtr, in, size, nullptr);
+		if (!remotePtr) return false;
+		WriteProcessMemory(hPvz, remotePtr, in, size, nullptr);
 		return true;
 	}
 	return _writeMemory(in, size, offsets, len);
@@ -181,10 +186,9 @@ bool Memory::runCode(const char* codes, size_t len) const
 		throw std::invalid_argument("runCode: too many codes");
 	
 	if (!isShmPrepared())
-	{
 		throw MemoryException("runCode: main loop not prepared", this->pid);
-	}
-	memcpy(getAsmPtr(), codes, len);
+
+	CopyMemory(getAsmPtr(), codes, len);
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
 	untilGameExecuted();
 	if (executeResult() == ExecuteResult::SUCCESS) return true;
