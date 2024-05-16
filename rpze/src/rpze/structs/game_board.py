@@ -62,6 +62,15 @@ class GameBoard(ob.ObjBase):
     def frame_duration(self, value: int) -> None:
         self.controller.write_i32(value, 0x6a9ec0, 0x454)
 
+    @property
+    def challenge_survival_stage(self) -> int:
+        """ize flag数"""
+        return self.controller.read_i32(self._p_challenge + 0x6c)
+
+    @challenge_survival_stage.setter
+    def challenge_survival_stage(self, value: int) -> None:
+        self.controller.write_i32(value, self._p_challenge + 0x6c)
+
     def iz_setup_plant(self, plant: Plant) -> Self:
         """
         对植物进行IZ模式调整, 如纸板化, 土豆出土

@@ -3,9 +3,9 @@
 描述pvz中数据结构的基类和基本函数.
 """
 import abc
-from collections.abc import Sequence, Iterator
+from collections.abc import Sequence, Iterator, Callable
 from enum import IntEnum
-from typing import ClassVar, Self, TypeVar, overload, SupportsIndex
+from typing import ClassVar, Self, TypeVar, overload, SupportsIndex, Generic
 
 from ..basic import asm
 from ..basic.exception import PvzStatusError
@@ -64,23 +64,45 @@ class ObjBase(abc.ABC):
                 f"ctler=Controller({self.controller.pid}))")
 
 
-class OffsetProperty(property):
+_T = TypeVar("_T")
+
+
+class OffsetProperty(property, Generic[_T]):
     """
     ObjBase对象在pvz内的属性
 
     Attributes:
         offset: 属性在游戏中的偏移
     """
-
-    def __init__(self, fget, fset, fdel, doc, offset):
-        super().__init__(fget, fset, fdel, None)
+    def __init__(self,
+                 fget: Callable[[ObjBase], _T] | None,
+                 fset: Callable[[ObjBase, _T], None] | None,
+                 fdel: Callable[[ObjBase], None] | None,
+                 doc: str | None,
+                 offset: int):
+        super().__init__(fget, fset, fdel, doc)
         self.__doc__ = doc
         self.__objclass__ = ObjBase
         self.offset = offset
 
+    @overload
+    def __get__(self, obj: ObjBase, objtype: type[ObjBase]) -> _T: ...  # noqa
+
+    @overload
+    def __get__(self, obj: None, objtype: type[ObjBase]) -> Self: ...  # noqa
+
+    def __get__(self, *args):
+        return super().__get__(*args)
+
+    def __set__(self, obj: ObjBase, value: _T) -> None:
+        return super().__set__(obj, value)
+
+    def __delete__(self, obj: ObjBase) -> None:
+        return super().__delete__(obj)
+
 
 # property factories 用于生成ObjBase对象在pvz内的属性
-def property_bool(offset: int, doc: str):
+def property_bool(offset: int, doc: str) -> OffsetProperty[bool]:
     def _get(self: ObjBase) -> bool:
         return self.controller.read_bool(self.base_ptr + offset)
 
@@ -90,7 +112,7 @@ def property_bool(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "bool: " + doc, offset)
 
 
-def property_i8(offset: int, doc: str):
+def property_i8(offset: int, doc: str) -> OffsetProperty[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_i8(self.base_ptr + offset)
 
@@ -100,7 +122,7 @@ def property_i8(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i16(offset: int, doc: str):
+def property_i16(offset: int, doc: str) -> OffsetProperty[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_i16(self.base_ptr + offset)
 
@@ -110,7 +132,7 @@ def property_i16(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i32(offset: int, doc: str):
+def property_i32(offset: int, doc: str) -> OffsetProperty[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_i32(self.base_ptr + offset)
 
@@ -120,7 +142,7 @@ def property_i32(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i64(offset: int, doc: str):
+def property_i64(offset: int, doc: str) -> OffsetProperty[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_i64(self.base_ptr + offset)
 
@@ -130,7 +152,7 @@ def property_i64(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u8(offset: int, doc: str):
+def property_u8(offset: int, doc: str) -> OffsetProperty[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_u8(self.base_ptr + offset)
 
@@ -140,7 +162,7 @@ def property_u8(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u16(offset: int, doc: str):
+def property_u16(offset: int, doc: str) -> OffsetProperty[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_u16(self.base_ptr + offset)
 
@@ -150,7 +172,7 @@ def property_u16(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u32(offset: int, doc: str):
+def property_u32(offset: int, doc: str) -> OffsetProperty[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_u32(self.base_ptr + offset)
 
@@ -160,7 +182,7 @@ def property_u32(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u64(offset: int, doc: str):
+def property_u64(offset: int, doc: str) -> OffsetProperty[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_u64(self.base_ptr + offset)
 
@@ -170,7 +192,7 @@ def property_u64(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_f32(offset: int, doc: str):
+def property_f32(offset: int, doc: str) -> OffsetProperty[float]:
     def _get(self: ObjBase) -> float:
         return self.controller.read_f32(self.base_ptr + offset)
 
@@ -180,7 +202,7 @@ def property_f32(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
-def property_f64(offset: int, doc: str):
+def property_f64(offset: int, doc: str) -> OffsetProperty[float]:
     def _get(self: ObjBase) -> float:
         return self.controller.read_f64(self.base_ptr + offset)
 
@@ -190,21 +212,28 @@ def property_f64(offset: int, doc: str):
     return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
-def property_int_enum(offset: int, cls: type[IntEnum], doc: str):
-    def _get(self: ObjBase):
+_T_int_enum = TypeVar("_T_int_enum", bound=IntEnum)
+
+
+def property_int_enum(offset: int, cls: type[_T_int_enum], doc: str) \
+        -> OffsetProperty[_T_int_enum]:
+    def _get(self: ObjBase) -> _T_int_enum:
         return cls(self.controller.read_i32(self.base_ptr + offset))
 
-    def _set(self: ObjBase, value: IntEnum):
+    def _set(self: ObjBase, value: _T_int_enum) -> None:
         self.controller.write_i32(int(value), self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 
 
-def property_obj(offset: int, cls: type[ObjBase], doc: str):
+_T_obj = TypeVar("_T_obj", bound=ObjBase)
+
+
+def property_obj(offset: int, cls: type[_T_obj], doc: str) -> OffsetProperty[_T_obj]:
     def _get(self: ObjBase):
         return cls(self.controller.read_i32(self.base_ptr + offset), self.controller)
 
-    def _set(self: ObjBase, value: ObjBase):
+    def _set(self: ObjBase, value: _T_obj) -> None:
         if self.controller != value.controller:
             raise ValueError("cannot assign an object from another controller")
         self.controller.write_i32(value.base_ptr, self.base_ptr + offset)
@@ -271,10 +300,10 @@ class ObjNode(ObjBase, abc.ABC):
     """对象是否存活, 必须在所有非抽象子类中赋值"""
 
 
-_T = TypeVar("_T", bound=ObjNode)
+_T_node = TypeVar("_T_node", bound=ObjNode)
 
 
-class ObjList(ObjBase, Sequence[_T], abc.ABC):
+class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
     """
     游戏中管理各类对象内存的数组, 即函数表中DataArray对象
 
@@ -299,7 +328,7 @@ class ObjList(ObjBase, Sequence[_T], abc.ABC):
         """
         return self.controller.read_i32(self.base_ptr + 4)
 
-    def at(self, index: int) -> _T:
+    def at(self, index: int) -> _T_node:
         """
         返回index对应下标的元素
 
@@ -310,7 +339,7 @@ class ObjList(ObjBase, Sequence[_T], abc.ABC):
         """
 
     @overload
-    def __getitem__(self, index: SupportsIndex, /) -> _T:
+    def __getitem__(self, index: SupportsIndex, /) -> _T_node:
         """
         返回index对应下标的元素
 
@@ -323,7 +352,7 @@ class ObjList(ObjBase, Sequence[_T], abc.ABC):
         """
 
     @overload
-    def __getitem__(self, index: slice, /) -> list[_T]:
+    def __getitem__(self, index: slice, /) -> list[_T_node]:
         """
         返回slice切片对应的列表
 
@@ -337,7 +366,7 @@ class ObjList(ObjBase, Sequence[_T], abc.ABC):
 
     def __getitem__(self, index): ...
 
-    def __invert__(self) -> Iterator[_T]:
+    def __invert__(self) -> Iterator[_T_node]:
         """
         迭代所有未回收对象的迭代器, 利用原版函数在迭代过程中动态寻找下一个对象
         
@@ -351,12 +380,12 @@ class ObjList(ObjBase, Sequence[_T], abc.ABC):
         """
 
     @property
-    def alive_iterator(self) -> Iterator[_T]:
+    def alive_iterator(self) -> Iterator[_T_node]:
         """与__invert__()相同"""
         return ~self
 
     @overload
-    def find(self, index: SupportsIndex | ObjId, /) -> _T | None:
+    def find(self, index: SupportsIndex | ObjId, /) -> _T_node | None:
         """
         通过index查找对象
 
@@ -375,7 +404,7 @@ class ObjList(ObjBase, Sequence[_T], abc.ABC):
         """
 
     @overload
-    def find(self, idx: int, rank: int, /) -> _T | None:
+    def find(self, idx: int, rank: int, /) -> _T_node | None:
         """
         通过(index, rank)组查找对象
 
@@ -428,7 +457,7 @@ class ObjList(ObjBase, Sequence[_T], abc.ABC):
         """
 
 
-def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
+def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
     """
     根据node_cls构造对应的NodeClsObject的父类
     
@@ -438,13 +467,13 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
         管理node_cls对象的数组的父类
     """
 
-    class _ObjIterator(Iterator[_T]):
+    class _ObjIterator(Iterator[_T_node]):
         def __init__(self, ctler: Controller, _iterate_func_asm):
             self._current_ptr = 0
             self._controller = ctler
             self._iterate_func_asm = _iterate_func_asm
 
-        def __next__(self) -> _T:
+        def __next__(self) -> _T_node:
             self._controller.result_u64 = self._current_ptr
             self._controller.run_code(self._iterate_func_asm)
             if (self._controller.result_u64 >> 32) == 0:
@@ -455,7 +484,7 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
         def __iter__(self) -> Self:
             return self
 
-    class _ObjListImplement(ObjList[_T], abc.ABC):
+    class _ObjListImplement(ObjList[_T_node], abc.ABC):
         def __init__(self, base_ptr: int, ctler: Controller):
             super().__init__(base_ptr, ctler)
             self._array_base_ptr = ctler.read_u32(base_ptr)
@@ -470,10 +499,10 @@ def obj_list(node_cls: type[_T]) -> type[ObjList[_T]]:
                 ret"""  # 可恶的reg优化
             self._iterate_func_asm = None
 
-        def at(self, index: int) -> _T:
+        def at(self, index: int) -> _T_node:
             return node_cls(self._array_base_ptr + node_cls.OBJ_SIZE * index, self.controller)
 
-        def find(self, *args) -> _T | None:
+        def find(self, *args) -> _T_node | None:
             match args:
                 case (index,):
                     if isinstance(index, SupportsIndex):

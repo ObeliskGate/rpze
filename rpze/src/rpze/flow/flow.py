@@ -5,7 +5,7 @@
 from collections.abc import Callable, Coroutine
 from enum import Enum, auto
 from itertools import count
-from typing import TypeAlias, Self
+from typing import TypeAlias, Self, Final
 
 
 class TickRunnerResult(Enum):
@@ -201,6 +201,10 @@ class FlowManager:
             d(self)
 
 
+DEFAULT_PRIORITY: Final[int] = 0
+"""各类参数的默认优先级"""
+
+
 class FlowFactory:
     """
     用于生成FlowManager的工厂对象
@@ -227,7 +231,8 @@ class FlowFactory:
 
         return _decorator
 
-    def add_tick_runner(self, priority: int = 0) -> Callable[[TickRunner], TickRunner]:
+    def add_tick_runner(self, priority: int = DEFAULT_PRIORITY) \
+            -> Callable[[TickRunner], TickRunner]:
         """
         添加tick_runner的方法, 与FlowManager.add使用方法相同
 
@@ -241,7 +246,7 @@ class FlowFactory:
 
         return _decorator
 
-    def add_destructor(self, priority: int = 0) \
+    def add_destructor(self, priority: int = DEFAULT_PRIORITY) \
             -> Callable[[Callable[[FlowManager], None]], Callable[[FlowManager], None]]:
         """
         添加destructor的方法, 与FlowManager.add使用方法相同
@@ -256,7 +261,7 @@ class FlowFactory:
 
         return _decorator
 
-    def connect(self, cond: CondFunc, priority: int = 0, only_once: bool = False) \
+    def connect(self, cond: CondFunc, priority: int = DEFAULT_PRIORITY, only_once: bool = False) \
             -> Callable[[TickRunner], TickRunner]:
         """
         把tick_runner绑定到cond上的方法, 与FlowManager.add使用方法相同
@@ -280,8 +285,8 @@ class FlowFactory:
 
         return _decorator
 
-    def build_manager(self, flow_priority: int = 0, flow_destructor_priority: int = 0) \
-            -> FlowManager:
+    def build_manager(self, flow_priority: int = DEFAULT_PRIORITY,
+                      flow_destructor_priority: int = DEFAULT_PRIORITY) -> FlowManager:
         """
         生成FlowManager的方法
 
