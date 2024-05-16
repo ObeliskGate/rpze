@@ -59,7 +59,9 @@ def place(place_str: str, board: GameBoard | None = None) -> Zombie | Plant | No
 
 
 async def repeat(place_str: str,
-                 time: int = 2, interval: int = 20, board: GameBoard | None = None):
+                 time: int = 2,
+                 interval: int = 20,
+                 board: GameBoard | None = None) -> list[Zombie | Plant | None]:
     """
     生成一个连续放东西的flow
 
@@ -68,13 +70,16 @@ async def repeat(place_str: str,
         time: 放僵尸个数
         interval: 放僵尸间隔时间
         board: 要放置的board. 为None时使用get_board()
+    Returns:
+        放置的植物或者僵尸列表
     Examples:
         >>> async def flow(_):
         ...    ...  # do something
         ...    await repeat("cg 1-6", time=3)
         为1-6三撑杆
     """
-    place(place_str, board)
+    ret = [place(place_str, board)]
     for _ in range(time - 1):
         await delay(interval)
-        place(place_str, board)
+        ret.append(place(place_str, board))
+    return ret

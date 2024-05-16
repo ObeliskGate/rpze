@@ -4,7 +4,7 @@
 """
 import warnings
 from collections.abc import Callable, Awaitable, Generator
-from typing import overload, Self
+from typing import overload, Self, Any
 
 from .flow import CondFunc, FlowManager
 
@@ -59,12 +59,15 @@ class VariablePool:  # thanks Reisen
 
 
 def _await_generator(t):
-    yield t
+    ret = yield t
+    return ret
 
 
 class AwaitableCondFunc(Callable, Awaitable):
     """
     包装CondFunc为Awaitable对象.
+
+    泛型变量用于标识被AwaitableCondFunc后的结果, 暂无实际作用.
 
     Attributes:
         func: 内层CondFunc函数
@@ -80,7 +83,7 @@ class AwaitableCondFunc(Callable, Awaitable):
         """
         return self.func(fm)
 
-    def __await__(self) -> Generator[CondFunc, None, None]:
+    def __await__(self) -> Generator[CondFunc, Any, None]:
         """
         让AwaitableCondFunc对象可以await.
 
@@ -153,11 +156,12 @@ class AwaitableCondFunc(Callable, Awaitable):
             一个新的AwaitableCondFunc对象.
         """
 
-        def _cond_func(fm: FlowManager, p=VariablePool(event_time=None)) -> bool:
-            if p.event_time is None and self.func(fm):
+        def _cond_func(fm: FlowManager, p=VariablePool(event_time=None, ret=None)):
+            if p.event_time is None and (t := self.func(fm)):
                 p.event_time = fm.time
+                p.ret = t
             if p.event_time is not None and p.event_time + delay_time <= fm.time:
-                return True
+                return p.ret
             return False
 
         return AwaitableCondFunc(_cond_func)

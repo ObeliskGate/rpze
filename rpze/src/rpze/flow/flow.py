@@ -5,7 +5,7 @@
 from collections.abc import Callable, Coroutine
 from enum import Enum, auto
 from itertools import count
-from typing import TypeAlias, Self, Final
+from typing import TypeAlias, Self, Final, Any
 
 
 class TickRunnerResult(Enum):
@@ -20,7 +20,7 @@ class TickRunnerResult(Enum):
 
 CondFunc: TypeAlias = Callable[["FlowManager"], bool]
 """判断条件的函数"""
-FlowCoroutine: TypeAlias = Coroutine[CondFunc, None, TickRunnerResult | None]
+FlowCoroutine: TypeAlias = Coroutine[CondFunc, Any, TickRunnerResult | None]
 """Flow返回的协程对象"""
 Flow: TypeAlias = Callable[["FlowManager"], FlowCoroutine]
 """await AwaitableCondFunc函数的async def函数"""
@@ -62,13 +62,20 @@ class FlowManager:
             pop_list = []
             for idx, (cond_func, flow) in enumerate(fcl):
                 try:
-                    b = cond_func(self_)
+                    rets = cond_func(self_)
                 except BaseException as e:
                     flow.throw(e)
                     continue  # 如果能处理异常则继续执行
+                match rets:  # rets should be False / True / (True, *rets)
+                    case (b, ret):
+                        pass
+                    case (b, *args):
+                        ret = tuple(args)
+                    case b:
+                        ret = None
                 if b:
                     try:
-                        fcl[idx][0] = flow.send(None)
+                        fcl[idx][0] = flow.send(ret)
                     except StopIteration as se:  # StopIteration.value为返回值
                         pop_list.append(idx)
                         if se.value is None:
