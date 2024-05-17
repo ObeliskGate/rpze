@@ -4,7 +4,7 @@
 """
 import warnings
 from collections.abc import Callable, Awaitable, Generator
-from typing import overload, Self, Any
+from typing import overload, Self, Any, TypeVar, Generic, TypeAlias
 
 from .flow import CondFunc, FlowManager
 
@@ -58,32 +58,45 @@ class VariablePool:  # thanks Reisen
         return f"<{t}, {d}>"
 
 
-def _await_generator(t):
+_T_co = TypeVar("_T_co", covariant=True)
+AwaitFunc: TypeAlias = Callable[[FlowManager], bool | tuple[bool, *tuple[Any, ...]]]
+
+
+def _await_generator(t) -> Generator[Any, Any, _T_co]:
     ret = yield t
     return ret
 
 
-class AwaitableCondFunc(Callable, Awaitable):
+class AwaitableCondFunc(Generic[_T_co], Callable, Awaitable):
     """
-    包装CondFunc为Awaitable对象.
+    包装Awaitable对象用于在flow中await 调用.
 
-    泛型变量用于标识被AwaitableCondFunc后的结果, 暂无实际作用.
+    泛型变量用于表示reveal_type(await AwaitableCondFunc[bool]) is bool
+    这个type hint在PyCharm和mypy工作正常, pylance不工作.
+
+    内层func应当返回bool或者(True, _T_co).
 
     Attributes:
         func: 内层CondFunc函数
     """
     __slots__ = ("func",)
 
-    def __init__(self, func: CondFunc):
-        self.func: CondFunc = func
+    def __init__(self, func: AwaitFunc):
+        self.func: AwaitFunc = func
 
     def __call__(self, fm: FlowManager) -> bool:
         """
         调用内层func. 确保AwaitableCondFunc自己也为CondFunc函数.
-        """
-        return self.func(fm)
 
-    def __await__(self) -> Generator[CondFunc, Any, None]:
+        忽略可能作为await返回值的_T_co而只返回第一位bool.
+        """
+        match self.func(fm):
+            case (b, *_):
+                return b
+            case b:
+                return b
+
+    def __await__(self) -> Generator[AwaitFunc, Any, _T_co]:
         """
         让AwaitableCondFunc对象可以await.
 
@@ -92,7 +105,7 @@ class AwaitableCondFunc(Callable, Awaitable):
         """
         return _await_generator(self.func)
 
-    def __and__(self, other: CondFunc) -> Self:
+    def __and__(self, other: CondFunc) -> "AwaitableCondFunc[None]":
         """
         重载&运算符, 使得对象可以用&运算符, 像逻辑和运算一样连接
 
@@ -100,11 +113,11 @@ class AwaitableCondFunc(Callable, Awaitable):
             other: 另一个CondFunc对象
 
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为self.func and other.func
+            一个新的AwaitableCondFunc对象. 该对象的func为self() and other.func
         """
-        return AwaitableCondFunc(lambda fm: self.func(fm) and other(fm))
+        return AwaitableCondFunc(lambda fm: self(fm) and other(fm))
 
-    def __rand__(self, other: CondFunc) -> Self:
+    def __rand__(self, other: CondFunc) -> "AwaitableCondFunc[None]":
         """
         重载&运算符, 使得对象可以用&运算符, 像逻辑和运算一样连接
 
@@ -112,40 +125,40 @@ class AwaitableCondFunc(Callable, Awaitable):
             other: 另一个CondFunc对象
 
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为other.func and self.func
+            一个新的AwaitableCondFunc对象. 该对象的func为other.func and self()
         """
-        return AwaitableCondFunc(lambda fm: other(fm) and self.func(fm))
+        return AwaitableCondFunc(lambda fm: other(fm) and self(fm))
 
-    def __or__(self, other: CondFunc) -> Self:
-        """
-        重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
-
-        Args:
-            other: 另一个CondFunc对象
-        Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为self.func or other.func
-        """
-        return AwaitableCondFunc(lambda fm: self.func(fm) or other(fm))
-
-    def __ror__(self, other: CondFunc) -> Self:
+    def __or__(self, other: CondFunc) -> "AwaitableCondFunc[None]":
         """
         重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
 
         Args:
             other: 另一个CondFunc对象
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为other.func or self.func
+            一个新的AwaitableCondFunc对象. 该对象的func为self() or other.func
         """
-        return AwaitableCondFunc(lambda fm: other(fm) or self.func(fm))
+        return AwaitableCondFunc(lambda fm: self(fm) or other(fm))
 
-    def __invert__(self) -> Self:
+    def __ror__(self, other: CondFunc) -> "AwaitableCondFunc[None]":
+        """
+        重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
+
+        Args:
+            other: 另一个CondFunc对象
+        Returns:
+            一个新的AwaitableCondFunc对象. 该对象的func为other.func or self()
+        """
+        return AwaitableCondFunc(lambda fm: other(fm) or self(fm))
+
+    def __invert__(self) -> "AwaitableCondFunc[None]":
         """
         重载~运算符, 使得对象可以用~运算符, 像逻辑非运算一样.
 
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为not self.func
+            一个新的AwaitableCondFunc对象. 该对象的func为not self()
         """
-        return AwaitableCondFunc(lambda fm: not self.func(fm))
+        return AwaitableCondFunc(lambda fm: not self(fm))
 
     def after(self, delay_time: int) -> Self:
         """
@@ -156,7 +169,7 @@ class AwaitableCondFunc(Callable, Awaitable):
             一个新的AwaitableCondFunc对象.
         """
 
-        def _cond_func(fm: FlowManager, p=VariablePool(event_time=None, ret=None)):
+        def _await_func(fm: FlowManager, p=VariablePool(event_time=None, ret=None)):
             if p.event_time is None and (t := self.func(fm)):
                 p.event_time = fm.time
                 p.ret = t
@@ -164,11 +177,11 @@ class AwaitableCondFunc(Callable, Awaitable):
                 return p.ret
             return False
 
-        return AwaitableCondFunc(_cond_func)
+        return AwaitableCondFunc(_await_func)
 
 
 @overload
-def until(time: int, /) -> AwaitableCondFunc:
+def until(time: int, /) -> AwaitableCondFunc[None]:
     """
     生成一个 判断时间是否到达 的函数
 
@@ -183,7 +196,7 @@ def until(time: int, /) -> AwaitableCondFunc:
 
 
 @overload
-def until(cond_func: CondFunc, /) -> AwaitableCondFunc:
+def until(cond_func: CondFunc, /) -> AwaitableCondFunc[None]:
     """
     把cond_func函数包装为AwaitableCondFunc对象.
 
@@ -194,7 +207,7 @@ def until(cond_func: CondFunc, /) -> AwaitableCondFunc:
     """
 
 
-def until(arg) -> AwaitableCondFunc:
+def until(arg) -> AwaitableCondFunc[None]:
     if callable(arg):
         return AwaitableCondFunc(arg)
     if isinstance(arg, bool):
@@ -204,7 +217,7 @@ def until(arg) -> AwaitableCondFunc:
     return AwaitableCondFunc(lambda fm: fm.time >= arg)
 
 
-def delay(time: int) -> AwaitableCondFunc:
+def delay(time: int) -> AwaitableCondFunc[None]:
     """
     生成一个 延迟time帧后返回True的函数
 
