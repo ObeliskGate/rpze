@@ -41,6 +41,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 						return {};
 					return 0;
 				});
+			InsertHook::addReplace(reinterpret_cast<void*>(0x42A6C0), 6,
+				[pSharedMemory](const Registers&, void*) -> std::optional<int32_t>
+				{
+					if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_PLACE_PLANTS))
+						return {};
+					return 0;
+				}, 12);
 		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:

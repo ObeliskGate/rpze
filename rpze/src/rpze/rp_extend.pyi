@@ -8,6 +8,7 @@ class HookPosition(Enum):
     MAIN_LOOP = 0
     ZOMBIE_PICK_RANDOM_SPEED = 1  # useless
     CHALLENGE_I_ZOMBIE_SCORE_BRAIN = 2
+    CHALLENGE_I_ZOMBIE_PLACE_PLANTS = 3
 
 class SyncMethod(Enum):
     SPIN = 1
