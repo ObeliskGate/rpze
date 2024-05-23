@@ -8,6 +8,10 @@ class HookPosition(Enum):
     MAIN_LOOP = 0
     ZOMBIE_PICK_RANDOM_SPEED = 1  # useless
     CHALLENGE_I_ZOMBIE_SCORE_BRAIN = 2
+
+class SyncMethod(Enum):
+    SPIN = 1
+    MUTEX = 2
     
 
 class RpBaseException(Exception): ...
@@ -44,6 +48,10 @@ class Controller:
     result_u32: int
     result_u64: int
 
+    sync_method: SyncMethod  # default: SyncMethod.MUTEX, cannot change when connected
+    jumping_sync_method: SyncMethod  # default: SyncMethod.SPIN , cannot change when jumping frame
+   
+
     @property
     def asm_address(self) -> int: ...  # start addr of where run_code would be executed
     @property
@@ -53,7 +61,7 @@ class Controller:
     def before(self) -> None: ...  # required before every frame after start() control
     def next_frame(self) -> None: ...  # let the game continue to the next frame
     def start(self) -> None: ...  # start control and get prepared; do nothing when connected
-    def end(self) -> None: ...  # end control (and jumping frame if necessary); do nothing when not connected
+    def end(self) -> None: ...  # assert prepared; end control (end jumping frame if necessary); do nothing when not connected
     
     def start_jump_frame(self) -> bool: ...
     # assert prepared and has board

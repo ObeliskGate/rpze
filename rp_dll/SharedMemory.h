@@ -4,18 +4,19 @@
 
 class SharedMemory
 {
-	static SharedMemory* instancePtr;
+	inline static SharedMemory* instancePtr = nullptr;
 
 	void* sharedMemoryPtr;
 	HANDLE hMapFile;
-	std::wstring sharedMemoryName;
+	HANDLE hMutex;
+
 	SharedMemory();
 	~SharedMemory();
 
-	template<typename T = BYTE>
+	template <typename T = BYTE>
 	T* getPtr() const { return static_cast<T*>(sharedMemoryPtr); }
 
-	template<typename T>
+	template <typename T>
 	T& getRef(const int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
 
 	// 返回用来read或write的指针
@@ -26,6 +27,10 @@ public:
 	static constexpr uint32_t BUFFER_SIZE = SHARED_MEMORY_SIZE - BUFFER_OFFSET;
 	static constexpr uint32_t RESULT_OFFSET = 1024;
 	static constexpr uint32_t RESULT_SIZE = BUFFER_OFFSET - RESULT_OFFSET;
+
+	void waitMutex() const;
+
+	void releaseMutex() const;
 
 	void* getSharedMemoryPtr() const { return sharedMemoryPtr; }
 
@@ -73,6 +78,10 @@ public:
 	static constexpr size_t HOOK_LEN = 16;
 	// hook位置的状态
 	volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 112); }
+
+	volatile SyncMethod& syncMethod() const { return getRef<SyncMethod>(200); }
+
+	volatile SyncMethod& jumpingSyncMethod() const { return getRef<SyncMethod>(204); }
 
 	// 用来存放asm的指针, 从1024开始
 	void* getAsmPtr() const { return getPtr() + BUFFER_OFFSET; }

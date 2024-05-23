@@ -10,6 +10,10 @@ PYBIND11_MODULE(rp_extend, m)
 		.value("ZOMBIE_PICK_RANDOM_SPEED", HookPosition::ZOMBIE_PICK_RANDOM_SPEED)
 		.value("CHALLENGE_I_ZOMBIE_SCORE_BRAIN", HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN);
 
+	py::enum_<SyncMethod>(m, "SyncMethod")
+		.value("SPIN", SyncMethod::SPIN)
+		.value("MUTEX", SyncMethod::MUTEX);
+
 	PYBIND11_CONSTINIT static py::gil_safe_call_once_and_store<py::object> base_exc_storage;
 	base_exc_storage.call_once_and_store_result(
 		[&m] { return py::exception<void>(m, "RpBaseException"); });
@@ -40,9 +44,8 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("close_hook", &Controller::close_hook)
 		.def("hook_connected", &Controller::hook_connected, py::arg("hook") = HookPosition::MAIN_LOOP)
 		.def("global_connected", &Controller::global_connected)
-
-		.def("read_bytes", &Controller::read_bytes)
-		.def("write_bytes", &Controller::write_bytes)
+		.def_property("sync_method", &Controller::sync_method, &Controller::set_sync_method)
+		.def_property("jumping_sync_method", &Controller::jumping_sync_method, &Controller::set_jumping_sync_method)
 
 		// read
 		.def("read_bool", &Controller::read_memory<bool>)
@@ -56,6 +59,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("read_u64", &Controller::read_memory<uint64_t>)
 		.def("read_f32", &Controller::read_memory<float>)
 		.def("read_f64", &Controller::read_memory<double>)
+		.def("read_bytes", &Controller::read_bytes)
 
 		// write
 		.def("write_bool", &Controller::write_memory<bool>)
@@ -69,6 +73,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("write_u64", &Controller::write_memory<uint64_t>)
 		.def("write_f32", &Controller::write_memory<float>)
 		.def("write_f64", &Controller::write_memory<double>)
+		.def("write_bytes", &Controller::write_bytes)
 
 		.def_property_readonly("result_address", &Controller::result_address)
 		.def_property_readonly("asm_address", &Controller::asm_address)

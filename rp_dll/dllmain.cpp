@@ -20,6 +20,12 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, 
 				[pSharedMemory](const Registers&) // main loop LawnApp::UpdateFrames 
 				{
+					static bool flag = false; // at the first time, we need to get the mutex
+					if (!flag)
+					{
+						pSharedMemory->waitMutex();
+						flag = true;
+					}
 					mainHook<0>(pSharedMemory);
 				});
 			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
@@ -32,9 +38,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 				[pSharedMemory](const Registers&, void*) -> std::optional<int32_t>
 				{
 					if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN))
-					{
 						return {};
-					}
 					return 0;
 				});
 		}

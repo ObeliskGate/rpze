@@ -1,27 +1,30 @@
 #pragma once
 #include "stdafx.h"
 #include "Enums.h"
+#include "MemoryException.h"
 
 class Memory
 {
 	void* pBuf;
 	HANDLE hMemory;
 	HANDLE hPvz;
+	HANDLE hMutex;
 
 	// 是否在跳帧
 	bool jumpingFrame = false;
 
 	volatile PhaseCode* pCurrentPhaseCode;
 	volatile RunState* pCurrentRunState;
+	volatile SyncMethod* pCurrentSyncMethod;
 
 	// 在pvz中共享内存的基址
 	uint32_t remoteMemoryAddress = 0;
 
 	template<typename T = BYTE>
-	inline T* getPtr() const { return static_cast<T*>(pBuf); }
+	T* getPtr() const { return static_cast<T*>(pBuf); }
 
 	template<typename T>
-	inline T& getRef(const int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
+	T& getRef(const int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
 
 	void getRemoteMemoryAddress();
 
@@ -78,12 +81,16 @@ private:
 	// hook位置的状态
 	volatile HookState* hookStateArr() const { return reinterpret_cast<HookState*>(getPtr() + 112); }
 
+	volatile SyncMethod& syncMethod() const { return getRef<SyncMethod>(200); }
+
+	volatile SyncMethod& jumpingSyncMethod() const { return getRef<SyncMethod>(204); }
+
 	// 用来存放asm的指针
 	void* getAsmPtr() const { return getPtr() + BUFFER_OFFSET; }
 
 
 	volatile PhaseCode& getCurrentPhaseCode() const { return *pCurrentPhaseCode; }
-
+	
 	volatile RunState& getCurrentRunState() const { return *pCurrentRunState; }
 
 
@@ -98,6 +105,12 @@ private:
 
 	template<typename T>
 	bool _writeRemoteMemory(T&& val, const uint32_t* offsets, uint32_t len);
+
+	template <bool check_sync = true>
+	void waitMutex() const;
+
+	template <bool check_sync = true>
+	void releaseMutex() const;
 
 	// 主要接口
 public:
@@ -114,7 +127,7 @@ public:
 	void before() const;
 
 	// 跳到下一帧
-	void next() const { getCurrentPhaseCode() = PhaseCode::CONTINUE; }
+	void next() const;
 
 	void skipFrames(size_t num = 1) const;
 
@@ -167,6 +180,16 @@ public:
 
 	uint32_t getAsmAddress() const { return remoteMemoryAddress + BUFFER_OFFSET; }
 
+	SyncMethod getSyncMethod() const { return syncMethod(); }
+
+	SyncMethod getJumpingSyncMethod() const { return jumpingSyncMethod(); }
+
+	void setSyncMethod(SyncMethod val);
+
+	void setJumpingSyncMethod(SyncMethod val);
+
+
+
 	std::tuple<bool, uint32_t> getPBoard() const; // 第一位返回0表示无须换新
 };
 
@@ -185,6 +208,51 @@ T* Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
 		basePtr += offsets[i];
 	}
 	return reinterpret_cast<T*>(basePtr);
+}
+
+template <bool check_sync>
+void Memory::waitMutex() const
+{
+	if constexpr (check_sync)
+		if (*pCurrentSyncMethod != SyncMethod::MUTEX) return;
+
+#ifdef _DEBUG
+	switch (WaitForSingleObject(hMutex, 500))
+#else
+	switch (WaitForSingleObject(hMutex, INFINITE))
+#endif // DEBUG
+	{
+	case WAIT_OBJECT_0:
+#ifdef _DEBUG
+		std::cout << "mutex waited" << std::endl;
+#endif
+		break;
+	case WAIT_FAILED:
+		throw MemoryException(
+			("waitMutex: failed, error " + std::to_string(GetLastError())).c_str(), pid);
+	case WAIT_ABANDONED:
+		throw MemoryException("waitMutex: abandoned", pid);
+#ifdef _DEBUG
+	case WAIT_TIMEOUT:
+		throw MemoryException("waitMutex: timeout", pid);
+#endif // DEBUG
+	default:
+		throw MemoryException("waitMutex: unexpected behavior", pid);
+	}
+}
+
+template <bool check_sync>
+void Memory::releaseMutex() const
+{
+	if constexpr (check_sync)
+		if (*pCurrentSyncMethod != SyncMethod::MUTEX) return;
+	if (!ReleaseMutex(hMutex))
+		throw MemoryException(
+			("releaseMutex: failed, error " + std::to_string(GetLastError())).c_str(), pid);
+#ifdef _DEBUG
+	std::cout << "mutex released" << std::endl;
+#endif
+
 }
 
 template <typename T>

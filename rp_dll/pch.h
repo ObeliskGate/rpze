@@ -20,7 +20,7 @@
 #include <functional>
 #include <limits>
 
-constexpr wchar_t SHARED_MEMORY_NAME_AFFIX[] = L"rp_dll_shared_memory_";
+constexpr wchar_t UU_NAME_AFFIX[] = L"__rp_dll_shared_affix_";
 
 constexpr size_t SHARED_MEMORY_SIZE = 1024 * 8;
 

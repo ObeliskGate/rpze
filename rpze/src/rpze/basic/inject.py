@@ -121,9 +121,10 @@ class InjectedGame(AbstractContextManager):
             raise TypeError("the parameter should be int, str or Controller instance")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is ControllerError:
+            return
         self.controller.end()
         if (self._close_when_exit and
-                exc_type is not ControllerError and
                 exc_type is not KeyboardInterrupt):
             close_by_pids((self.controller.pid,))
 

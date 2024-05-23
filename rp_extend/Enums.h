@@ -38,4 +38,10 @@ enum class HookPosition : int32_t
 	CHALLENGE_I_ZOMBIE_SCORE_BRAIN
 };
 
+enum class SyncMethod : int32_t
+{
+	SPIN = 0,
+	MUTEX = 1
+};
+
 inline size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }
