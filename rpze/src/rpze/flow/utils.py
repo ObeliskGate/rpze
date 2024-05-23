@@ -4,7 +4,7 @@
 """
 import warnings
 from collections.abc import Callable, Awaitable, Generator
-from typing import overload, Self, Any, TypeVar, Generic, TypeAlias
+from typing import overload, Self, Any, TypeVar, TypeAlias
 
 from .flow import CondFunc, FlowManager
 
@@ -67,7 +67,7 @@ def _await_generator(t) -> Generator[Any, Any, _T_co]:
     return ret
 
 
-class AwaitableCondFunc(Generic[_T_co], Callable, Awaitable):
+class AwaitableCondFunc(Awaitable[_T_co]):
     """
     包装Awaitable对象用于在flow中await 调用.
 

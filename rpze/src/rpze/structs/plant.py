@@ -5,8 +5,7 @@
 import typing
 from enum import IntEnum
 
-from . import obj_base as ob
-from .obj_base import ObjNode
+from .obj_base import ObjNode, property_i32, property_bool, property_int_enum, ObjId, obj_list
 from ..basic import asm
 
 
@@ -120,44 +119,44 @@ class Plant(ObjNode):
 
     OBJ_SIZE = 0x14c
 
-    x = ob.property_i32(0x8, "x")
+    x = property_i32(0x8, "x")
 
-    y = ob.property_i32(0xc, "y")
+    y = property_i32(0xc, "y")
 
-    visible = ob.property_bool(0x18, "可见时为True")
+    visible = property_bool(0x18, "可见时为True")
 
-    row = ob.property_i32(0x1c, "所在行数, 起点为0")
+    row = property_i32(0x1c, "所在行数, 起点为0")
 
-    type_ = ob.property_int_enum(0x24, PlantType, "植物类型")
+    type_ = property_int_enum(0x24, PlantType, "植物类型")
 
-    col = ob.property_i32(0x28, "int: 所在列数, 起点为0")
+    col = property_i32(0x28, "int: 所在列数, 起点为0")
 
-    status = ob.property_int_enum(0x3c, PlantStatus, "植物状态")
+    status = property_int_enum(0x3c, PlantStatus, "植物状态")
 
-    hp = ob.property_i32(0x40, "当前血量")
+    hp = property_i32(0x40, "当前血量")
 
-    max_hp = ob.property_i32(0x44, "最大血量")
+    max_hp = property_i32(0x44, "最大血量")
 
-    status_cd = ob.property_i32(0x54, """
+    status_cd = property_i32(0x54, """
         属性倒计时, 如磁铁cd
                                      
         地刺攻击倒计时也在这儿:
             地刺的判断和generate_cd无关. 在范围内有僵尸时使status_cd = 100, == 75时打出攻击
         """)
 
-    generate_cd = ob.property_i32(0x58, """
+    generate_cd = property_i32(0x58, """
         子弹生成 / 物品生产倒计时
                                        
         初值为max_boot_delay - 14到max_boot_delay
         """)
 
-    max_boot_delay = ob.property_i32(0x5c, """
+    max_boot_delay = property_i32(0x5c, """
         generate_cd的最大值
                                           
         对大多数植物为150，对投手为300，曾为200
         """)
 
-    launch_cd = ob.property_i32(0x90, """
+    launch_cd = property_i32(0x90, """
         从准备发射到发射子弹的倒计时
                                      
         **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
@@ -185,14 +184,14 @@ class Plant(ObjNode):
             在generate_cd == 0时再改改动一次launch_cd = 26
         """)
 
-    can_attack = ob.property_bool(0x48, "能攻击时为True")
+    can_attack = property_bool(0x48, "能攻击时为True")
 
-    is_dead = ob.property_bool(0x141, "死亡时为True")
+    is_dead = property_bool(0x141, "死亡时为True")
 
     @property
-    def target_zombie_id(self) -> ob.ObjId:
+    def target_zombie_id(self) -> ObjId:
         """倭瓜, 水草目标僵尸编号"""
-        return ob.ObjId(self.base_ptr + 0x12c, self.controller)
+        return ObjId(self.base_ptr + 0x12c, self.controller)
 
     def __str__(self) -> str:
         if not self.is_dead:
@@ -210,7 +209,7 @@ class Plant(ObjNode):
         asm.run(code, self.controller)
 
 
-class PlantList(ob.obj_list(Plant)):
+class PlantList(obj_list(Plant)):
     """
     植物DataArray
     """

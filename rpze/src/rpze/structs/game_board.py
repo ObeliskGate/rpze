@@ -5,8 +5,8 @@
 from collections import OrderedDict
 from typing import Self
 
-from . import obj_base as ob
 from .griditem import GriditemList, Griditem, GriditemType
+from .obj_base import ObjBase, property_u32, property_bool, property_i32
 from .plant import PlantList, Plant, PlantType
 from .projectile import ProjectileList
 from .zombie import ZombieList, ZombieType, Zombie
@@ -15,7 +15,7 @@ from ..basic.exception import PvzStatusError
 from ..rp_extend import Controller, RpBaseException
 
 
-class GameBoard(ob.ObjBase):
+class GameBoard(ObjBase):
     """
     函数表中Board对象
 
@@ -36,13 +36,13 @@ class GameBoard(ob.ObjBase):
         self.projectile_list: ProjectileList = ProjectileList(base_ptr + 0xc8, controller)
         self.griditem_list: GriditemList = GriditemList(base_ptr + 0x11c, controller)
 
-    _p_challenge = ob.property_u32(0x160, "Challenge对象指针")
+    _p_challenge = property_u32(0x160, "Challenge对象指针")
 
-    is_dance_mode = ob.property_bool(0x5765, "在dance秘籍时中为True")
+    is_dance_mode = property_bool(0x5765, "在dance秘籍时中为True")
 
-    sun_num = ob.property_i32(0x5560, "阳光数量")
+    sun_num = property_i32(0x5560, "阳光数量")
 
-    game_time = ob.property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
+    game_time = property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
 
     @property
     def mj_clock(self) -> int:
