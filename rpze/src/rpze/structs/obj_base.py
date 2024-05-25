@@ -3,7 +3,7 @@
 描述pvz中数据结构的基类和基本函数.
 """
 import abc
-from collections.abc import Sequence, Iterator, Callable
+from collections.abc import Sequence, Iterator, Callable, Iterable
 from enum import IntEnum
 from typing import ClassVar, Self, TypeVar, overload, SupportsIndex, Generic
 
@@ -275,6 +275,13 @@ class ObjId(ObjBase):
 
     def __str__(self) -> str:
         return f"(index={self.index}, rank={self.rank})"
+
+    def tpl(self) -> tuple[int, int]:
+        """
+        Returns:
+            (index, rank)元组
+        """
+        return self.index, self.rank
 
 
 class ObjNode(ObjBase, abc.ABC):

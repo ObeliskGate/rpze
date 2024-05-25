@@ -236,8 +236,8 @@ class Zombie(ObjNode):
     @property
     def partner_ids(self) -> tuple[ObjId, ObjId, ObjId, ObjId]:
         """伴舞id"""
-        return tuple(ob.ObjId(self.base_ptr + 0xf4 + i * 4,  # type: ignore
-                              self.controller) for i in range(4))
+        return tuple(ObjId(self.base_ptr + 0xf4 + i * 4,    # type: ignore
+                           self.controller) for i in range(4))
 
     def __str__(self) -> str:
         if not self.is_dead:
