@@ -3,9 +3,9 @@
 描述pvz中数据结构的基类和基本函数.
 """
 import abc
-from collections.abc import Sequence, Iterator, Callable, Iterable
+from collections.abc import Sequence, Iterator, Callable
 from enum import IntEnum
-from typing import ClassVar, Self, TypeVar, overload, SupportsIndex, Generic
+from typing import ClassVar, Self, TypeVar, overload, SupportsIndex, Generic, Any, TypeAlias, Final
 
 from ..basic import asm
 from ..basic.exception import PvzStatusError
@@ -65,44 +65,51 @@ class ObjBase(abc.ABC):
 
 
 _T = TypeVar("_T")
+_T_co = TypeVar("_T_co", covariant=True)
+_T_con = TypeVar("_T_con", contravariant=True)
 
 
-class OffsetProperty(property, Generic[_T]):
+class OffsetProperty(property, Generic[_T_co, _T_con]):
     """
     ObjBase对象在pvz内的属性
+
+    两个泛型参数分别表示: 通过对象调用的__get__返回值, __set__入参.
 
     Attributes:
         offset: 属性在游戏中的偏移
     """
     def __init__(self,
-                 fget: Callable[[ObjBase], _T] | None,
-                 fset: Callable[[ObjBase, _T], None] | None,
+                 fget: Callable[[ObjBase], _T_co] | None,
+                 fset: Callable[[ObjBase, _T_con], None] | None,
                  fdel: Callable[[ObjBase], None] | None,
                  doc: str | None,
                  offset: int):
         super().__init__(fget, fset, fdel, doc)
         self.__doc__ = doc
         self.__objclass__ = ObjBase
-        self.offset = offset
+        self.offset: Final[int] = offset
 
     @overload
-    def __get__(self, obj: ObjBase, objtype: type[ObjBase]) -> _T: ...  # noqa
+    def __get__(self, obj: None, owner: type | None = ..., /) -> Self: ...
 
     @overload
-    def __get__(self, obj: None, objtype: type[ObjBase]) -> Self: ...  # noqa
+    def __get__(self, obj: Any, owner: type | None = ..., /) -> _T_co: ...
 
     def __get__(self, *args):
         return super().__get__(*args)
 
-    def __set__(self, obj: ObjBase, value: _T) -> None:
+    def __set__(self, obj: ObjBase, value: _T_con) -> None:
         return super().__set__(obj, value)
 
     def __delete__(self, obj: ObjBase) -> None:
         return super().__delete__(obj)
 
 
+_OffsetProp: TypeAlias = OffsetProperty[_T, _T]
+
+
 # property factories 用于生成ObjBase对象在pvz内的属性
-def property_bool(offset: int, doc: str) -> OffsetProperty[bool]:
+def property_bool(offset: int, doc: str) -> _OffsetProp[bool]:
     def _get(self: ObjBase) -> bool:
         return self.controller.read_bool(self.base_ptr + offset)
 
@@ -112,7 +119,7 @@ def property_bool(offset: int, doc: str) -> OffsetProperty[bool]:
     return OffsetProperty(_get, _set, None, "bool: " + doc, offset)
 
 
-def property_i8(offset: int, doc: str) -> OffsetProperty[int]:
+def property_i8(offset: int, doc: str) -> _OffsetProp[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_i8(self.base_ptr + offset)
 
@@ -122,7 +129,7 @@ def property_i8(offset: int, doc: str) -> OffsetProperty[int]:
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i16(offset: int, doc: str) -> OffsetProperty[int]:
+def property_i16(offset: int, doc: str) -> _OffsetProp[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_i16(self.base_ptr + offset)
 
@@ -132,7 +139,7 @@ def property_i16(offset: int, doc: str) -> OffsetProperty[int]:
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i32(offset: int, doc: str) -> OffsetProperty[int]:
+def property_i32(offset: int, doc: str) -> _OffsetProp[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_i32(self.base_ptr + offset)
 
@@ -142,7 +149,7 @@ def property_i32(offset: int, doc: str) -> OffsetProperty[int]:
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_i64(offset: int, doc: str) -> OffsetProperty[int]:
+def property_i64(offset: int, doc: str) -> _OffsetProp[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_i64(self.base_ptr + offset)
 
@@ -152,7 +159,7 @@ def property_i64(offset: int, doc: str) -> OffsetProperty[int]:
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u8(offset: int, doc: str) -> OffsetProperty[int]:
+def property_u8(offset: int, doc: str) -> _OffsetProp[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_u8(self.base_ptr + offset)
 
@@ -162,7 +169,7 @@ def property_u8(offset: int, doc: str) -> OffsetProperty[int]:
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u16(offset: int, doc: str) -> OffsetProperty[int]:
+def property_u16(offset: int, doc: str) -> _OffsetProp[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_u16(self.base_ptr + offset)
 
@@ -172,7 +179,7 @@ def property_u16(offset: int, doc: str) -> OffsetProperty[int]:
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u32(offset: int, doc: str) -> OffsetProperty[int]:
+def property_u32(offset: int, doc: str) -> _OffsetProp[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_u32(self.base_ptr + offset)
 
@@ -182,7 +189,7 @@ def property_u32(offset: int, doc: str) -> OffsetProperty[int]:
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_u64(offset: int, doc: str) -> OffsetProperty[int]:
+def property_u64(offset: int, doc: str) -> _OffsetProp[int]:
     def _get(self: ObjBase) -> int:
         return self.controller.read_u64(self.base_ptr + offset)
 
@@ -192,7 +199,7 @@ def property_u64(offset: int, doc: str) -> OffsetProperty[int]:
     return OffsetProperty(_get, _set, None, "int: " + doc, offset)
 
 
-def property_f32(offset: int, doc: str) -> OffsetProperty[float]:
+def property_f32(offset: int, doc: str) -> _OffsetProp[float]:
     def _get(self: ObjBase) -> float:
         return self.controller.read_f32(self.base_ptr + offset)
 
@@ -202,7 +209,7 @@ def property_f32(offset: int, doc: str) -> OffsetProperty[float]:
     return OffsetProperty(_get, _set, None, "float: " + doc, offset)
 
 
-def property_f64(offset: int, doc: str) -> OffsetProperty[float]:
+def property_f64(offset: int, doc: str) -> _OffsetProp[float]:
     def _get(self: ObjBase) -> float:
         return self.controller.read_f64(self.base_ptr + offset)
 
@@ -216,7 +223,7 @@ _T_int_enum = TypeVar("_T_int_enum", bound=IntEnum)
 
 
 def property_int_enum(offset: int, cls: type[_T_int_enum], doc: str) \
-        -> OffsetProperty[_T_int_enum]:
+        -> OffsetProperty[_T_int_enum, int]:
     def _get(self: ObjBase) -> _T_int_enum:
         return cls(self.controller.read_i32(self.base_ptr + offset))
 
@@ -229,7 +236,7 @@ def property_int_enum(offset: int, cls: type[_T_int_enum], doc: str) \
 _T_obj = TypeVar("_T_obj", bound=ObjBase)
 
 
-def property_obj(offset: int, cls: type[_T_obj], doc: str) -> OffsetProperty[_T_obj]:
+def property_obj(offset: int, cls: type[_T_obj], doc: str) -> _OffsetProp[_T_obj]:
     def _get(self: ObjBase):
         return cls(self.controller.read_i32(self.base_ptr + offset), self.controller)
 
@@ -271,7 +278,7 @@ class ObjId(ObjBase):
         return self.controller.read_u32(self.base_ptr) == ((rank << 16) | index)
 
     def __ne__(self, val: Self | tuple[int, int]) -> bool:
-        return not (self.__eq__(val))
+        return not self.__eq__(val)
 
     def __str__(self) -> str:
         return f"(index={self.index}, rank={self.rank})"
@@ -511,20 +518,23 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
 
         def find(self, *args) -> _T_node | None:
             match args:
-                case (index,):
-                    if isinstance(index, SupportsIndex):
+                case (idx,):
+                    if isinstance(idx, SupportsIndex):
                         try:
-                            target = self[index]
+                            target = self[idx]
                         except IndexError:
                             return None
                         return target if target.id.rank != 0 else None
-                    if isinstance(index, ObjId):
-                        target = self.at(index.index)
-                        return target if target.id == index else None
+                    if isinstance(idx, ObjId):
+                        try:
+                            target = self[idx.index]
+                        except IndexError:
+                            return None
+                        return target if target.id == idx else None
                     raise TypeError("index must be int or ObjId instance")
-                case (idx, rank):
+                case (index, rank):
                     try:
-                        target = self[idx]
+                        target = self[index]
                     except IndexError:
                         return None
                     return target if target.id.rank == rank else None
