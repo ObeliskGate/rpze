@@ -92,6 +92,10 @@ def build(compile=False):
                      platfrom + ".whl")
     try:
         os.chdir("./rpze/dist")
+        cwd = os.getcwd()
+        fp = os.path.join(cwd, new_file_name)
+        if os.path.isfile(fp):
+            os.remove(fp)
         os.rename(latest_file_name, new_file_name)
     finally:
         os.chdir(os.path.dirname(__file__))

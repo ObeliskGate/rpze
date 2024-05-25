@@ -8,7 +8,7 @@ from ..structs.game_board import GameBoard, get_board
 from ..structs.plant import Plant, PlantType
 
 SUNFLOWER_HPS_ON_DROPPING_SUN: tuple[int, int, int, int, int, int, int, int] = \
-    tuple(276 - 40 * i for i in range(7)) + (0,)
+    tuple(276 - 40 * i for i in range(7)) + (0,)  # type: ignore
 """向日葵掉落阳光时的血量"""
 
 

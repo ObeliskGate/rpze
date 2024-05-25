@@ -8,7 +8,7 @@ void init();
 // 根据PhaseCode控制本帧应该做什么
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory);
 
-// 被注入到主流程游戏中的函数, 一式两份分别在LawnApp::UpdateFrames和IZUpdate
+// 被注入到主流程游戏中的函数 isInGame==0时为LawnApp; ==1时为跳帧
 template<DWORD isInGame>
 void mainHook(const SharedMemory* pSharedMemory)
 {
@@ -17,19 +17,28 @@ void mainHook(const SharedMemory* pSharedMemory)
 		pSharedMemory->hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode;
 	volatile RunState* pRunState;
+	volatile SyncMethod* pSyncMethod;
 	if constexpr (isInGame)
 	{
 		pPhaseCode = &pSharedMemory->jumpingPhaseCode();
 		pRunState = &pSharedMemory->jumpingRunState();
+		pSyncMethod = &pSharedMemory->jumpingSyncMethod();
 	}
 	else
 	{
 		pPhaseCode = &pSharedMemory->phaseCode();
 		pRunState = &pSharedMemory->runState();
+		pSyncMethod = &pSharedMemory->syncMethod();
 	}
+	if (*pSyncMethod == SyncMethod::MUTEX)
+		pSharedMemory->releaseMutex();
+	
 	*pPhaseCode = PhaseCode::WAIT;
 	*pRunState = RunState::OVER;
 	doAsPhaseCode(*pPhaseCode, pSharedMemory);
+	if (*pSyncMethod == SyncMethod::MUTEX)
+		pSharedMemory->waitMutex();
+		
 	*pRunState = RunState::RUNNING;
 }
 

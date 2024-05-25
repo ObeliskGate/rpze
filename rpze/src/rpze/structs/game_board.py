@@ -5,8 +5,8 @@
 from collections import OrderedDict
 from typing import Self
 
-from . import obj_base as ob
 from .griditem import GriditemList, Griditem, GriditemType
+from .obj_base import ObjBase, property_u32, property_bool, property_i32
 from .plant import PlantList, Plant, PlantType
 from .projectile import ProjectileList
 from .zombie import ZombieList, ZombieType, Zombie
@@ -15,7 +15,7 @@ from ..basic.exception import PvzStatusError
 from ..rp_extend import Controller, RpBaseException
 
 
-class GameBoard(ob.ObjBase):
+class GameBoard(ObjBase):
     """
     函数表中Board对象
 
@@ -36,13 +36,13 @@ class GameBoard(ob.ObjBase):
         self.projectile_list: ProjectileList = ProjectileList(base_ptr + 0xc8, controller)
         self.griditem_list: GriditemList = GriditemList(base_ptr + 0x11c, controller)
 
-    _p_challenge = ob.property_u32(0x160, "Challenge对象指针")
+    _p_challenge = property_u32(0x160, "Challenge对象指针")
 
-    is_dance_mode = ob.property_bool(0x5765, "在dance秘籍时中为True")
+    is_dance_mode = property_bool(0x5765, "在dance秘籍时中为True")
 
-    sun_num = ob.property_i32(0x5560, "阳光数量")
+    sun_num = property_i32(0x5560, "阳光数量")
 
-    game_time = ob.property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
+    game_time = property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
 
     @property
     def mj_clock(self) -> int:
@@ -61,6 +61,15 @@ class GameBoard(ob.ObjBase):
     @frame_duration.setter
     def frame_duration(self, value: int) -> None:
         self.controller.write_i32(value, 0x6a9ec0, 0x454)
+
+    @property
+    def challenge_survival_stage(self) -> int:
+        """ize flag数"""
+        return self.controller.read_i32(self._p_challenge + 0x6c)
+
+    @challenge_survival_stage.setter
+    def challenge_survival_stage(self, value: int) -> None:
+        self.controller.write_i32(value, self._p_challenge + 0x6c)
 
     def iz_setup_plant(self, plant: Plant) -> Self:
         """
@@ -105,7 +114,7 @@ class GameBoard(ob.ObjBase):
             ret"""
         asm.run(code, ctler)
         view = ctler.result_mem[:16].cast("I")  # 以单个元素为u32格式读取前16字节
-        return tuple(None if it == 0 else Plant(it, ctler) for it in view)
+        return tuple(None if it == 0 else Plant(it, ctler) for it in view)  # type: ignore
 
     def new_plant(self, row: int, col: int, type_: PlantType) -> Plant:
         """

@@ -22,7 +22,7 @@ rpze是一个用于ize测试的框架, 旨在保持一定性能、高精度、�
     - 为什么弹出一个黑色窗口显示create shared memory success? 
     - 这是正常现象, 无须多注意. 用于确认成功以及在跳帧时关闭游戏等.
 -
-    - create shared memory failed?
+    - create shared memory failed / 未找到文件?
     - 请再运行一次试试, 可能和杀毒有关; 若一直这样请和我反馈.
 -
     - 游戏正常启动但并不自动运行脚本/invalid command?
@@ -40,14 +40,13 @@ rpze是一个用于ize测试的框架, 旨在保持一定性能、高精度、�
 - 跳帧性能不如[AvZ](https://github.com/vector-wlc/AsmVsZombies), [iztools](https://github.com/sqrt07/iztools)等注入框架
 - 相比于向exe静态添加汇编和DLL注入等方案, 不够原生而存在大量性能浪费.
 - 支持平台过少(>=win10, >=cpy311)使得大量win7玩家无法使用
-- 采用忙等待同步进程, 同步性能好但对计算机配置要求偏高
 - 对ize以外模式的键控暂无支持, 操控游戏底层实现(如跳帧)可能因为和`Board`耦合过高而不够通用.
 - 作者太菜了, 对软件工程和操作系统变成没有基本认知, 会存在大量浪费时间的试错和重构
 
 ## 鸣谢
 [Reisen](https://github.com/alumkal) - 提供初始思路, 模型以及解答各种问题,   
 [63enjoy](https://github.com/POP63enjoy), [Ghastasaucey(BiliBili)](https://space.bilibili.com/384775811)等 - 反汇编结论参考以及教学,  
-[vector-wlc/AsmVsZombies](https://github.com/vector-wlc/AsmVsZombies)  - 重要功能汇编函数参考,  
+[vector-wlc/AsmVsZombies](https://github.com/vector-wlc/AsmVsZombies) - 重要功能汇编函数参考,  
 [sqrt07/iztools](https://github.com/sqrt07/iztools)  -  测试字符串, 功能和简写标准参照,
 
 以及指针表, 函数表等资源工具和各位玩家的鼎力支持.

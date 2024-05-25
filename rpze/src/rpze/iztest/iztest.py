@@ -6,7 +6,7 @@ import time
 from collections.abc import Callable
 from msvcrt import kbhit, getwch
 from random import randint
-from typing import TypeAlias, Self, overload, NamedTuple
+from typing import TypeAlias, Self, overload, NamedTuple, SupportsIndex
 
 from .consts import plant_abbr_to_type, zombie_abbr_to_type
 from .operations import enter_ize
@@ -19,7 +19,7 @@ from ..rp_extend import Controller, HookPosition, RpBaseException
 from ..structs.game_board import GameBoard, get_board
 from ..structs.griditem import Griditem
 from ..structs.plant import PlantType, Plant
-from ..structs.zombie import ZombieType
+from ..structs.zombie import ZombieType, Zombie
 
 
 class PlaceZombieOp(NamedTuple):
@@ -118,10 +118,15 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
     return [PlaceZombieOp(*op) for op in zip(types, times, rows, cols)]
 
 
+_Id: TypeAlias = tuple[int, int]
+
+
 class _IzGround:
-    def __init__(self, origin_plants: list[list[Plant]], origin_brains: list[Griditem]):
-        self.origin_plants: list[list[Plant | None]] = origin_plants
-        self.origin_brains: list[Griditem | None] = origin_brains
+    def __init__(self, origin_plant_ids: list[list[_Id]], origin_brain_ids: list[_Id], izt: "IzTest") -> None:
+        self.origin_plant_ids: list[list[_Id]] = origin_plant_ids
+        self.origin_brain_ids: list[_Id] = origin_brain_ids
+        self.zombie_ids: list[_Id] = []
+        self.izt: "IzTest" = izt
 
     @overload
     def __getitem__(self, item: tuple[int, int]) -> Plant | Griditem | None:
@@ -131,7 +136,7 @@ class _IzGround:
         Args:
             item: (row, col)元组
         Returns:
-            若没有对象或种植对象已死亡返回None, 否则返回该植物/脑子.
+            对象不存在 or 已死亡返回None, 否则返回该植物/脑子.
         Examples:
             >>> ground: _IzGround = ...
             >>> plant = ground[0, 0]  # 获得1-1位置的植物
@@ -146,7 +151,7 @@ class _IzGround:
         Args:
             item: GridStr位置
         Returns:
-            若没有对象或种植对象已死亡返回None, 否则返回该植物/脑子.
+            对象不存在 or 已死亡返回None, 否则返回该植物/脑子.
         Examples:
             >>> ground: _IzGround = ...
             >>> plant = ground["1-1"]  # 获得1-1位置的植物
@@ -156,11 +161,29 @@ class _IzGround:
     def __getitem__(self, item):
         match item:
             case (row, -1):
-                return None if (t := self.origin_brains[row]) is None or t.is_dead else t
+                t = self.izt.game_board.griditem_list.find(*self.origin_brain_ids[row])
+                return None if t is None or t.is_dead else t
             case (row, col):
-                return None if (t := self.origin_plants[row][col]) is None or t.is_dead else t
+                t = self.izt.game_board.plant_list.find(*self.origin_plant_ids[row][col])
+                return None if t is None or t.is_dead else t
             case grid:
                 return self.__getitem__(parse_grid_str(grid))
+
+    def zombie(self, i: SupportsIndex) -> Zombie | None:
+        """
+        获得写在IzTest init_str上的第i个僵尸
+
+        Args:
+            i: 索引, 支持负数, 如-1表示"此时init_str上写的最近放的僵尸"
+        Returns:
+            不存在 or 已死亡返回None, 否则返回僵尸
+        """
+        try:
+            id_ = self.zombie_ids[i]
+        except IndexError:
+            return None
+        t = self.izt.game_board.zombie_list.find(*id_)
+        return None if t is None or t.is_dead else t
 
 
 class IzTest:
@@ -375,8 +398,8 @@ class IzTest:
         @self.flow_factory.connect(until(0), only_once=True, priority=place_priority)
         def _init(_):
             # 清掉所有_ObjList的栈
-            origin_plants: list[list[Plant | None]] = [[None] * 5 for _ in range(5)]
-            origin_brains: list[Griditem | None] = [None] * 5
+            origin_plant_ids: list[list[_Id]] = [[None] * 5 for _ in range(5)]  # type: ignore
+            origin_brain_ids: list[_Id] = [None] * 5  # type: ignore
             board = self.game_board
             board.plant_list.free_all().reset_stack()
             board.zombie_list.free_all().reset_stack()
@@ -391,7 +414,7 @@ class IzTest:
                             continue
                         plant = board.iz_new_plant(row, col, type_)
                         # assert plant is not None
-                        origin_plants[row][col] = plant
+                        origin_plant_ids[row][col] = plant.id.tpl()
                         if self.reset_generate_cd:
                             randomize_generate_cd(plant)
                         if (row, col) in self.target_plants_pos:
@@ -399,17 +422,18 @@ class IzTest:
 
             for i in range(5):
                 brain = self.game_board.new_iz_brain(i)
-                origin_brains[i] = brain
+                origin_brain_ids[i] = brain.id.tpl()
                 if i in self.target_brains_pos:
                     self._target_brains.append(brain)
 
-            self.ground = _IzGround(origin_plants, origin_brains)
+            self.ground = _IzGround(origin_plant_ids, origin_brain_ids, self)
 
         for op in self.place_zombie_list:
             @self.flow_factory.add_tick_runner(place_priority)
             def _place_zombie(fm: FlowManager, _op=op):
                 if fm.time == _op.time:
-                    self.game_board.iz_place_zombie(_op.row, _op.col, _op.type_)
+                    t = self.game_board.iz_place_zombie(_op.row, _op.col, _op.type_)
+                    self.ground.zombie_ids.append(t.id.tpl())
                     return TickRunnerResult.DONE
 
         if self.enable_default_check_end:

@@ -35,7 +35,14 @@ enum class HookPosition : int32_t
 {
 	MAIN_LOOP = 0,
 	ZOMBIE_PICK_RANDOM_SPEED,
-	CHALLENGE_I_ZOMBIE_SCORE_BRAIN
+	CHALLENGE_I_ZOMBIE_SCORE_BRAIN,
+	CHALLENGE_I_ZOMBIE_PLACE_PLANTS
+};
+
+enum class SyncMethod : int32_t
+{
+	SPIN = 0,
+	MUTEX = 1
 };
 
 inline size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }

@@ -19,7 +19,11 @@ bool InsertHook::hookFunc(BYTE* stackTopPtr)
 	return true;
 }
 
-InsertHook::InsertHook(void* pInsert, size_t replacedSize, WORD popStackNum, std::function<ReplaceHookFunc> hookFunc)
+InsertHook::InsertHook(
+	void* pInsert, 
+	size_t replacedSize, 
+	WORD popStackNum, 
+	std::function<ReplaceHookFunc> hookFunc)
 	: pInsert(pInsert), replacedSize(replacedSize), hookFunctor(std::move(hookFunc))
 {
 
@@ -42,8 +46,8 @@ InsertHook::InsertHook(void* pInsert, size_t replacedSize, WORD popStackNum, std
 	afterCode[1] = '\x61'; // popad
 	CopyMemory(&afterCode[2], pInsert, replacedSize);
 	afterCode[replacedSize + 2] = '\xe9'; // jmp originalCode
-	*reinterpret_cast<DWORD*>(&afterCode[replacedSize + 3]) =
-		getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, this->afterCode.get() + replacedSize + 2);
+	*reinterpret_cast<DWORD*>(&afterCode[replacedSize + 3]) = getJmpVal(
+		static_cast<BYTE*>(pInsert) + replacedSize, this->afterCode.get() + replacedSize + 2);
 
 	// returnCode¸³Öµ
 	returnCode = ExecutableUniquePtr<char>(sizeof(RETURN_CODE) - 1);
@@ -74,21 +78,28 @@ InsertHook::~InsertHook()
 	CopyMemory(pInsert, originalCode.get(), replacedSize);
 }
 
-const InsertHook& InsertHook::addReplace(void* pInsert, size_t replacedSize, std::function<ReplaceHookFunc> hookFunc, WORD popStackNum)
+const InsertHook& InsertHook::addReplace(
+	void* pInsert, 
+	size_t replacedSize, 
+	const std::function<ReplaceHookFunc>& hookFunc, 
+	WORD popStackNum)
 {
-	auto pHook = new InsertHook(pInsert, replacedSize, popStackNum, std::move(hookFunc));
+	auto pHook = new InsertHook(pInsert, replacedSize, popStackNum, hookFunc);
 	hooks.push_back(pHook);
 	return *pHook;
 }
 
-const InsertHook& InsertHook::addInsert(void* pInsert, size_t replacedSize, std::function<InsertHookFunc> hookFunc)
+const InsertHook& InsertHook::addInsert(
+	void* pInsert, 
+	size_t replacedSize, 
+	const std::function<InsertHookFunc>& hookFunc)
 {
 	auto pHook = new InsertHook(pInsert, replacedSize, 0, 
-		[hookFunc = std::move(hookFunc)](const Registers& reg, void* rawFuncPtr) -> std::optional<int>
-	{
-		hookFunc(reg);
-		return {};
-	});
+		[hookFunc](const Registers& reg, void*) -> std::optional<int>
+		{
+			hookFunc(reg);
+			return {};
+		});
 	hooks.push_back(pHook);
 	return *pHook;
 }

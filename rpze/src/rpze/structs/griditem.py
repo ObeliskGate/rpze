@@ -5,7 +5,7 @@
 from enum import IntEnum
 from typing import Self
 
-from . import obj_base as ob
+from .obj_base import ObjNode, property_int_enum, property_i32, property_bool, property_f32, obj_list
 from ..basic import asm
 
 
@@ -23,7 +23,7 @@ class GriditemType(IntEnum):
     brain = 0xc
 
 
-class Griditem(ob.ObjNode):
+class Griditem(ObjNode):
     """
     场地物品. 包括脑子, 梯子等
     """
@@ -31,25 +31,25 @@ class Griditem(ob.ObjNode):
 
     ITERATOR_FUNC_ADDRESS = 0x41CAD0
 
-    type_ = ob.property_int_enum(0x8, GriditemType, "场地物品类型")
+    type_ = property_int_enum(0x8, GriditemType, "场地物品类型")
 
-    row = ob.property_i32(0x14, "所在行")
+    row = property_i32(0x14, "所在行")
 
-    col = ob.property_i32(0x10, "所在列")
+    col = property_i32(0x10, "所在列")
 
-    brain_hp = ob.property_i32(0x18, """
+    brain_hp = property_i32(0x18, """
         脑子血量, 墓碑冒出的量, 弹坑消失倒计时, 钉钯消失倒计时
         
         对于ize中脑子, 初始为70, 每次被啃时-= 1(区别于植物血量 -= 4)
         """)
 
-    layer = ob.property_i32(0x1c, "图层")
+    layer = property_i32(0x1c, "图层")
 
-    is_dead = ob.property_bool(0x20, "是否死亡")
+    is_dead = property_bool(0x20, "是否死亡")
 
-    x = ob.property_f32(0x24, "x坐标")
+    x = property_f32(0x24, "x坐标")
 
-    y = ob.property_f32(0x28, "y坐标")
+    y = property_f32(0x28, "y坐标")
 
     def __str__(self) -> str:
         if not self.is_dead:
@@ -68,7 +68,7 @@ class Griditem(ob.ObjNode):
         asm.run(code, self.controller)
 
 
-class GriditemList(ob.obj_list(Griditem)):
+class GriditemList(obj_list(Griditem)):
     """
     场地物品DataArray
     """

@@ -72,6 +72,14 @@ public:
 
 	void close_hook(HookPosition hook) { mem.closeHook(hook); }
 
+	SyncMethod sync_method() const { return mem.getSyncMethod(); }
+
+	SyncMethod jumping_sync_method() const { return mem.getJumpingSyncMethod(); }
+
+	void set_sync_method(SyncMethod val) { mem.setSyncMethod(val); }
+
+	void set_jumping_sync_method(SyncMethod val) { mem.setJumpingSyncMethod(val); }
+
 	template<typename T>
 	T get_result();
 

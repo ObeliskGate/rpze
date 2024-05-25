@@ -3,7 +3,8 @@
 ize 对植物常见的操控方式
 """
 import random
-import typing
+from collections.abc import Iterable
+from typing import overload
 
 from ..structs.game_board import get_board
 from ..structs.plant import Plant, PlantType
@@ -32,7 +33,7 @@ def randomize_generate_cd(plant: Plant) -> Plant:
     return plant
 
 
-@typing.overload
+@overload
 def set_puff_x_offset(puff: Plant, offset: int) -> None:
     """
     为小喷设置x偏移
@@ -49,8 +50,8 @@ def set_puff_x_offset(puff: Plant, offset: int) -> None:
     """
 
 
-@typing.overload
-def set_puff_x_offset(puff: Plant, offset: typing.Iterable[int]) -> None:
+@overload
+def set_puff_x_offset(puff: Plant, offset: Iterable[int]) -> None:
     """
     为小喷设置x偏移
 

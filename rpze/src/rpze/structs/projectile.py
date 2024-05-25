@@ -5,7 +5,7 @@
 from enum import IntEnum
 from typing import Self
 
-from . import obj_base as ob
+from .obj_base import ObjNode, property_i32, property_f32, property_bool, property_int_enum, ObjId, obj_list
 from ..basic import asm
 
 
@@ -41,7 +41,7 @@ class ProjectileMotionType(IntEnum):
     cattail = 9
 
 
-class Projectile(ob.ObjNode):
+class Projectile(ObjNode):
     """
     子弹对象
     """
@@ -49,30 +49,30 @@ class Projectile(ob.ObjNode):
 
     OBJ_SIZE = 0x94
 
-    int_x = ob.property_i32(0x8, "图像整数x坐标")
+    int_x = property_i32(0x8, "图像整数x坐标")
 
-    int_y = ob.property_i32(0xc, "图像整数y坐标")
+    int_y = property_i32(0xc, "图像整数y坐标")
 
-    col = ob.property_i32(0x1c, "所在行数")
+    col = property_i32(0x1c, "所在行数")
 
-    x = ob.property_f32(0x30, "浮点x坐标")
+    x = property_f32(0x30, "浮点x坐标")
 
-    y = ob.property_f32(0x34, "浮点y坐标")
+    y = property_f32(0x34, "浮点y坐标")
 
-    dx = ob.property_f32(0x3c, "x速度")
+    dx = property_f32(0x3c, "x速度")
 
-    dy = ob.property_f32(0x40, "y速度")
+    dy = property_f32(0x40, "y速度")
 
-    is_dead = ob.property_bool(0x50, "是否死亡")
+    is_dead = property_bool(0x50, "是否死亡")
 
-    type_ = ob.property_int_enum(0x5c, ProjectileType, "子弹类型")
+    type_ = property_int_enum(0x5c, ProjectileType, "子弹类型")
 
-    motion_type = ob.property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")
+    motion_type = property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")
 
     @property
-    def target_zombie_id(self) -> ob.ObjId:
+    def target_zombie_id(self) -> ObjId:
         """香蒲子弹目标僵尸"""
-        return ob.ObjId(self.base_ptr + 0x88, self.controller)
+        return ObjId(self.base_ptr + 0x88, self.controller)
 
     def die(self) -> None:
         """
@@ -85,7 +85,7 @@ class Projectile(ob.ObjNode):
         asm.run(code, self.controller)
 
 
-class ProjectileList(ob.obj_list(Projectile)):
+class ProjectileList(obj_list(Projectile)):
     """
     子弹DataArray
     """

@@ -8,7 +8,7 @@ from enum import Enum
 from typing import SupportsIndex, Literal, TypeAlias, Self, overload
 
 from .iztest import IzTest
-from ..flow.flow import FlowManager, TickRunnerResult, CondFunc, FlowFactory
+from ..flow.flow import FlowManager, TickRunnerResult, CondFunc, DEFAULT_PRIORITY
 from ..flow.utils import AwaitableCondFunc
 from ..rp_extend import ControllerError
 from ..structs.game_board import GameBoard, get_board
@@ -230,7 +230,7 @@ class DancingManipulator(AbstractContextManager):
     mj相位控制器, 即, "女仆秘籍".
 
     与avz不同, DancingManipulator目前依托于一个TickRunner控制mj时钟工作.
-    构造函数为protected接口.
+    构造函数为protected.
 
     Attributes:
         start_phase: with语句开始时的相位
@@ -261,7 +261,7 @@ class DancingManipulator(AbstractContextManager):
 
         使用中等效于:
         >>> async def flow(_):
-        ...     await until(condition)
+        ...     await until(condition)  # noqa
         ...     self.next_phase(phase)
 
         Args:
@@ -306,8 +306,7 @@ class DancingManipulator(AbstractContextManager):
 def get_dancing_manipulator(iz_test: IzTest,
                             start_phase: DancingPhaseLiteral = DancingPhase.MOVING,
                             end_phase: DancingPhaseLiteral = DancingPhase.MOVING,
-                            priority: int = FlowFactory.add_tick_runner.__defaults__[0] + 1) \
-        -> DancingManipulator:
+                            priority: int = DEFAULT_PRIORITY + 1) -> DancingManipulator:
     """
     获取一个DancingManipulator
 

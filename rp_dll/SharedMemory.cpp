@@ -1,23 +1,21 @@
 #include "pch.h"
 #include "SharedMemory.h"
 
-SharedMemory* SharedMemory::instancePtr = nullptr;
-
 SharedMemory::SharedMemory()
 {
 	auto hProc = GetCurrentProcess();
-	sharedMemoryName = std::wstring(SHARED_MEMORY_NAME_AFFIX).append(std::to_wstring((GetProcessId(hProc))));
+	auto nameAffix = std::wstring{ UU_NAME_AFFIX } + std::to_wstring(GetProcessId(hProc));
 	hMapFile = CreateFileMappingW(
 		INVALID_HANDLE_VALUE,
 		nullptr,                
 		PAGE_READWRITE,    
 		0,                      
 		SHARED_MEMORY_SIZE,
-		sharedMemoryName.c_str());
+		(nameAffix + L"_shm").c_str());
 	if (!hMapFile)
 	{
 		std::cout << "cannot create shared memory: " << GetLastError() << std::endl;
-		throw std::exception("cannot create shared memory");
+		throw std::runtime_error("cannot create shared memory");
 	}
 	sharedMemoryPtr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
 	if (sharedMemoryPtr)
@@ -36,6 +34,13 @@ SharedMemory::SharedMemory()
 	{
 		hookStateArr()[i] = HookState::NOT_CONNECTED;
 	}
+
+	hMutex = CreateMutexW(nullptr, FALSE, (nameAffix + L"_mutex").c_str());
+	if (!hMutex)
+	{
+		std::cout << "cannot create mutex: " << GetLastError() << std::endl;
+		throw std::exception();
+	}
 }
 
 SharedMemory::~SharedMemory()
@@ -43,9 +48,10 @@ SharedMemory::~SharedMemory()
 	globalState() = HookState::NOT_CONNECTED;
 	UnmapViewOfFile(sharedMemoryPtr);
 	CloseHandle(hMapFile);
+	CloseHandle(hMutex);
 }
 
-std::optional<void*> SharedMemory::getReadWritePtr() const
+void* SharedMemory::getReadWritePtr() const
 {
 	uint32_t ptr = getOffsets()[0];
 	for (size_t i = 1; i < OFFSETS_LEN; i++)
@@ -56,8 +62,50 @@ std::optional<void*> SharedMemory::getReadWritePtr() const
 		ptr += getOffsets()[i];
 	}
 
-	if (!ptr || ptr == OFFSET_END) return {}; // 后半个是为了解决[0]==OFFSET_END的问题
+	if (!ptr || ptr == OFFSET_END) return nullptr; // 后半个是为了解决[0]==OFFSET_END的问题
 	return reinterpret_cast<void*>(ptr);
+}
+
+void SharedMemory::waitMutex() const
+{
+#ifdef _DEBUG
+	switch (WaitForSingleObject(hMutex, 500))
+#else
+	switch (WaitForSingleObject(hMutex, INFINITE))
+#endif
+	{
+	case WAIT_OBJECT_0:
+#ifdef _DEBUG
+		std::cout << "waitMutex: WAIT_OBJECT_0" << std::endl;
+#endif
+		break;
+	case WAIT_ABANDONED:
+		std::cout << "waitMutex: WAIT_ABANDONED" << std::endl;
+		throw std::exception();
+#ifdef _DEBUG
+	case WAIT_TIMEOUT:
+		std::cout << "waitMutex: WAIT_TIMEOUT" << std::endl;
+		throw std::exception();
+#endif
+	case WAIT_FAILED:
+		std::cout << "waitMutex: WAIT_FAILED, error" << GetLastError() << std::endl;
+		throw std::exception();
+	default:
+		std::cout << "waitMutex: unexpected behavior" << std::endl;
+		throw std::exception();
+	}
+}
+
+void SharedMemory::releaseMutex() const
+{
+	if (!ReleaseMutex(hMutex))
+	{
+		std::cout << "releaseMutex: failed, error: " << GetLastError() << std::endl;
+		throw std::exception();
+	}
+#ifdef _DEBUG
+	std::cout << "releaseMutex: success" << std::endl;
+#endif
 }
 
 SharedMemory* SharedMemory::getInstance()
@@ -78,16 +126,16 @@ bool SharedMemory::deleteInstance()
 bool SharedMemory::readMemory() const
 {
 	*static_cast<volatile uint64_t*>(getReadWriteVal()) = 0;
-	bool b = false;
+	bool b;
 	do
 	{
 		auto p = getReadWritePtr();
-		if (!p.has_value())
+		if (!p)
 		{
 			b = false;
 			break;
 		}
-		memcpy(getReadWriteVal(), *p, memoryNum());
+		CopyMemory(getReadWriteVal(), p, memoryNum());
 		b = true;
 	} while (false);
 	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
@@ -99,12 +147,12 @@ bool SharedMemory::writeMemory() const
 	bool b;
 	do {
 		auto p = getReadWritePtr();
-		if (!p.has_value())
+		if (!p)
 		{
 			b = false;
 			break;
 		}
-		memcpy(*p, getReadWriteVal(), memoryNum());
+		CopyMemory(p, getReadWriteVal(), memoryNum());
 		b = true;
 	} while (false);
 	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;

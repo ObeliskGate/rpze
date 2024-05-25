@@ -83,7 +83,7 @@ class InsertHook
 
 	std::function<ReplaceHookFunc> hookFunctor;
 
-	bool __thiscall hookFunc(BYTE* stackTopPtr); // 初始化registers 以及调用InsertHookFunc
+	bool __fastcall hookFunc(BYTE* stackTopPtr); // 初始化registers 以及调用InsertHookFunc
 
 	DWORD __thiscall getAfterCodePtr() { return reinterpret_cast<DWORD>(afterCode.get()); }
 
@@ -100,16 +100,21 @@ class InsertHook
 public:
 	int32_t returnVal; // replaceHook 返回值的参数.
 
-	static const InsertHook& addReplace(void* pInsert, size_t replacedSize, std::function<ReplaceHookFunc> hookFunc, WORD popStackNum = 0);
+	static const InsertHook& addReplace(
+		void* pInsert, 
+		size_t replacedSize, 
+		const std::function<ReplaceHookFunc>& hookFunc,
+		WORD popStackNum = 0);
 
-	static const InsertHook& addInsert(void* pInsert, size_t replacedSize, std::function<InsertHookFunc> hookFunc);
+	static const InsertHook& addInsert(
+		void* pInsert, 
+		size_t replacedSize, 
+		const std::function<InsertHookFunc>& hookFunc);
 
 	static void deleteAll();
 
 	void* getOriginalFuncPtr() { return originalCode.get(); } // 用来call原函数的指针
 };
-
-constexpr size_t RETURN_VAL_OFFSET = offsetof(InsertHook, returnVal);
 
 inline void __declspec(naked) hookStub() // 参数为ecx = InsertHook* 用jmp调用 并且需要手动popfd popad的naked函数. 可能会帮上级函数一起ret.
 {
@@ -118,7 +123,6 @@ inline void __declspec(naked) hookStub() // 参数为ecx = InsertHook* 用jmp调用 并
 		pushfd
 		push ecx
 		lea edx, [esp + 4]
-		push edx
 		call offset InsertHook::hookFunc
 		pop ecx
 		test al, al

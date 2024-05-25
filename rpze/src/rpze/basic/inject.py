@@ -21,7 +21,7 @@ def open_game(game_path: str, num: int = 1) -> list[int]:
     Args:
         game_path: 游戏路径, 绝对相对路径均可
         num: 打开的游戏数量
-    Returns:
+    Returns:e
         打开的所有游戏进程process id组成的列表, 长度为num
     """
     abs_path = os.path.abspath(game_path)
@@ -121,9 +121,10 @@ class InjectedGame(AbstractContextManager):
             raise TypeError("the parameter should be int, str or Controller instance")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is ControllerError:
+            return
         self.controller.end()
         if (self._close_when_exit and
-                exc_type is not ControllerError and
                 exc_type is not KeyboardInterrupt):
             close_by_pids((self.controller.pid,))
 
