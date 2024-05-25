@@ -16,6 +16,19 @@ if __name__ == "__main__":
             from .examples.botanical_clock import botanical_clock
         except ImportError as ie:
             raise ImportError("maybe the package is not fully installed?") from ie
+
+        from pathlib import Path
+        dir_ = Path(__file__).parent / "bin"
+        if not dir_.is_dir():
+            raise IOError("/bin is not a directory, "
+                          "please turn off the antivirus program and add exclusions.")
+        file_names = set()
+        for entry in dir_.iterdir():
+            if entry.is_file():
+                file_names.add(entry.name)
+        if file_names != {"rp_dll.dll", "rp_injector.exe"}:
+            raise IOError("miss binary dependencies! "
+                          "please turn off the antivirus program and add exclusions.")
         try:
             game = InjectedGame(p)
         except (PermissionError, IOError, FileNotFoundError) as e:

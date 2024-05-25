@@ -6,14 +6,18 @@ from typing import Self
 
 class HookPosition(Enum):
     MAIN_LOOP = 0
+    # the main hook of the project
+    # do not open / close it manually, use Controller.start()/.end() instead
     ZOMBIE_PICK_RANDOM_SPEED = 1  # useless
     CHALLENGE_I_ZOMBIE_SCORE_BRAIN = 2
+    # open to disable 0x42B8B0 (disable := do nothing and return)
     CHALLENGE_I_ZOMBIE_PLACE_PLANTS = 3
+    # open to disable 0x42A6C0
 
 
 class SyncMethod(Enum):
     SPIN = 1  # better performance for testing
-    MUTEX = 2  # better performance for normal use
+    MUTEX = 2  # better performance for normal case like modifier
 
 
 class RpBaseException(Exception): ...
@@ -100,6 +104,8 @@ class Controller:
 
     # fall back to use ReadProcessMemory & WriteProcessMemory when not prepared
     # *args for offsets
+    # return None(read_... funcs) or False(write_... funcs) when reading nullptr
+    # the game will crash when reading wild pointers
     def read_bool(self, *args: int) -> bool | None: ...
 
     def read_f32(self, *args: int) -> float | None: ...
