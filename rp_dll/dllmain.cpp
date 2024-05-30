@@ -6,6 +6,7 @@
 #include "SharedMemory.h"
 
 
+
 BOOL APIENTRY DllMain(HMODULE hModule,
                       DWORD ul_reason_for_call,
                       LPVOID lpReserved
@@ -48,6 +49,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 						return {};
 					return 0;
 				}, 12);
+			// InsertHook::addInsert(reinterpret_cast<void*>(0x5a4835), 5, [](Registers& reg)
+			// 	{
+			// 		if (!globalExceptionMessage.has_value()) return;
+			// 		*globalExceptionMessage += ": (code 0x%x) at address %08x in thread %X\n";
+			// 		
+			// 		*reinterpret_cast<const char**>(reg.esp() + 4) = globalExceptionMessage->c_str();
+			// 	});
 		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:

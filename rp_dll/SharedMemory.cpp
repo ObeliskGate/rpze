@@ -15,7 +15,6 @@ SharedMemory::SharedMemory()
 	if (!hMapFile)
 	{
 		std::cout << "cannot create shared memory: " << GetLastError() << std::endl;
-		throw std::runtime_error("cannot create shared memory");
 	}
 	sharedMemoryPtr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
 	if (sharedMemoryPtr)

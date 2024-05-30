@@ -53,8 +53,8 @@ public:
 	Registers() : Registers(nullptr) {}
 };
 
-using InsertHookFunc = void(const Registers&);  
-using ReplaceHookFunc = std::optional<int32_t>(const Registers&, void*);
+using InsertHookFunc = void(Registers&);  
+using ReplaceHookFunc = std::optional<int32_t>(Registers&, void*);
 // 返回{}表示继续执行原函数, 返回其他表示原函数返回值
 
 class InsertHook
@@ -65,7 +65,7 @@ class InsertHook
 		"\xff\xe0";							  // jmp eax
 
 	static constexpr char AFTER_CODE[] = "\x9d\x61"		  // popfd popad
-		"\xe9\xcc\xcc\xcc\xcc";				  // jmp pInsert + replacedSize
+		"\xe9\xcc\xcc\xcc\xcc";				  // jmp originalCode
 
 	static constexpr char RETURN_CODE[] = "\x9d\x61\xc2\xdd\xdd"; // popfd popad ret N
 
@@ -75,7 +75,9 @@ class InsertHook
 
 	size_t replacedSize;  // 被替换的代码段大小
 
-	ExecutableUniquePtr<char> afterCode; // 在替被注入的主函数返回时需要执行的代码段 内容为popfd popad jmp pInsert + replacedSize
+	std::unique_ptr<char[]> replacedCode; // 被替换的函数段
+
+	ExecutableUniquePtr<char> afterCode; // 在替被注入的主函数返回时需要执行的代码段 内容为popfd popad jmp originalCode
 
 	ExecutableUniquePtr<char> returnCode; // 在帮助原函数返回时需要执行的代码段, 内容为popfd popad ret N
 
@@ -89,7 +91,9 @@ class InsertHook
 
 	DWORD __thiscall getReturnCodePtr() { return reinterpret_cast<DWORD>(returnCode.get()); }
 
-	ExecutableUniquePtr<char> originalCode; // 用来保存原函数的代码段
+	ExecutableUniquePtr<char> originalCode; // 用来保存原函数的代码段, 包括jmp回原函数
+	
+	void setOriginalCode();
 
 	InsertHook(void* pInsert, size_t replacedSize, WORD popStackNum, std::function<ReplaceHookFunc> hookFunc);
 

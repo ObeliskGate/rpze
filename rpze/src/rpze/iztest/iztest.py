@@ -483,6 +483,7 @@ class IzTest:
                     if not jump_frame and kbhit() and getwch() == control_speed_key:
                         self.game_board.frame_duration = 10 \
                             if self.game_board.frame_duration != 10 else frame_duration
+                    # print(_flow_manager.time)
                     ctler.skip_frames()
                 self._last_test_ended = False
                 _flow_manager.end()

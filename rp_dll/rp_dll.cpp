@@ -54,9 +54,6 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 
 			continue;
 		case PhaseCode::READ_MEMORY:
-#ifdef _DEBUG	
-			std::cout << "read memory" << std::endl;
-#endif
 			pSharedMemory->readMemory();
 			phaseCode = PhaseCode::WAIT;
 			continue;
@@ -80,10 +77,11 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 {
 	auto pSharedMemory = SharedMemory::getInstance();
+	size_t t = 0;
 	while (phaseCode == PhaseCode::JUMP_FRAME)
 	{
 		__asm
-			{
+		{
 			mov edi, ds:[0x6a9ec0]
 			inc dword ptr [edi + 0x838] // mjClock++
 			mov esi, [edi + 0x768]
@@ -100,7 +98,11 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 			mov eax, esi
 			mov edx, 0x4524F0 // LawnApp::CheckForGameEnd
 			call edx
-			}
+		}
+#ifdef _DEBUG
+		std::cout << std::hex << readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(-1) << std::oct
+		<< "  one frame  " << t++ << std::endl;
+#endif
 		if (!(time(nullptr) % 5))
 		{
 			MSG msg;

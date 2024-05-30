@@ -19,6 +19,44 @@ bool InsertHook::hookFunc(BYTE* stackTopPtr)
 	return true;
 }
 
+void InsertHook::setOriginalCode()
+{
+	originalCode = ExecutableUniquePtr<char>(replacedSize + 5);
+	CopyMemory(originalCode.get(), pInsert, replacedSize);
+	originalCode[replacedSize] = '\xe9'; // jmp pInsert + replacedSize
+	*reinterpret_cast<DWORD*>(&originalCode[replacedSize + 1])
+		= getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, originalCode.get() + replacedSize);
+
+	// 特判jmp call等hook点
+	DWORD toSetIdx;
+
+	switch (replacedSize)
+	{
+	case 5:
+		if (static_cast<unsigned char>(originalCode[0]) == 0xe9 || // jmp
+			static_cast<unsigned char>(originalCode[0]) == 0xe8) // call
+		{
+			toSetIdx = 1;
+			break;
+		}
+		return;
+	case 6:
+		if (static_cast<unsigned char>(originalCode[0] == 0x0f))
+		{
+			auto t = static_cast<unsigned char>(originalCode[1]);
+			if (t <= 0x8f && t >= 0x80)
+			{
+				toSetIdx = 2;
+				break;
+			}
+		}
+	default:
+		return;
+	}
+	auto toJmp = reinterpret_cast<DWORD>(pInsert) + toSetIdx + 4 + *reinterpret_cast<DWORD*>(&originalCode[toSetIdx]);
+	*reinterpret_cast<DWORD*>(&originalCode[toSetIdx]) = toJmp - (reinterpret_cast<DWORD>(&originalCode[toSetIdx]) + 4);
+}
+
 InsertHook::InsertHook(
 	void* pInsert, 
 	size_t replacedSize, 
@@ -26,40 +64,33 @@ InsertHook::InsertHook(
 	std::function<ReplaceHookFunc> hookFunc)
 	: pInsert(pInsert), replacedSize(replacedSize), hookFunctor(std::move(hookFunc))
 {
-
+	// 执行流程 beforeCode -> hookStub -> (afterCode -> originalCode)或returnCode
 	// beforeCode赋值
 	beforeCode = ExecutableUniquePtr<char>(sizeof(INIT_CODE) - 1);
 	CopyMemory(beforeCode.get(), INIT_CODE, sizeof(INIT_CODE) - 1);
 	*reinterpret_cast<DWORD*>(&beforeCode[2]) = reinterpret_cast<DWORD>(this);
 	*reinterpret_cast<DWORD*>(&beforeCode[7]) = reinterpret_cast<DWORD>(&hookStub);
 
-	// originalCode赋值
-	originalCode = ExecutableUniquePtr<char>(replacedSize + 5);
-	CopyMemory(originalCode.get(), pInsert, replacedSize);
-	originalCode[replacedSize] = '\xe9'; // jmp pInsert + replacedSize
-	*reinterpret_cast<DWORD*>(&originalCode[replacedSize + 1])
-		= getJmpVal(static_cast<BYTE*>(pInsert) + replacedSize, originalCode.get() + replacedSize);
+	replacedCode = std::make_unique<char[]>(10);
+	CopyMemory(replacedCode.get(), pInsert, replacedSize);
 
-	// afterCode赋值
-	this->afterCode = ExecutableUniquePtr<char>(replacedSize + sizeof(AFTER_CODE) - 1);
-	afterCode[0] = '\x9d'; // popfd
-	afterCode[1] = '\x61'; // popad
-	CopyMemory(&afterCode[2], pInsert, replacedSize);
-	afterCode[replacedSize + 2] = '\xe9'; // jmp originalCode
-	*reinterpret_cast<DWORD*>(&afterCode[replacedSize + 3]) = getJmpVal(
-		static_cast<BYTE*>(pInsert) + replacedSize, this->afterCode.get() + replacedSize + 2);
+	// originalCode赋值
+	setOriginalCode();
+
+	// afterCode赋值 
+	this->afterCode = ExecutableUniquePtr<char>(sizeof(AFTER_CODE) - 1);
+	CopyMemory(afterCode.get(), AFTER_CODE, sizeof(AFTER_CODE) - 1);
+	*reinterpret_cast<DWORD*>(&afterCode[3]) = getJmpVal(
+		originalCode.get(), this->afterCode.get() + 2);
 
 	// returnCode赋值
 	returnCode = ExecutableUniquePtr<char>(sizeof(RETURN_CODE) - 1);
 	CopyMemory(returnCode.get(), RETURN_CODE, sizeof(RETURN_CODE) - 1);
 	if (popStackNum == 0)
-	{
 		returnCode[2] = '\xc3';
-	}
 	else
-	{
 		*reinterpret_cast<WORD*>(&returnCode[3]) = popStackNum; // ret num
-	}
+	
 
 	// 注入
 	auto injectCode = std::make_unique<char[]>(replacedSize);
@@ -75,7 +106,7 @@ InsertHook::InsertHook(
 
 InsertHook::~InsertHook()
 {
-	CopyMemory(pInsert, originalCode.get(), replacedSize);
+	CopyMemory(pInsert, replacedCode.get(), replacedSize);
 }
 
 const InsertHook& InsertHook::addReplace(
@@ -95,7 +126,7 @@ const InsertHook& InsertHook::addInsert(
 	const std::function<InsertHookFunc>& hookFunc)
 {
 	auto pHook = new InsertHook(pInsert, replacedSize, 0, 
-		[hookFunc](const Registers& reg, void*) -> std::optional<int>
+		[hookFunc](Registers& reg, void*) -> std::optional<int>
 		{
 			hookFunc(reg);
 			return {};
