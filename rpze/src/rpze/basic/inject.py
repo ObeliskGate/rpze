@@ -6,8 +6,9 @@ import os
 import signal
 import subprocess
 import time
+from collections.abc import Iterable
 from contextlib import ContextDecorator, AbstractContextManager
-from typing import overload, Iterable
+from typing import overload
 
 from . import asm
 from .exception import PvzStatusError

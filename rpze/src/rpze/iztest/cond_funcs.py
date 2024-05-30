@@ -14,7 +14,7 @@ def until_precise_digger(magnet: Plant) -> AwaitableCondFunc[None]:
     Args:
         magnet: 要判断cd的磁铁
     """
-    return AwaitableCondFunc(lambda _: magnet.status_cd <= 587)  # 1500 - 913
+    return AwaitableCondFunc(lambda _: magnet.status_cd <= 587)  # 587 - 590 by 寒风
 
 
 def until_plant_die(plant: Plant) -> AwaitableCondFunc[None]:

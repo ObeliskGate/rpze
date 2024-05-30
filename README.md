@@ -10,7 +10,7 @@ rpze是一个用于ize测试的框架, 旨在保持一定性能、高精度、�
 通过与注入游戏的DLL进行ipc以实现理论100%精度和不崩溃的原版函数调用.
 
 ## 支持平台
-所需CPython版本 >= 3.11, 仅支持**Windows10及以上**的x64平台.
+所需CPython版本 >= 3.11, 仅支持**Windows10及以上**的x64平台. (win10+ 32位平台原则上支持但需要自己编译二进制)
 
 仅支持1.0.0.1051版本pvz, 测试以[pt站上的英语原版(lcx版)](https://pvz.tools/download/)为准. 原则上支持各类汉化版, **不支持jspvz上的英语原版.** 各种其他来源的“英语原版”有不小概率出自jspvz或者同样没去登录壳, 请注意.
 
@@ -60,7 +60,7 @@ rpze是一个用于ize测试的框架, 旨在保持一定性能、高精度、�
 
 仅可用MSBuild编译二进制依赖. 本框架使用VS2022.
 
-Python依赖`pip install pybind11 pywin32 keystone-engine setuptools build`   
+Python依赖`pip install pybind11 keystone-engine setuptools build`   
 执行`python config.py --config`配置msbuild文件, `--build`打包生成.whl文件, 具体说明见`config.py`
 
 ## 许可

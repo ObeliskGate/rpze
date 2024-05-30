@@ -5,7 +5,7 @@
 import abc
 from collections.abc import Sequence, Iterator, Callable
 from enum import IntEnum
-from typing import ClassVar, Self, TypeVar, overload, SupportsIndex, Generic, Any, TypeAlias, Final
+from typing import ClassVar, Self, TypeVar, overload, SupportsIndex, Generic, Any, TypeAlias, Final, SupportsInt
 
 from ..basic import asm
 from ..basic.exception import PvzStatusError
@@ -223,7 +223,7 @@ _T_int_enum = TypeVar("_T_int_enum", bound=IntEnum)
 
 
 def property_int_enum(offset: int, cls: type[_T_int_enum], doc: str) \
-        -> OffsetProperty[_T_int_enum, int]:
+        -> OffsetProperty[_T_int_enum, SupportsInt]:
     def _get(self: ObjBase) -> _T_int_enum:
         return cls(self.controller.read_i32(self.base_ptr + offset))
 
