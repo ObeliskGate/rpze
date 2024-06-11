@@ -1,0 +1,8 @@
+target("rp_dll")
+    set_languages("cxx17")
+    add_syslinks("User32")
+    set_encodings("utf-8")
+    set_kind("shared")
+    add_includedirs("inc")
+    add_files("src/*.cpp")
+    set_pcxxheader("inc/stdafx.h")

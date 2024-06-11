@@ -1,0 +1,10 @@
+add_requires("pybind11 2.12.*")
+
+target("rp_extend")
+    add_packages("pybind11")
+    set_languages("cxx17")
+    set_encodings("utf-8")
+    add_rules("python.library", { soabi = true })
+    add_includedirs("inc")
+    add_files("src/*.cpp")
+    set_pcxxheader("inc/stdafx.h")
