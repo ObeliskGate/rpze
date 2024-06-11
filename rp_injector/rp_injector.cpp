@@ -3,7 +3,7 @@
 #include <Windows.h>
 
 #ifdef _WIN64
-#error 请用32位编译
+#error please build in x86 mode
 #endif
 
 bool injectDll(DWORD pid, LPCSTR dllPath)
