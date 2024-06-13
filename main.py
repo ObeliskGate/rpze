@@ -7,7 +7,7 @@ from src.rpze.iztest.operations import enter_ize
 from time import sleep
 from src.rpze.basic.asm import run
 
-with InjectedGame(r"C:\space\pvz\Plants vs. Zombies 1.0.0.1051 EN\PlantsVsZombies.exe", False) as game:
+with InjectedGame(r"G:\pvz\en\Plants vs. Zombies 1.0.0.1051 EN\PlantsVsZombies.exe", False) as game:
     # enter_ize(game.controller)
     # enter_level(game.controller, 70)
     botanical_clock(game.controller, True)
