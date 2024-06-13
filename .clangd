@@ -1,0 +1,4 @@
+If:
+  PathMatch: [rp_dll/.*, rp_inject/.*]
+CompileFlags:
+  Add: [ -m32 ]  # specify 32-bit build for msvc compile_commands

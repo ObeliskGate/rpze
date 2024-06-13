@@ -57,7 +57,7 @@ void* SharedMemory::getReadWritePtr() const
 	{
 		if (getOffsets()[i] == OFFSET_END) break;
 		ptr = *reinterpret_cast<uint32_t*>(ptr);
-		if (!ptr) return {};
+		if (!ptr) return nullptr;
 		ptr += getOffsets()[i];
 	}
 
@@ -67,21 +67,21 @@ void* SharedMemory::getReadWritePtr() const
 
 void SharedMemory::waitMutex() const
 {
-#ifdef _DEBUG
+#ifndef NDEBUG
 	switch (WaitForSingleObject(hMutex, 500))
 #else
 	switch (WaitForSingleObject(hMutex, INFINITE))
 #endif
 	{
 	case WAIT_OBJECT_0:
-#ifdef _DEBUG
+#ifndef NDEBUG
 		std::cout << "waitMutex: WAIT_OBJECT_0" << std::endl;
 #endif
 		break;
 	case WAIT_ABANDONED:
 		std::cout << "waitMutex: WAIT_ABANDONED" << std::endl;
 		throw std::exception();
-#ifdef _DEBUG
+#ifndef NDEBUG
 	case WAIT_TIMEOUT:
 		std::cout << "waitMutex: WAIT_TIMEOUT" << std::endl;
 		throw std::exception();
@@ -102,7 +102,7 @@ void SharedMemory::releaseMutex() const
 		std::cout << "releaseMutex: failed, error: " << GetLastError() << std::endl;
 		throw std::exception();
 	}
-#ifdef _DEBUG
+#ifndef NDEBUG
 	std::cout << "releaseMutex: success" << std::endl;
 #endif
 }

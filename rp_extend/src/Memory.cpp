@@ -253,6 +253,9 @@ bool Memory::runCode(const char* codes, size_t len) const
 void Memory::startControl()
 {
 	if (hookConnected(HookPosition::MAIN_LOOP)) return;
+#ifndef NDEBUG
+	std::cout << "start control" << std::endl;
+#endif
 	phaseCode() = PhaseCode::CONTINUE;
 	jumpingPhaseCode() = PhaseCode::CONTINUE;
 	openHook(HookPosition::MAIN_LOOP); // mutex: this process
@@ -264,6 +267,9 @@ void Memory::endControl()
 	if (!hookConnected(HookPosition::MAIN_LOOP)) return;
 	if (!isShmPrepared())
 		throw MemoryException("endControl: main loop not prepared", this->pid);
+#ifndef NDEBUG
+	std::cout << "end control" << std::endl;
+#endif
 	if (jumpingFrame) endJumpFrame();
 	releaseMutex<>();
 	closeHook(HookPosition::MAIN_LOOP);

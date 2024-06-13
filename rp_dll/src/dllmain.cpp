@@ -16,8 +16,8 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		{
 			init();
 			auto pSharedMemory = SharedMemory::getInstance();
-			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b), 7, 
-				[pSharedMemory](const Registers&) // main loop LawnApp::UpdateFrames 
+			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b),
+				[pSharedMemory](const HookContext&)  // main loop LawnApp::UpdateFrames 
 				{
 					static bool flag = false; // at the first time, we need to get the mutex
 					if (!flag)
@@ -27,33 +27,34 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 					}
 					mainHook<0>(pSharedMemory);
 				});
-			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 5, 
-			 	[pSharedMemory](const Registers& reg) // Board::Board
+			InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 
+			 	[pSharedMemory](const HookContext& reg) // Board::Board
 			 	{
 					pSharedMemory->isBoardPtrValid() = false;
-					pSharedMemory->boardPtr() = *reinterpret_cast<uint32_t*>(reg.esp() + 8); // stack is (... pBoard rta -01) now
+					pSharedMemory->boardPtr() = *reinterpret_cast<uint32_t*>(reg.esp + 8); // stack is (... pBoard rta -1) now
 			 	});
-			InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), 9,
-				[pSharedMemory](const Registers&, void*) -> std::optional<int32_t>
+			InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), reinterpret_cast<void*>(0x42b967),
+				[pSharedMemory](const HookContext&) -> std::optional<uint32_t>
 				{
 					if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN))
 						return {};
 					return 0;
 				});
-			InsertHook::addReplace(reinterpret_cast<void*>(0x42A6C0), 6,
-				[pSharedMemory](const Registers&, void*) -> std::optional<int32_t>
+			InsertHook::addReplace(reinterpret_cast<void*>(0x42A6C0), reinterpret_cast<void*>(0x42a889),
+				[pSharedMemory](const HookContext&) -> std::optional<uint32_t>
 				{
 					if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_PLACE_PLANTS))
 						return {};
 					return 0;
-				}, 12);
+				});
 		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 		break;
 	case DLL_PROCESS_DETACH:
-		InsertHook::deleteAll();
 		SharedMemory::deleteInstance();
+		InsertHook::deleteAll();
+		MH_Uninitialize();
 		break;
 	}
 	return TRUE;

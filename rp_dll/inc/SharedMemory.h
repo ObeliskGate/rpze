@@ -13,16 +13,18 @@ class SharedMemory
 	SharedMemory();
 	~SharedMemory();
 
+	// 返回用来read或write的指针
+	void* getReadWritePtr() const;
+
 	template <typename T = BYTE>
 	T* getPtr() const { return static_cast<T*>(sharedMemoryPtr); }
 
 	template <typename T>
 	T& getRef(const int offset) const { return *reinterpret_cast<T*>(getPtr() + offset); }
 
-	// 返回用来read或write的指针
-	void* getReadWritePtr() const;
-
 public:
+
+
 	static constexpr uint32_t BUFFER_OFFSET = 1024 * 4;
 	static constexpr uint32_t BUFFER_SIZE = SHARED_MEMORY_SIZE - BUFFER_OFFSET;
 	static constexpr uint32_t RESULT_OFFSET = 1024;

@@ -35,7 +35,13 @@ void mainHook(const SharedMemory* pSharedMemory)
 	
 	*pPhaseCode = PhaseCode::WAIT;
 	*pRunState = RunState::OVER;
+#ifndef NDEBUG
+	std::cout << "start a control" << std::endl;
+#endif
 	doAsPhaseCode(*pPhaseCode, pSharedMemory);
+#ifndef NDEBUG
+	std::cout << "end a control" << std::endl;
+#endif
 	if (*pSyncMethod == SyncMethod::MUTEX)
 		pSharedMemory->waitMutex();
 		

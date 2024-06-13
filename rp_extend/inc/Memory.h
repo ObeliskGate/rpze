@@ -216,14 +216,14 @@ void Memory::waitMutex() const
 	if constexpr (check_sync)
 		if (*pCurrentSyncMethod != SyncMethod::MUTEX) return;
 
-#ifdef _DEBUG
+#ifndef NDEBUG
 	switch (WaitForSingleObject(hMutex, 500))
 #else
 	switch (WaitForSingleObject(hMutex, INFINITE))
 #endif // DEBUG
 	{
 	case WAIT_OBJECT_0:
-#ifdef _DEBUG
+#ifndef NDEBUG
 		std::cout << "mutex waited" << std::endl;
 #endif
 		break;
@@ -232,7 +232,7 @@ void Memory::waitMutex() const
 			("waitMutex: failed, error " + std::to_string(GetLastError())).c_str(), pid);
 	case WAIT_ABANDONED:
 		throw MemoryException("waitMutex: abandoned", pid);
-#ifdef _DEBUG
+#ifndef NDEBUG
 	case WAIT_TIMEOUT:
 		throw MemoryException("waitMutex: timeout", pid);
 #endif // DEBUG
@@ -249,7 +249,7 @@ void Memory::releaseMutex() const
 	if (!ReleaseMutex(hMutex))
 		throw MemoryException(
 			("releaseMutex: failed, error " + std::to_string(GetLastError())).c_str(), pid);
-#ifdef _DEBUG
+#ifndef NDEBUG
 	std::cout << "mutex released" << std::endl;
 #endif
 

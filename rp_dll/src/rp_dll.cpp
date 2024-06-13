@@ -14,7 +14,11 @@ void init()
 	freopen_s(&_, "CONIN$", "r", stdin);
 	std::ios::sync_with_stdio();
 	std::cout << "console set" << std::endl;
-	SharedMemory::getInstance();
+	auto p = SharedMemory::getInstance();
+	MH_Initialize();
+#ifndef NDEBUG
+	std::cout << "debug mode, base ptr: " << (DWORD)p->getSharedMemoryPtr() << std::endl;
+#endif
 }
 
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory)
@@ -30,6 +34,9 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 			continue;
 		case PhaseCode::RUN_CODE:
 			{
+#ifndef NDEBUG
+				std::cout << "start run code" << std::endl;
+#endif
 				auto p = pSharedMemory->getAsmPtr();
 				__asm
 				{
@@ -38,6 +45,9 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 				}
 				pSharedMemory->executeResult() = ExecuteResult::SUCCESS;
 				phaseCode = PhaseCode::WAIT;
+#ifndef NDEBUG
+				std::cout << "run code success" << std::endl;
+#endif
 				continue;
 			}
 		case PhaseCode::JUMP_FRAME:
@@ -48,17 +58,20 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 			if (pSharedMemory->syncMethod() == SyncMethod::MUTEX &&
 				pSharedMemory->jumpingSyncMethod() == SyncMethod::MUTEX)
 				pSharedMemory->releaseMutex();
-#ifdef _DEBUG
+#ifndef NDEBUG
 			std::cout << "end jmp frame" << std::endl;
 #endif
 
 			continue;
 		case PhaseCode::READ_MEMORY:
-#ifdef _DEBUG	
+#ifndef NDEBUG
 			std::cout << "read memory" << std::endl;
 #endif
 			pSharedMemory->readMemory();
 			phaseCode = PhaseCode::WAIT;
+#ifndef NDEBUG
+			std::cout << "read memory success" << std::endl;
+#endif
 			continue;
 		case PhaseCode::WRITE_MEMORY:
 			pSharedMemory->writeMemory();
@@ -67,8 +80,11 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 
 		case PhaseCode::READ_MEMORY_PTR:
 			{
-				*static_cast<volatile uint32_t*>(pSharedMemory->getReadWriteVal()) = reinterpret_cast<uint32_t>(
-					pSharedMemory->getSharedMemoryPtr());
+#ifndef NDEBUG
+				std::cout << "read memory ptr" << std::endl;
+#endif
+				*static_cast<volatile uint32_t*>(pSharedMemory->getReadWriteVal()) = 
+					reinterpret_cast<uint32_t>(pSharedMemory->getSharedMemoryPtr());
 				pSharedMemory->executeResult() = ExecuteResult::SUCCESS;
 				phaseCode = PhaseCode::WAIT;
 				continue;

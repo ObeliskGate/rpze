@@ -1,7 +1,7 @@
 includes("**/xmake.lua")
 
 add_rules("mode.debug", "mode.release", "mode.releasedbg")
-add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
+add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode", lsp = "clangd"})
 
 target("prebuild")
     set_kind("phony")
@@ -31,6 +31,7 @@ target("rp_dll")
     after_build(function (target)
         os.cp(target:targetfile(), "./src/rpze/bin")
     end)
+    -- set_targetdir("./src/rpze/bin")
 
 target("rp_injector")
     set_arch("x86")

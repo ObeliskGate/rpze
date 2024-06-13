@@ -108,7 +108,6 @@ bool Controller::write_memory(T&& val, const py::args& offsets)
 template <typename T>
 T Controller::get_result()
 {
-	
 	static_assert(sizeof(T) <= Memory::RESULT_SIZE);
 	return *static_cast<volatile T*>(mem.getReturnResult());
 }

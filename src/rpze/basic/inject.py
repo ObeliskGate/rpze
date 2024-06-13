@@ -227,7 +227,7 @@ def enter_level(controller: Controller, game_mode: int, look_for_saved_game: boo
         pop esi;
         ret;"""
     with ConnectedContext(controller, False) as ctler:
-        if ctler.read_bool(0x6a9ec0, 0x76c):
+        if ctler.read_u32(0x6a9ec0, 0x76c) is not None:
             ctler.end()
             while not ctler.read_bool(0x6a9ec0, 0x76c, 0xa1):  # 是否加载成功bool, thanks for ghast
                 if not ctler.global_connected():
