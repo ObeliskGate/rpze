@@ -8,8 +8,8 @@ void Memory::getRemoteMemoryAddress()
 		throw MemoryException("getRemoteMemoryAddress: main loop not prepared", pid);
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY_PTR;
 	untilGameExecuted();
-	if (executeResult() == ExecuteResult::SUCCESS)
-		remoteMemoryAddress = *static_cast<volatile uint32_t*>(getReadWriteVal());
+	if (shm().executeResult == ExecuteResult::SUCCESS)
+		remoteMemoryAddress = *shm().getReadWriteBuffer<uint32_t>();
 	else throw MemoryException("getRemoteMemoryAddress: unexpected behavior", pid);
 }
 
@@ -23,19 +23,19 @@ Memory::Memory(DWORD pid) : pid(pid)
 		throw MemoryException(
 			("find shared memory failed: " + std::to_string(GetLastError())).c_str(), pid);
 	
-	pBuf = MapViewOfFile(hMemory, 
+	pShm = static_cast<Shm*>(MapViewOfFile(hMemory, 
 		FILE_MAP_ALL_ACCESS, 
 		0, 
 		0, 
-		SHARED_MEMORY_SIZE);
-	if (!pBuf)
+		SHARED_MEMORY_SIZE));
+	if (!pShm)
 		throw MemoryException(
 			("create shared memory failed: " + std::to_string(GetLastError())).c_str(), pid);
 	
 
-	pCurrentPhaseCode = &phaseCode();
-	pCurrentRunState = &runState();
-	pCurrentSyncMethod = &syncMethod();
+	pCurrentPhaseCode = &shm().phaseCode;
+	pCurrentRunState = &shm().runState;
+	pCurrentSyncMethod = &shm().syncMethod;
 	hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 	if (!hPvz)
 		throw MemoryException(
@@ -50,20 +50,23 @@ Memory::Memory(DWORD pid) : pid(pid)
 			("cannot find mutex: " + std::to_string(GetLastError())).c_str(), pid);
 
 
-	globalState() = HookState::CONNECTED;
+	shm().globalState = HookState::CONNECTED;
 	startControl();
 	getRemoteMemoryAddress();
 	endControl();
 
-	syncMethod() = SyncMethod::MUTEX; // 第一次通信切忌不能用mutex, game还没拿到锁
-	jumpingSyncMethod() = SyncMethod::SPIN;
+	shm().syncMethod = SyncMethod::MUTEX; // 第一次通信切忌不能用mutex, game还没拿到锁
+	shm().jumpingSyncMethod = SyncMethod::SPIN;
+#ifndef NDEBUG
+	std::cout << "memory constructed, remote base_ptr is " << remoteMemoryAddress << std::endl;
+#endif
 }
 
 Memory::~Memory()
 {
 	endControl();
-	globalState() = HookState::NOT_CONNECTED;
-	UnmapViewOfFile(pBuf);
+	shm().globalState = HookState::NOT_CONNECTED;
+	UnmapViewOfFile(const_cast<Shm*>(pShm));
 	CloseHandle(hMemory);
 	CloseHandle(hPvz);
 	CloseHandle(hMutex);
@@ -71,26 +74,26 @@ Memory::~Memory()
 
 volatile void* Memory::_readMemory(uint32_t size, const uint32_t* offsets, uint32_t len)
 {
-	memoryNum() = size;
-	CopyMemory(getOffsets(), offsets, sizeof(uint32_t) * len);
-	getOffsets()[len] = OFFSET_END;
+	shm().memoryNum = size;
+	CopyMemory(const_cast<uint32_t*>(shm().offsets), offsets, sizeof(uint32_t) * len);
+	shm().offsets[len] = Shm::OFFSET_END;
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	untilGameExecuted(); 
-	if (executeResult() == ExecuteResult::SUCCESS) return getReadWriteVal();
-	if (executeResult() == ExecuteResult::FAIL) return nullptr;
+	if (shm().executeResult == ExecuteResult::SUCCESS) return shm().getReadWriteBuffer();
+	if (shm().executeResult == ExecuteResult::FAIL) return nullptr;
 	throw MemoryException("_readMemory: unexpected behavior", this->pid);
 }
 
 bool Memory::_writeMemory(const void* pVal, uint32_t size, const uint32_t* offsets, uint32_t len)
 {
-	memoryNum() = size;
-	CopyMemory(getReadWriteVal(), pVal, size);
-	CopyMemory(getOffsets(), offsets, sizeof(uint32_t) * len);
-	getOffsets()[len] = OFFSET_END;
+	shm().memoryNum = size;
+	CopyMemory(const_cast<void*>(shm().getReadWriteBuffer()), pVal, size);
+	CopyMemory(const_cast<uint32_t*>(shm().offsets), offsets, sizeof(uint32_t) * len);
+	shm().offsets[len] = Shm::OFFSET_END;
 	getCurrentPhaseCode() = PhaseCode::WRITE_MEMORY;
 	untilGameExecuted();
-	if (executeResult() == ExecuteResult::SUCCESS) return true;
-	if (executeResult() == ExecuteResult::FAIL) return false;
+	if (shm().executeResult == ExecuteResult::SUCCESS) return true;
+	if (shm().executeResult == ExecuteResult::FAIL) return false;
 	throw MemoryException("_writeMemory: unexpected behavior", this->pid);
 }
 
@@ -132,13 +135,13 @@ bool Memory::startJumpFrame()
 {
 	if (!isShmPrepared())
 		throw MemoryException("startJumpFrame: main loop hook not prepared", this->pid);
-	if (!boardPtr())
+	if (!shm().boardPtr)
 		throw MemoryException("startJumpFrame: board ptr not found", this->pid);
 	if (jumpingFrame) return false;
 	jumpingFrame = true;
-	pCurrentPhaseCode = &jumpingPhaseCode();
-	pCurrentRunState = &jumpingRunState();
-	pCurrentSyncMethod = &jumpingSyncMethod();
+	pCurrentPhaseCode = &shm().jumpingPhaseCode;
+	pCurrentRunState = &shm().jumpingRunState;
+	pCurrentSyncMethod = &shm().jumpingSyncMethod;
 
 
 	// 非syncMethod -> 跳帧syncMethod | 锁所有权变化
@@ -147,11 +150,11 @@ bool Memory::startJumpFrame()
 	// mutex -> mutex | extend -> dll 放锁
 	// spin -> spin | dll -> dll 不做事
 
-	if (jumpingSyncMethod() == SyncMethod::MUTEX && syncMethod() == SyncMethod::MUTEX)
+	if (shm().syncMethod == SyncMethod::MUTEX && shm().jumpingSyncMethod == SyncMethod::MUTEX)
 		releaseMutex<false>();
 	
-	jumpingPhaseCode() = PhaseCode::CONTINUE;
-	phaseCode() = PhaseCode::JUMP_FRAME;
+	shm().jumpingPhaseCode = PhaseCode::CONTINUE;
+	shm().phaseCode = PhaseCode::JUMP_FRAME;
 	while (isBlocked())
 	{
 		if (!globalConnected())
@@ -176,23 +179,24 @@ bool Memory::endJumpFrame()
 	jumpingFrame = false;
 	releaseMutex<>();
 
-	pCurrentPhaseCode = &phaseCode();
-	pCurrentRunState = &runState();
-	pCurrentSyncMethod = &syncMethod();
+	pCurrentPhaseCode = &shm().phaseCode;
+	pCurrentRunState = &shm().runState;
+	pCurrentSyncMethod = &shm().syncMethod;
 
-	phaseCode() = PhaseCode::WAIT;
-	jumpingPhaseCode() = PhaseCode::CONTINUE;
-	while (jumpingRunState() == RunState::OVER)
+	shm().phaseCode = PhaseCode::WAIT;
+	shm().jumpingPhaseCode = PhaseCode::CONTINUE;
+	while (shm().jumpingRunState == RunState::OVER)
 	{
 		if (!globalConnected())
 			throw MemoryException("endJumpFrame: global hook not connected", this->pid);
 	} // give dll time to get mutex
-	if (jumpingSyncMethod() == SyncMethod::MUTEX && syncMethod() == SyncMethod::MUTEX)
+	if (shm().jumpingSyncMethod == SyncMethod::MUTEX && shm().syncMethod == SyncMethod::MUTEX)
 		waitMutex<false>();
 	return true;
 }
 
-void Memory::untilGameExecuted() const
+void Memory::
+untilGameExecuted() const
 {
 	while (getCurrentPhaseCode() != PhaseCode::WAIT)
 	{
@@ -203,8 +207,8 @@ void Memory::untilGameExecuted() const
 
 std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const uint32_t* offsets, uint32_t len)
 {
-	if (size > BUFFER_SIZE) throw std::invalid_argument("readBytes: too many bytes");
-	if (len > OFFSET_LENGTH) throw std::invalid_argument("readBytes: too many offsets");
+	if (size > Shm::BUFFER_SIZE) throw std::invalid_argument("readBytes: too many bytes");
+	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("readBytes: too many offsets");
 	if (!isShmPrepared())
 	{
 		auto remotePtr = getRemotePtr<char[]>(offsets, len);
@@ -222,8 +226,8 @@ std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const ui
 
 bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len)
 {
-	if (size > BUFFER_SIZE) throw std::invalid_argument("writeBytes: too many bytes");
-	if (len > OFFSET_LENGTH) throw std::invalid_argument("writeBytes: too many offsets");
+	if (size > Shm::BUFFER_SIZE) throw std::invalid_argument("writeBytes: too many bytes");
+	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("writeBytes: too many offsets");
 	if (!isShmPrepared())
 	{
 		auto remotePtr = getRemotePtr<char[]>(offsets, len);
@@ -242,11 +246,14 @@ bool Memory::runCode(const char* codes, size_t len) const
 	if (!isShmPrepared())
 		throw MemoryException("runCode: main loop not prepared", this->pid);
 
-	CopyMemory(getAsmPtr(), codes, len);
+#ifndef NDEBUG
+	std::cout << "run code" << std::endl;
+#endif
+	memcpy(const_cast<void*>(shm().getAsmBuffer()), codes, len);
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
 	untilGameExecuted();
-	if (executeResult() == ExecuteResult::SUCCESS) return true;
-	if (executeResult() == ExecuteResult::FAIL) return false;
+	if (shm().executeResult == ExecuteResult::SUCCESS) return true;
+	if (shm().executeResult == ExecuteResult::FAIL) return false;
 	throw MemoryException("runCode: unexpected behavior", this->pid);
 }
 
@@ -256,8 +263,8 @@ void Memory::startControl()
 #ifndef NDEBUG
 	std::cout << "start control" << std::endl;
 #endif
-	phaseCode() = PhaseCode::CONTINUE;
-	jumpingPhaseCode() = PhaseCode::CONTINUE;
+	shm().phaseCode = PhaseCode::CONTINUE;
+	shm().jumpingPhaseCode = PhaseCode::CONTINUE;
 	openHook(HookPosition::MAIN_LOOP); // mutex: this process
 	before();
 }
@@ -273,9 +280,9 @@ void Memory::endControl()
 	if (jumpingFrame) endJumpFrame();
 	releaseMutex<>();
 	closeHook(HookPosition::MAIN_LOOP);
-	phaseCode() = PhaseCode::CONTINUE;
-	jumpingPhaseCode() = PhaseCode::CONTINUE;
-	while (runState() == RunState::OVER)
+	shm().phaseCode = PhaseCode::CONTINUE;
+	shm().jumpingPhaseCode = PhaseCode::CONTINUE;
+	while (shm().runState == RunState::OVER)
 	{
 		if (!globalConnected())
 			throw MemoryException("endControl: global not connected", this->pid);
@@ -284,12 +291,12 @@ void Memory::endControl()
 
 void Memory::openHook(HookPosition hook)
 {
-	hookStateArr()[getHookIndex(hook)] = HookState::CONNECTED;
+	shm().hookStateArr[getHookIndex(hook)] = HookState::CONNECTED;
 }
 
 void Memory::closeHook(HookPosition hook)
 {
-	hookStateArr()[getHookIndex(hook)] = HookState::NOT_CONNECTED;
+	shm().hookStateArr[getHookIndex(hook)] = HookState::NOT_CONNECTED;
 }
 
 void Memory::setSyncMethod(SyncMethod val)
@@ -297,7 +304,7 @@ void Memory::setSyncMethod(SyncMethod val)
 	if (hookConnected(HookPosition::MAIN_LOOP))
 		throw MemoryException(
 			"setSyncMethod: cannot set sync method when main loop hook is connected", this->pid);
-	syncMethod() = val;
+	shm().syncMethod = val;
 }
 
 void Memory::setJumpingSyncMethod(SyncMethod val)
@@ -305,12 +312,12 @@ void Memory::setJumpingSyncMethod(SyncMethod val)
 	if (jumpingFrame)
 		throw MemoryException(
 			"setJumpingSyncMethod: cannot set jumping sync method when jumping frame", this->pid);
-	jumpingSyncMethod() = val;
+	shm().jumpingSyncMethod = val;
 }
 
-std::tuple<bool, uint32_t> Memory::getPBoard() const
+std::pair<bool, uint32_t> Memory::getPBoard() const
 {
-	auto t = isBoardPtrValid();
-	isBoardPtrValid() = true;
-	return { t, boardPtr() };
+	auto t = shm().isBoardPtrValid;
+	shm().isBoardPtrValid = true;
+	return { t, shm().boardPtr };
 }

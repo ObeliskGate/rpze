@@ -1,7 +1,7 @@
 #pragma once
 #include "Memory.h"
 #include "stdafx.h"
-#include <pybind11/stl.h>
+
 // 给Python侧暴露的类型
 
 class Controller
@@ -30,7 +30,7 @@ public:
 
 	DWORD pid() const { return mem.getPid(); }
 
-	std::tuple<bool, uint32_t> get_p_board() const { return mem.getPBoard(); }
+	std::pair<bool, uint32_t> get_p_board() const { return mem.getPBoard(); }
 
 	bool hook_connected(HookPosition pos = HookPosition::MAIN_LOOP) const { return mem.hookConnected(pos); }
 
@@ -60,7 +60,7 @@ public:
 
 	void start() { mem.startControl(); }
 
-	uint32_t result_address() const { return mem.getWrittenAddress(); }
+	uint32_t result_address() const { return mem.getBufferAddress(); }
 
 	uint32_t asm_address() const { return mem.getAsmAddress(); }
 
@@ -108,13 +108,13 @@ bool Controller::write_memory(T&& val, const py::args& offsets)
 template <typename T>
 T Controller::get_result()
 {
-	static_assert(sizeof(T) <= Memory::RESULT_SIZE);
+	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
 	return *static_cast<volatile T*>(mem.getReturnResult());
 }
 
 template <typename T>
 void Controller::set_result(T val)
 {
-	static_assert(sizeof(T) <= Memory::RESULT_SIZE);
+	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
 	*static_cast<volatile T*>(mem.getReturnResult()) = val;
 }

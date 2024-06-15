@@ -3,23 +3,28 @@ includes("**/xmake.lua")
 add_rules("mode.debug", "mode.release", "mode.releasedbg")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode", lsp = "clangd"})
 
+
 target("prebuild")
     set_kind("phony")
-    before_build(function(target)
+    on_config(function(target)
         import("lib.detect.find_tool")
         assert(is_plat("windows"), "Only support windows")
-        local python = find_tool("python3")
-        arch = os.arch()
-        if python then
-            arch = try { function() return os.iorunv(python.program, {"-c", 
-                "import sys; print('x86' if sys.maxsize < 2**32 else 'x64')"}) end}
-            if arch then
-                print("Python arch: " .. arch)  -- arch由Python版本决定而不是操作系统
-            else
-                arch = os.arch()
-            end
-        end
 
+        local python = assert(find_tool("python3"), "Python3 not found")
+        local arch = try { function() return os.iorunv(python.program, {"-c", 
+            "import sys; print('x86' if sys.maxsize < 2**32 else 'x64')"}) end}
+        local version = os.iorunv(python.program, {"--version"})
+        if arch and version then
+            print(version:trim() .. ": " .. arch:trim())  -- arch由Python版本决定而不是操作系统
+        else
+            arch = os.arch()
+        end
+    end)
+    before_build(function(target)
+        os.rm("./src/rpze/bin/*")
+        os.rm("./src/rpze/*.pyd")
+    end)
+    on_clean(function(target)
         os.rm("./src/rpze/bin/*")
         os.rm("./src/rpze/*.pyd")
     end)
@@ -40,7 +45,6 @@ target("rp_injector")
     end)
 
 target("rp_extend")
-    set_arch(arch)
     add_deps("prebuild")
     after_build(function (target)
         os.cp(target:targetfile(), "./src/rpze/")

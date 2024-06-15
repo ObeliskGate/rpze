@@ -2,6 +2,10 @@
 #include "SharedMemory.h"
 #include "rp_dll.h"
 
+#include <cstdint>
+#include <MinHook.h>
+
+
 #define __until(expr) do {} while (!(expr))
 
 void init()
@@ -37,13 +41,13 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 #ifndef NDEBUG
 				std::cout << "start run code" << std::endl;
 #endif
-				auto p = pSharedMemory->getAsmPtr();
+				auto p = pSharedMemory->shm().getAsmBuffer();
 				__asm
 				{
 					mov edx, p
 					call edx
 				}
-				pSharedMemory->executeResult() = ExecuteResult::SUCCESS;
+				pSharedMemory->shm().executeResult = ExecuteResult::SUCCESS;
 				phaseCode = PhaseCode::WAIT;
 #ifndef NDEBUG
 				std::cout << "run code success" << std::endl;
@@ -51,12 +55,12 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 				continue;
 			}
 		case PhaseCode::JUMP_FRAME:
-			if (pSharedMemory->syncMethod() == SyncMethod::MUTEX &&
-				pSharedMemory->jumpingSyncMethod() == SyncMethod::MUTEX)
+			if (pSharedMemory->shm().syncMethod == SyncMethod::MUTEX &&
+				pSharedMemory->shm().jumpingSyncMethod == SyncMethod::MUTEX)
 				pSharedMemory->waitMutex();
 			doWhenJmpFrame(phaseCode);
-			if (pSharedMemory->syncMethod() == SyncMethod::MUTEX &&
-				pSharedMemory->jumpingSyncMethod() == SyncMethod::MUTEX)
+			if (pSharedMemory->shm().syncMethod == SyncMethod::MUTEX &&
+				pSharedMemory->shm().jumpingSyncMethod == SyncMethod::MUTEX)
 				pSharedMemory->releaseMutex();
 #ifndef NDEBUG
 			std::cout << "end jmp frame" << std::endl;
@@ -83,9 +87,9 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 #ifndef NDEBUG
 				std::cout << "read memory ptr" << std::endl;
 #endif
-				*static_cast<volatile uint32_t*>(pSharedMemory->getReadWriteVal()) = 
-					reinterpret_cast<uint32_t>(pSharedMemory->getSharedMemoryPtr());
-				pSharedMemory->executeResult() = ExecuteResult::SUCCESS;
+				*pSharedMemory->shm().getReadWriteBuffer<uint32_t>() = 
+					reinterpret_cast<uint32_t>(&pSharedMemory->shm());
+				pSharedMemory->shm().executeResult = ExecuteResult::SUCCESS;
 				phaseCode = PhaseCode::WAIT;
 				continue;
 			}
@@ -132,8 +136,8 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 
 bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook)
 {
-	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED ||
-		pSharedMemory->hookStateArr()[getHookIndex(hook)] == HookState::NOT_CONNECTED)
+	if (pSharedMemory->shm().globalState == HookState::NOT_CONNECTED ||
+		pSharedMemory->shm().hookStateArr[getHookIndex(hook)] == HookState::NOT_CONNECTED)
 		return true;
 	return false;
 }

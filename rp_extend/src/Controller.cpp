@@ -93,7 +93,7 @@ PYBIND11_MODULE(rp_extend, m)
 }
 
 Controller::Controller(DWORD pid) : mem(pid),
-	result_mem(py::memoryview::from_memory(const_cast<void*>(mem.getReturnResult()), Memory::RESULT_SIZE, false))
+	result_mem(py::memoryview::from_memory(const_cast<void*>(mem.getReturnResult()), Shm::BUFFER_SIZE, false))
 { }
 
 bool Controller::run_code(const py::bytes& codes) const

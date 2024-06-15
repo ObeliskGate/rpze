@@ -1,4 +1,4 @@
-add_requires("minhook", { arch = "x86" , configs = {cxflags = "/FIIntrin.h"} })
+add_requires("minhook", { arch = "x86" , configs = {cxflags = "/FIintrin.h"} })
 
 target("rp_dll")
     set_languages("cxx17")
@@ -6,6 +6,6 @@ target("rp_dll")
     add_syslinks("User32")
     set_encodings("utf-8")
     set_kind("shared")
+    add_includedirs("../sharedinc")
     add_includedirs("inc")
     add_files("src/*.cpp")
-    set_pcxxheader("inc/stdafx.h")

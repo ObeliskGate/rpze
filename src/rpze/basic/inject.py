@@ -8,7 +8,7 @@ import subprocess
 import time
 from collections.abc import Iterable
 from contextlib import ContextDecorator, AbstractContextManager
-from typing import overload
+from typing import Self, overload
 
 from . import asm
 from .exception import PvzStatusError
@@ -120,6 +120,9 @@ class InjectedGame(AbstractContextManager):
             self.controller: Controller = arg
         else:
             raise TypeError("the parameter should be int, str or Controller instance")
+        
+    def __enter__(self) -> Self:
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is ControllerError:

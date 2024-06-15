@@ -1,4 +1,6 @@
 #include "stdafx.h"
+#include <stdexcept>
+#include <string>
 #include "SharedMemory.h"
 
 SharedMemory::SharedMemory()
@@ -17,21 +19,24 @@ SharedMemory::SharedMemory()
 		std::cout << "cannot create shared memory: " << GetLastError() << std::endl;
 		throw std::runtime_error("cannot create shared memory");
 	}
-	sharedMemoryPtr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE);
+	sharedMemoryPtr = static_cast<Shm*>(MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE));
 	if (sharedMemoryPtr)
 	{
 		std::cout << "create shared memory success" << std::endl;
+#ifndef NDEBUG
+		std::cout << "shared memory ptr: " << sharedMemoryPtr << std::endl;
+#endif
 	}
 
-	for (size_t i = 0; i < OFFSETS_LEN; i++)
+	for (size_t i = 0; i < Shm::OFFSETS_LEN; i++)
 	{
-		getOffsets()[i] = OFFSET_END;
+		shm().offsets[i] = Shm::OFFSET_END;
 	}
-	globalState() = HookState::NOT_CONNECTED;
-	isBoardPtrValid() = false;
-	for (size_t i = 0; i < HOOK_LEN; i++)
+	shm().globalState = HookState::NOT_CONNECTED;
+	shm().isBoardPtrValid = false;
+	for (size_t i = 0; i < Shm::HOOK_LEN; i++)
 	{
-		hookStateArr()[i] = HookState::NOT_CONNECTED;
+		shm().hookStateArr[i] = HookState::NOT_CONNECTED;
 	}
 
 	hMutex = CreateMutexW(nullptr, FALSE, (nameAffix + L"_mutex").c_str());
@@ -44,24 +49,24 @@ SharedMemory::SharedMemory()
 
 SharedMemory::~SharedMemory()
 {
-	globalState() = HookState::NOT_CONNECTED;
-	UnmapViewOfFile(sharedMemoryPtr);
+	shm().globalState = HookState::NOT_CONNECTED;
+	UnmapViewOfFile(const_cast<Shm*>(sharedMemoryPtr));
 	CloseHandle(hMapFile);
 	CloseHandle(hMutex);
 }
 
 void* SharedMemory::getReadWritePtr() const
 {
-	uint32_t ptr = getOffsets()[0];
-	for (size_t i = 1; i < OFFSETS_LEN; i++)
+	uint32_t ptr = shm().offsets[0];
+	for (size_t i = 1; i < Shm::OFFSETS_LEN; i++)
 	{
-		if (getOffsets()[i] == OFFSET_END) break;
+		if (shm().offsets[i] == Shm::OFFSET_END) break;
 		ptr = *reinterpret_cast<uint32_t*>(ptr);
 		if (!ptr) return nullptr;
-		ptr += getOffsets()[i];
+		ptr += shm().offsets[i];
 	}
 
-	if (!ptr || ptr == OFFSET_END) return nullptr;
+	if (!ptr || ptr == Shm::OFFSET_END) return nullptr;
 	return reinterpret_cast<void*>(ptr);
 }
 
@@ -124,7 +129,7 @@ bool SharedMemory::deleteInstance()
 
 bool SharedMemory::readMemory() const
 {
-	*static_cast<volatile uint64_t*>(getReadWriteVal()) = 0;
+	*reinterpret_cast<volatile uint64_t*>(shm().readWriteBuffer) = 0;
 	bool b;
 	do
 	{
@@ -134,10 +139,10 @@ bool SharedMemory::readMemory() const
 			b = false;
 			break;
 		}
-		CopyMemory(getReadWriteVal(), p, memoryNum());
+		CopyMemory(const_cast<void*>(shm().getReadWriteBuffer<>()), p, shm().memoryNum);
 		b = true;
 	} while (false);
-	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
+	shm().executeResult = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
 	return b;
 }
 
@@ -151,9 +156,9 @@ bool SharedMemory::writeMemory() const
 			b = false;
 			break;
 		}
-		CopyMemory(p, getReadWriteVal(), memoryNum());
+		CopyMemory(p, const_cast<void*>(shm().getReadWriteBuffer<>()), shm().memoryNum);
 		b = true;
 	} while (false);
-	executeResult() = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
+	shm().executeResult = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
 	return b;
 }

@@ -1,5 +1,14 @@
 #pragma once
 #include "stdafx.h"
+#include <functional>
+#include <memory>
+#include <new>
+#include <optional>
+#include <unordered_map>
+#include <iostream>
+#include <stdexcept>
+#include <MinHook.h>
+#include <winnt.h>
 
 
 #pragma pack(push, 1)
@@ -16,6 +25,7 @@ struct HookContext
 	DWORD ecx;
 	DWORD eax;
 	DWORD eip;
+
 	HookContext() = delete;
 };
 #pragma pack(pop)
@@ -73,14 +83,30 @@ private:
 		HANDLE hHeap;
 	public:
 		HANDLE heap() const { return hHeap; }
-		explicit HeapWrapper(DWORD flOptions) : hHeap(HeapCreate(flOptions, 0, 0)) {}
+		explicit HeapWrapper(DWORD flOptions) : hHeap(HeapCreate(flOptions, 0, 0))
+		{
+			if (hHeap == nullptr)
+			{
+				std::cerr << "HeapCreate failed" << std::endl;
+				throw std::runtime_error("HeapCreate failed");
+			}
+		}
 		~HeapWrapper() { HeapDestroy(hHeap); }
-		void* alloc(size_t size) { return HeapAlloc(hHeap, HEAP_ZERO_MEMORY, size); }
-		void realloc(void* p, size_t size) { HeapReAlloc(hHeap, HEAP_ZERO_MEMORY, p, size); }
+		void* alloc(size_t size, bool zero_memory = false) 
+		{ 	
+			auto ret = HeapAlloc(hHeap, zero_memory ? HEAP_ZERO_MEMORY : 0, size); 
+			if (ret == nullptr) throw std::bad_alloc();
+			return ret;
+		}
+		void realloc(void* p, size_t size, bool zero_memory = false)
+		{
+			auto ret = HeapReAlloc(hHeap, zero_memory ? HEAP_ZERO_MEMORY : 0, p, size);
+			if (ret == nullptr) throw std::bad_alloc();
+		}
 		void free(void* p) { HeapFree(hHeap, 0, p); }
 	};
 
-	inline static auto __executableHeap = HeapWrapper(HEAP_CREATE_ENABLE_EXECUTE);
+	inline static auto __executableHeap = HeapWrapper(HEAP_CREATE_ENABLE_EXECUTE | HEAP_GENERATE_EXCEPTIONS);
 
 #pragma pack(pop)
 	static void __fastcall callBackFunc(InsertHook* this_, HookContext* context);

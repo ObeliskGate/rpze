@@ -1,34 +1,55 @@
 #pragma once
 #include "stdafx.h"
 #include "SharedMemory.h"
+#include <optional>
+#include <type_traits>
+#include <array>
 
-// 设置控制台
+// 设置
 void init();
 
 // 根据PhaseCode控制本帧应该做什么
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory);
 
+template <typename T, typename... Args>
+std::enable_if_t<std::is_trivially_copy_assignable_v<T> && (std::is_convertible_v<std::remove_reference_t<Args>, uint32_t> && ...),
+std::optional<T>>  readMemory(Args&&... offsets)
+{
+	static_assert(sizeof...(Args) >= 1, "at least one offset is required");
+	auto offsets_ = std::array<uint32_t, sizeof...(Args)> {uint32_t(std::forward<Args>(offsets))...};
+	auto base = offsets_[0];
+	for (size_t i = 1; i < sizeof...(Args); i++)
+	{
+		if (base == 0) return std::nullopt;
+		base = *reinterpret_cast<uint32_t*>(base) + offsets_[i];
+	}
+	if (base == 0) return std::nullopt;
+	T result;
+	memcpy(&result, reinterpret_cast<void*>(base), sizeof(T));
+	return result;
+}
+
 // 被注入到主流程游戏中的函数 isInGame==0时为LawnApp; ==1时为跳帧
 template<DWORD isInGame>
 void mainHook(const SharedMemory* pSharedMemory)
 {
-	pSharedMemory->boardPtr() = readMemory<DWORD>(0x6a9ec0, { 0x768 }).value_or(0);
-	if (pSharedMemory->globalState() == HookState::NOT_CONNECTED ||
-		pSharedMemory->hookStateArr()[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
+	pSharedMemory->shm().boardPtr = readMemory<DWORD>(0x6a9ec0, 0x768).value_or(0);
+	if (pSharedMemory->shm().globalState == HookState::NOT_CONNECTED ||
+		pSharedMemory->shm().hookStateArr[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode;
 	volatile RunState* pRunState;
 	volatile SyncMethod* pSyncMethod;
 	if constexpr (isInGame)
 	{
-		pPhaseCode = &pSharedMemory->jumpingPhaseCode();
-		pRunState = &pSharedMemory->jumpingRunState();
-		pSyncMethod = &pSharedMemory->jumpingSyncMethod();
+		pPhaseCode = &pSharedMemory->shm().jumpingPhaseCode;
+		pRunState = &pSharedMemory->shm().jumpingRunState;
+		pSyncMethod = &pSharedMemory->shm().jumpingSyncMethod;
 	}
 	else
 	{
-		pPhaseCode = &pSharedMemory->phaseCode();
-		pRunState = &pSharedMemory->runState();
-		pSyncMethod = &pSharedMemory->syncMethod();
+		pPhaseCode = &pSharedMemory->shm().phaseCode;
+		pRunState = &pSharedMemory->shm().runState;
+		pSyncMethod = &pSharedMemory->shm().syncMethod;
 	}
 	if (*pSyncMethod == SyncMethod::MUTEX)
 		pSharedMemory->releaseMutex();
@@ -36,11 +57,11 @@ void mainHook(const SharedMemory* pSharedMemory)
 	*pPhaseCode = PhaseCode::WAIT;
 	*pRunState = RunState::OVER;
 #ifndef NDEBUG
-	std::cout << "start a control" << std::endl;
+	std::cout << "start a control frame, sync mode: " << (DWORD)*pSyncMethod << std::endl;
 #endif
 	doAsPhaseCode(*pPhaseCode, pSharedMemory);
 #ifndef NDEBUG
-	std::cout << "end a control" << std::endl;
+	std::cout << "end a control frame" << std::endl;
 #endif
 	if (*pSyncMethod == SyncMethod::MUTEX)
 		pSharedMemory->waitMutex();
