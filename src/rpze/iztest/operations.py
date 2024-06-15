@@ -14,7 +14,7 @@ from ..structs.zombie import Zombie
 
 def enter_ize(ctler: Controller) -> GameBoard:
     """
-    进入ize关卡并处理残留的选卡僵尸
+    进入ize关卡并等待至清除选卡僵尸
 
     Args:
         ctler: 被注入的游戏对象
@@ -25,7 +25,8 @@ def enter_ize(ctler: Controller) -> GameBoard:
         enter_level(ctler, 70)
         board = get_board(ctler)
         board.remove_cutscene_zombie()
-        ctler.skip_frames()
+        while ctler.read_u32(0x6a9ec0, 0x7fc) == 2:  # game scene == playing
+            ctler.skip_frames()
     return board
 
 
