@@ -62,11 +62,11 @@ struct Shm
     volatile uint32_t boardPtr;
     volatile PhaseCode jumpingPhaseCode;
     volatile RunState jumpingRunState;
-    volatile uint32_t memoryNum;
+    volatile uint32_t memoryNum; // size of memory to be read & writed
 
     static constexpr size_t OFFSETS_LEN = 16;
     static constexpr uint32_t OFFSET_END = std::numeric_limits<uint32_t>::max();
-    volatile uint32_t offsets[OFFSETS_LEN];
+    volatile uint32_t offsets[OFFSETS_LEN];  // offsets of memory be read & writed
 
     volatile HookState globalState;
     volatile ExecuteResult executeResult;

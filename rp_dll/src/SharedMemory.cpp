@@ -50,7 +50,7 @@ SharedMemory::SharedMemory()
 SharedMemory::~SharedMemory()
 {
 	shm().globalState = HookState::NOT_CONNECTED;
-	UnmapViewOfFile(const_cast<Shm*>(sharedMemoryPtr));
+	UnmapViewOfFile(sharedMemoryPtr);
 	CloseHandle(hMapFile);
 	CloseHandle(hMutex);
 }

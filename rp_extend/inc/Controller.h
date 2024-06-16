@@ -18,7 +18,7 @@ class Controller
 		auto len_ = static_cast<uint32_t>(offsets.size());
 		for (size_t i = 0; i < len_; i++)
 		{
-			offset_buffer[i] = offsets[i].cast<uint32_t>();
+			offset_buffer[i] = offsets[i].template cast<uint32_t>();
 		}
 		return len_;
 	}

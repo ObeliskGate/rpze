@@ -2,7 +2,6 @@
 #include "stdafx.h"
 #include "SharedMemory.h"
 #include <optional>
-#include <type_traits>
 #include <array>
 
 // 设置
@@ -12,21 +11,34 @@ void init();
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory);
 
 template <typename T, typename... Args>
-std::enable_if_t<std::is_trivially_copy_assignable_v<T> && (std::is_convertible_v<std::remove_reference_t<Args>, uint32_t> && ...),
-std::optional<T>>  readMemory(Args&&... offsets)
+std::optional<T> readMemory(Args&&... offsets)
 {
 	static_assert(sizeof...(Args) >= 1, "at least one offset is required");
-	auto offsets_ = std::array<uint32_t, sizeof...(Args)> {uint32_t(std::forward<Args>(offsets))...};
+	auto offsets_ = std::array<uint32_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
 	{
-		if (base == 0) return std::nullopt;
+		if (base == 0) return {};
 		base = *reinterpret_cast<uint32_t*>(base) + offsets_[i];
 	}
-	if (base == 0) return std::nullopt;
-	T result;
-	memcpy(&result, reinterpret_cast<void*>(base), sizeof(T));
-	return result;
+	if (base == 0) return {};
+	return T(*reinterpret_cast<T*>(base));
+}
+
+template <typename T, typename... Args>
+bool writeMemory(T&& val, Args&&... offsets)
+{
+	static_assert(sizeof...(Args) >= 1, "at least one offset is required");
+	auto offsets_ = std::array<uint32_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
+	auto base = offsets_[0];
+	for (size_t i = 1; i < sizeof...(Args); i++)
+	{
+		if (base == 0) return false;
+		base = *reinterpret_cast<uint32_t*>(base) + offsets_[i];
+	}
+	if (base == 0) return false;
+	*reinterpret_cast<T*>(base) = T(std::forward<T>(val));
+	return true;
 }
 
 // 被注入到主流程游戏中的函数 isInGame==0时为LawnApp; ==1时为跳帧

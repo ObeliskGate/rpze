@@ -66,7 +66,7 @@ Memory::~Memory()
 {
 	endControl();
 	shm().globalState = HookState::NOT_CONNECTED;
-	UnmapViewOfFile(const_cast<Shm*>(pShm));
+	UnmapViewOfFile(pShm);
 	CloseHandle(hMemory);
 	CloseHandle(hPvz);
 	CloseHandle(hMutex);

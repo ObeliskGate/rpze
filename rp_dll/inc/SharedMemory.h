@@ -5,7 +5,7 @@ class SharedMemory
 {
 	inline static SharedMemory* instancePtr = nullptr;
 
-	volatile Shm* sharedMemoryPtr;
+	Shm* sharedMemoryPtr;
 	HANDLE hMapFile;
 	HANDLE hMutex;
 
@@ -15,7 +15,7 @@ class SharedMemory
 	// 返回用来read或write的指针
 	void* getReadWritePtr() const;
 public:
-	volatile Shm& shm() const { return *sharedMemoryPtr; }
+	Shm& shm() const { return *sharedMemoryPtr; }
 
 	void waitMutex() const;
 

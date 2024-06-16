@@ -92,21 +92,22 @@ private:
 			}
 		}
 		~HeapWrapper() { HeapDestroy(hHeap); }
-		void* alloc(size_t size, bool zero_memory = false) 
+		void* alloc(size_t size, bool zeroMemory = false) 
 		{ 	
-			auto ret = HeapAlloc(hHeap, zero_memory ? HEAP_ZERO_MEMORY : 0, size); 
+			auto ret = HeapAlloc(hHeap, zeroMemory ? HEAP_ZERO_MEMORY : 0, size); 
 			if (ret == nullptr) throw std::bad_alloc();
 			return ret;
 		}
-		void realloc(void* p, size_t size, bool zero_memory = false)
+		void* realloc(void* p, size_t size, bool zeroMemory = false)
 		{
-			auto ret = HeapReAlloc(hHeap, zero_memory ? HEAP_ZERO_MEMORY : 0, p, size);
+			auto ret = HeapReAlloc(hHeap, zeroMemory ? HEAP_ZERO_MEMORY : 0, p, size);
 			if (ret == nullptr) throw std::bad_alloc();
+			return ret;
 		}
 		void free(void* p) { HeapFree(hHeap, 0, p); }
 	};
 
-	inline static auto __executableHeap = HeapWrapper(HEAP_CREATE_ENABLE_EXECUTE | HEAP_GENERATE_EXCEPTIONS);
+	inline static auto __executableHeap = HeapWrapper(HEAP_CREATE_ENABLE_EXECUTE);
 
 #pragma pack(pop)
 	static void __fastcall callBackFunc(InsertHook* this_, HookContext* context);

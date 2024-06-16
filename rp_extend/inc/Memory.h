@@ -5,7 +5,7 @@
 
 class Memory
 {
-	volatile Shm* pShm;
+	Shm* pShm;
 	HANDLE hMemory;
 	HANDLE hPvz;
 	HANDLE hMutex;
@@ -51,7 +51,7 @@ class Memory
 	void releaseMutex() const;
 
 
-	volatile Shm& shm() const { return *pShm; }
+	Shm& shm() const { return *pShm; }
 
 	// 主要接口
 public:
@@ -91,12 +91,12 @@ public:
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>
-	std::optional<std::enable_if_t<std::is_trivially_copy_assignable_v<T>, T>>
+	std::optional<std::enable_if_t<std::is_trivially_copyable_v<T>, T>>
 		readMemory(const uint32_t* offsets, uint32_t len);
 
 	// **直接**将传入的val写入游戏指定地址
 	template<typename T>
-	std::enable_if_t<std::is_trivially_copy_assignable_v<std::remove_reference_t<T>>, bool>
+	std::enable_if_t<std::is_trivially_copyable_v<std::remove_reference_t<T>>, bool>
 		writeMemory(T&& val, const uint32_t* offsets, uint32_t len);
 
 	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, const uint32_t* offsets, uint32_t len);
@@ -214,7 +214,7 @@ bool Memory::_writeRemoteMemory(T&& val, const uint32_t* offsets, uint32_t len)
 }
 
 template<typename T>
-std::optional<std::enable_if_t<std::is_trivially_copy_assignable_v<T>, T>>
+std::optional<std::enable_if_t<std::is_trivially_copyable_v<T>, T>>
 	Memory::readMemory(const uint32_t* offsets, uint32_t len)
 {
 	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
@@ -226,7 +226,7 @@ std::optional<std::enable_if_t<std::is_trivially_copy_assignable_v<T>, T>>
 }
 
 template<typename T>
-std::enable_if_t<std::is_trivially_copy_assignable_v<std::remove_reference_t<T>>, bool>
+std::enable_if_t<std::is_trivially_copyable_v<std::remove_reference_t<T>>, bool>
 	Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len)
 {
 	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);

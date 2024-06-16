@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [ -m32 ]  # specify 32-bit build for msvc compile_commands
