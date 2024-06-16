@@ -1,5 +1,4 @@
 #include "InsertHook.h"
-#include <errhandlingapi.h>
 #include <stdexcept>
 
 void InsertHook::callBackFunc(InsertHook* this_, HookContext* hookContext)

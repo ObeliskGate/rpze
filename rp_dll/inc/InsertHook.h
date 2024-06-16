@@ -4,10 +4,7 @@
 #include <memory>
 #include <optional>
 #include <unordered_map>
-#include <iostream>
-#include <stdexcept>
 #include <MinHook.h>
-#include <winnt.h>
 
 
 #pragma pack(push, 4)
@@ -84,10 +81,10 @@ private:
         uint8_t popad = 0x61;  // popad
         uint8_t ret = 0xc3;  // ret
 	};
+#pragma pack(pop)
 
 	inline static auto executableHeap = HeapWrapper(HEAP_CREATE_ENABLE_EXECUTE);
 
-#pragma pack(pop)
 	static void __fastcall callBackFunc(InsertHook* this_, HookContext* context);
 
 	CallBack callFunc;
