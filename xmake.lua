@@ -15,16 +15,16 @@ target("prebuild")
             "import sys; print('x86' if sys.maxsize < 2**32 else 'x64')"}) end}
         local version = os.iorunv(python.program, {"--version"})
         if arch and version then
-            print(version:trim() .. ": " .. arch:trim())  -- arch由Python版本决定而不是操作系统
-        else
-            arch = os.arch()
+            local arch = arch:trim()
+            print(version:trim() .. ": " .. arch)  -- arch由Python版本决定而不是操作系统
+            assert(is_arch(arch), "Python arch must be same with the project arch")
         end
     end)
     before_build(function(target)
         os.rm("./src/rpze/bin/*")
         os.rm("./src/rpze/*.pyd")
     end)
-    on_clean(function(target)
+    before_clean(function(target)
         os.rm("./src/rpze/bin/*")
         os.rm("./src/rpze/*.pyd")
     end)
