@@ -49,32 +49,32 @@ PYBIND11_MODULE(rp_extend, m)
 		.def_property("jumping_sync_method", &Controller::jumping_sync_method, &Controller::set_jumping_sync_method)
 
 		// read
-		.def("read_bool", &Controller::read_memory<bool>)
-		.def("read_i8", &Controller::read_memory<int8_t>)
-		.def("read_i16", &Controller::read_memory<int16_t>)
-		.def("read_i32", &Controller::read_memory<int32_t>)
-		.def("read_i64", &Controller::read_memory<int64_t>)
-		.def("read_u8", &Controller::read_memory<uint8_t>)
-		.def("read_u16", &Controller::read_memory<uint16_t>)
-		.def("read_u32", &Controller::read_memory<uint32_t>)
-		.def("read_u64", &Controller::read_memory<uint64_t>)
-		.def("read_f32", &Controller::read_memory<float>)
-		.def("read_f64", &Controller::read_memory<double>)
-		.def("read_bytes", &Controller::read_bytes)
+		 .def("read_bool", &Controller::read_memory<bool>, py::arg("force_remote") = false)
+        .def("read_i8", &Controller::read_memory<int8_t>, py::arg("force_remote") = false)
+        .def("read_i16", &Controller::read_memory<int16_t>, py::arg("force_remote") = false)
+        .def("read_i32", &Controller::read_memory<int32_t>, py::arg("force_remote") = false)
+        .def("read_i64", &Controller::read_memory<int64_t>, py::arg("force_remote") = false)
+        .def("read_u8", &Controller::read_memory<uint8_t>, py::arg("force_remote") = false)
+        .def("read_u16", &Controller::read_memory<uint16_t>, py::arg("force_remote") = false)
+        .def("read_u32", &Controller::read_memory<uint32_t>, py::arg("force_remote") = false)
+        .def("read_u64", &Controller::read_memory<uint64_t>, py::arg("force_remote") = false)
+        .def("read_f32", &Controller::read_memory<float>, py::arg("force_remote") = false)
+        .def("read_f64", &Controller::read_memory<double>, py::arg("force_remote") = false)
+        .def("read_bytes", &Controller::read_bytes, py::arg("size"), py::arg("force_remote") = false)
 
 		// write
-		.def("write_bool", &Controller::write_memory<bool>)
-		.def("write_i8", &Controller::write_memory<int8_t>)
-		.def("write_i16", &Controller::write_memory<int16_t>)
-		.def("write_i32", &Controller::write_memory<int32_t>)
-		.def("write_i64", &Controller::write_memory<int64_t>)
-		.def("write_u8", &Controller::write_memory<uint8_t>)
-		.def("write_u16", &Controller::write_memory<uint16_t>)
-		.def("write_u32", &Controller::write_memory<uint32_t>)
-		.def("write_u64", &Controller::write_memory<uint64_t>)
-		.def("write_f32", &Controller::write_memory<float>)
-		.def("write_f64", &Controller::write_memory<double>)
-		.def("write_bytes", &Controller::write_bytes)
+        .def("write_bool", &Controller::write_memory<bool>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_i8", &Controller::write_memory<int8_t>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_i16", &Controller::write_memory<int16_t>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_i32", &Controller::write_memory<int32_t>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_i64", &Controller::write_memory<int64_t>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_u8", &Controller::write_memory<uint8_t>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_u16", &Controller::write_memory<uint16_t>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_u32", &Controller::write_memory<uint32_t>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_u64", &Controller::write_memory<uint64_t>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_f32", &Controller::write_memory<float>, py::arg("value"), py::arg("force_remote") = false)
+        .def("write_f64", &Controller::write_memory<double>, py::arg("value"), py::arg("force_remote") = false)
+		.def("write_bytes", &Controller::write_bytes, py::arg("value"), py::arg("force_remote") = false)
 
 		.def_property_readonly("result_address", &Controller::result_address)
 		.def_property_readonly("asm_address", &Controller::asm_address)
@@ -102,17 +102,17 @@ bool Controller::run_code(const py::bytes& codes) const
 	return mem.runCode(sw.data(), sw.size());
 }
 
-py::object Controller::read_bytes(uint32_t size, const py::args& offsets)
+py::object Controller::read_bytes(uint32_t size, const py::args& offsets, bool force_remote)
 {
 	auto len_ = set_offset_arr_of_py_sequence(offsets);
-	auto ret = mem.readBytes(size, offset_buffer, len_);
+	auto ret = mem.readBytes(size, offset_buffer, len_, force_remote);
 	if (ret.has_value()) return py::bytes(ret->get(), size);
 	return py::none();
 }
 
-bool Controller::write_bytes(const py::bytes& in, const py::args& offsets)
+bool Controller::write_bytes(const py::bytes& in, const py::args& offsets, bool force_remote)
 {
 	auto sw = std::string_view(in);
 	auto len_ = set_offset_arr_of_py_sequence(offsets);
-	return mem.writeBytes(sw.data(), static_cast<uint32_t>(sw.size()), offset_buffer, len_);
+	return mem.writeBytes(sw.data(), static_cast<uint32_t>(sw.size()), offset_buffer, len_, force_remote);
 }

@@ -195,8 +195,7 @@ bool Memory::endJumpFrame()
 	return true;
 }
 
-void Memory::
-untilGameExecuted() const
+void Memory::untilGameExecuted() const
 {
 	while (getCurrentPhaseCode() != PhaseCode::WAIT)
 	{
@@ -205,18 +204,35 @@ untilGameExecuted() const
 	}
 }
 
-std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const uint32_t* offsets, uint32_t len)
+void* Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
 {
-	if (size > Shm::BUFFER_SIZE) throw std::invalid_argument("readBytes: too many bytes");
-	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("readBytes: too many offsets");
-	if (!isShmPrepared())
+	uint64_t basePtr = offsets[0];
+	for (size_t i = 1; i < len; i++)
 	{
-		auto remotePtr = getRemotePtr<char[]>(offsets, len);
+		if (!basePtr) return nullptr;
+		ReadProcessMemory(hPvz, 
+			reinterpret_cast<LPCVOID>(basePtr), 
+			&basePtr, 
+			sizeof(uint32_t), 
+			nullptr);
+		basePtr += offsets[i];
+	}
+	return reinterpret_cast<void*>(basePtr);
+}
+
+
+std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const uint32_t* offsets, uint32_t len, bool forceRemote)
+{
+	if (forceRemote || !isShmPrepared())
+	{
+		auto remotePtr = getRemotePtr(offsets, len);
 		if (!remotePtr) return {};
 		auto ret = std::make_unique<char[]>(size);
 		ReadProcessMemory(hPvz, remotePtr, ret.get(), size, nullptr);
 		return ret;
 	}
+	if (size > Shm::BUFFER_SIZE) throw std::invalid_argument("readBytes: too many bytes");
+	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("readBytes: too many offsets");
 	auto p = _readMemory(size, offsets, len);
 	if (!p) return {};
 	auto ret = std::make_unique<char[]>(size);
@@ -224,17 +240,17 @@ std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const ui
 	return ret;
 }
 
-bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len)
+bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len, bool forceRemote)
 {
-	if (size > Shm::BUFFER_SIZE) throw std::invalid_argument("writeBytes: too many bytes");
-	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("writeBytes: too many offsets");
-	if (!isShmPrepared())
+	if (forceRemote || !isShmPrepared())
 	{
-		auto remotePtr = getRemotePtr<char[]>(offsets, len);
+		auto remotePtr = getRemotePtr(offsets, len);
 		if (!remotePtr) return false;
 		WriteProcessMemory(hPvz, remotePtr, in, size, nullptr);
 		return true;
 	}
+	if (size > Shm::BUFFER_SIZE) throw std::invalid_argument("writeBytes: too many bytes");
+	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("writeBytes: too many offsets");
 	return _writeMemory(in, size, offsets, len);
 }
 

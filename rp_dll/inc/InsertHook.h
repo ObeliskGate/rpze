@@ -2,7 +2,6 @@
 #include "stdafx.h"
 #include <functional>
 #include <memory>
-#include <new>
 #include <optional>
 #include <unordered_map>
 #include <iostream>
@@ -11,7 +10,7 @@
 #include <winnt.h>
 
 
-#pragma pack(push, 1)
+#pragma pack(push, 4)
 struct HookContext
 {
 	DWORD addr;
@@ -30,28 +29,35 @@ struct HookContext
 };
 #pragma pack(pop)
 
+class HeapWrapper
+{
+	HANDLE hHeap;
+public:
+	HANDLE heap() const { return hHeap; }
+	explicit HeapWrapper(DWORD flOptions);
+	~HeapWrapper() { HeapDestroy(hHeap); }
+	void* alloc(size_t size, bool zeroMemory = false);
+	void* realloc(void* p, size_t size, bool zeroMemory = false);
+	void free(void* p);
+};
+
 class InsertHook
 {
 public:
 	using CallBack = std::function<void(HookContext&)>;
 
-	using ReplaceFunc = std::function<std::optional<uint32_t>(HookContext&)>;
-
-	template <typename T, typename Target = CallBack>
-	using void_if_convertible = std::enable_if_t<std::is_convertible_v<std::remove_reference_t<T>, Target>>;
+	template <typename T>
+	static void addInsert(void* addr, T&& callback);
 
 	template <typename T>
-	static void_if_convertible<T> addInsert(void* addr, T&& callback);
-
-	template <typename T>
-	static void_if_convertible<T, ReplaceFunc> addReplace(void* addr, void* pEip, T&& callback);
+	static void addReplace(void* addr, void* pEip, T&& callback);
 
 	static void deleteAt(void* addr);
 
 	static void deleteAll();
 	
 	template <typename T>
-	InsertHook(void_if_convertible<T>* addr_, T&& callback);
+	InsertHook(void* addr_, T&& callback);
 
 	~InsertHook();
 
@@ -78,36 +84,8 @@ private:
         uint8_t popad = 0x61;  // popad
         uint8_t ret = 0xc3;  // ret
 	};
-	class HeapWrapper
-	{
-		HANDLE hHeap;
-	public:
-		HANDLE heap() const { return hHeap; }
-		explicit HeapWrapper(DWORD flOptions) : hHeap(HeapCreate(flOptions, 0, 0))
-		{
-			if (hHeap == nullptr)
-			{
-				std::cerr << "HeapCreate failed" << std::endl;
-				throw std::runtime_error("HeapCreate failed");
-			}
-		}
-		~HeapWrapper() { HeapDestroy(hHeap); }
-		void* alloc(size_t size, bool zeroMemory = false) 
-		{ 	
-			auto ret = HeapAlloc(hHeap, zeroMemory ? HEAP_ZERO_MEMORY : 0, size); 
-			if (ret == nullptr) throw std::bad_alloc();
-			return ret;
-		}
-		void* realloc(void* p, size_t size, bool zeroMemory = false)
-		{
-			auto ret = HeapReAlloc(hHeap, zeroMemory ? HEAP_ZERO_MEMORY : 0, p, size);
-			if (ret == nullptr) throw std::bad_alloc();
-			return ret;
-		}
-		void free(void* p) { HeapFree(hHeap, 0, p); }
-	};
 
-	inline static auto __executableHeap = HeapWrapper(HEAP_CREATE_ENABLE_EXECUTE);
+	inline static auto executableHeap = HeapWrapper(HEAP_CREATE_ENABLE_EXECUTE);
 
 #pragma pack(pop)
 	static void __fastcall callBackFunc(InsertHook* this_, HookContext* context);
@@ -124,8 +102,8 @@ private:
 };
 
 template <typename T>
-InsertHook::InsertHook(void_if_convertible<T>* addr_, T&& callback)
-	: callFunc(std::forward<T>(callback)), addr(addr_),  hookCode(new (__executableHeap.alloc(sizeof(HookCode))) HookCode())
+InsertHook::InsertHook(void* addr_, T&& callback)
+	: callFunc(std::forward<T>(callback)), addr(addr_),  hookCode(new (executableHeap.alloc(sizeof(HookCode))) HookCode())
 {
 #ifndef NDEBUG
 	std::cout << "generating hook at " << addr_ << std::endl;
@@ -151,24 +129,22 @@ InsertHook::InsertHook(void_if_convertible<T>* addr_, T&& callback)
 }
 
 template <typename T>
-InsertHook::void_if_convertible<T> InsertHook::addInsert(void* addr, T&& callback)
+void InsertHook::addInsert(void* addr, T&& callback)
 {
 	auto it = hooks.find(addr);
 	if (it != hooks.end())
 	{
 		std::cerr << "hook already exists, addr: " << addr << std::endl;
-		throw std::runtime_error("hook already exists");
+		throw std::invalid_argument("hook already exists");
 	}
 	hooks[addr] = std::make_unique<InsertHook>(addr, std::forward<T>(callback));
 }
 
 template <typename T>
-InsertHook::void_if_convertible<T, InsertHook::ReplaceFunc> 
-	InsertHook::addReplace(void* addr, void* pEip, T&& callback)
+void InsertHook::addReplace(void* addr, void* pEip, T&& callback)
 {
 	InsertHook::addInsert(addr, [cb = std::forward<T>(callback), pEip](HookContext& context) {
-		auto ret = cb(context);
-		static_assert(std::is_same_v<decltype(ret), std::optional<uint32_t>>);
+		auto ret = std::optional<uint32_t>(cb(context));
 		if (ret.has_value())
 		{
 			context.eax = *ret;

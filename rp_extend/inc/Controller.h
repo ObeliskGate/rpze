@@ -49,10 +49,10 @@ public:
 	bool end_jump_frame() { return mem.endJumpFrame(); }
 
 	template <typename T>
-	std::optional<T> read_memory(const py::args& offsets);
+	std::optional<T> read_memory(const py::args& offsets, bool force_remote = false);
 
 	template <typename T>
-	bool write_memory(T&& val, const py::args& offsets);
+	bool write_memory(T&& val, const py::args& offsets, bool force_remote = false);
 	
 	inline bool run_code(const py::bytes& codes) const;
 
@@ -86,23 +86,23 @@ public:
 	template<typename T>
 	void set_result(T val);
 
-	py::object read_bytes(uint32_t size, const py::args& offsets);
+	py::object read_bytes(uint32_t size, const py::args& offsets, bool force_remote = false);
 
-	bool write_bytes(const py::bytes& in, const py::args& offsets);
+	bool write_bytes(const py::bytes& in, const py::args& offsets, bool force_remote = false);
 };
 
 template <typename T>
-std::optional<T> Controller::read_memory(const py::args& offsets)
+std::optional<T> Controller::read_memory(const py::args& offsets, bool force_remote)
 {
 	auto len_ = set_offset_arr_of_py_sequence(offsets);
-	return mem.readMemory<T>(offset_buffer, len_);
+	return mem.readMemory<T>(offset_buffer, len_, force_remote);
 }
 
 template <typename T>
-bool Controller::write_memory(T&& val, const py::args& offsets)
+bool Controller::write_memory(T&& val, const py::args& offsets, bool force_remote)
 {
 	auto len_ = set_offset_arr_of_py_sequence(offsets);
-	return mem.writeMemory<T>(std::forward<T>(val), offset_buffer, len_);
+	return mem.writeMemory<T>(std::forward<T>(val), offset_buffer, len_, force_remote);
 }
 
 template <typename T>

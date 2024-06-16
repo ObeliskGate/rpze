@@ -21,8 +21,7 @@ class Memory
 	uint32_t remoteMemoryAddress = 0;
 	void getRemoteMemoryAddress();
 
-	template <typename T>
-	T* getRemotePtr(const uint32_t* offsets, uint32_t len);
+	void* getRemotePtr(const uint32_t* offsets, uint32_t len);
 
 	// pvz进程id
 	DWORD pid = 0;
@@ -59,7 +58,6 @@ public:
 
 	~Memory();
 
-	// 8字节 返回结果
 	volatile void* getReturnResult() const { return shm().getReadWriteBuffer<>(); }
 
 	DWORD getPid() const { return pid; }
@@ -91,17 +89,17 @@ public:
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>
-	std::optional<std::enable_if_t<std::is_trivially_copyable_v<T>, T>>
-		readMemory(const uint32_t* offsets, uint32_t len);
+	std::enable_if_t<std::is_trivial_v<T>, 
+		std::optional<T>> readMemory(const uint32_t* offsets, uint32_t len, bool forceRemote = false);
 
 	// **直接**将传入的val写入游戏指定地址
 	template<typename T>
-	std::enable_if_t<std::is_trivially_copyable_v<std::remove_reference_t<T>>, bool>
-		writeMemory(T&& val, const uint32_t* offsets, uint32_t len);
+	std::enable_if_t<std::is_trivial_v<std::remove_reference_t<T>>, 
+		bool> writeMemory(T&& val, const uint32_t* offsets, uint32_t len, bool forceRemote = false);
 
-	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, const uint32_t* offsets, uint32_t len);
+	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, const uint32_t* offsets, uint32_t len, bool forceRemote = false);
 
-	bool writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len);
+	bool writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len, bool forceRemote = false);
 
 	bool runCode(const char* codes, size_t len) const;
 
@@ -131,23 +129,6 @@ public:
 
 	std::pair<bool, uint32_t> getPBoard() const; // 第一位返回0表示无须换新
 };
-
-template <typename T>
-T* Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
-{
-	uint64_t basePtr = offsets[0];
-	for (size_t i = 1; i < len; i++)
-	{
-		ReadProcessMemory(hPvz, 
-			reinterpret_cast<LPCVOID>(basePtr), 
-			&basePtr, 
-			sizeof(uint32_t), 
-			nullptr);
-		if (!basePtr) return nullptr;
-		basePtr += offsets[i];
-	}
-	return reinterpret_cast<T*>(basePtr);
-}
 
 template <bool check_sync>
 void Memory::waitMutex() const
@@ -197,7 +178,7 @@ void Memory::releaseMutex() const
 template <typename T>
 std::optional<T> Memory::_readRemoteMemory(const uint32_t* offsets, uint32_t len)
 {
-	auto remotePtr = getRemotePtr<T>(offsets, len);
+	auto remotePtr = getRemotePtr(offsets, len);
 	if (!remotePtr) return {};
 	T ret;
 	ReadProcessMemory(hPvz, reinterpret_cast<LPCVOID>(remotePtr), &ret, sizeof(T), nullptr);
@@ -207,30 +188,31 @@ std::optional<T> Memory::_readRemoteMemory(const uint32_t* offsets, uint32_t len
 template <typename T>
 bool Memory::_writeRemoteMemory(T&& val, const uint32_t* offsets, uint32_t len)
 {
-	auto remotePtr = getRemotePtr<T>(offsets, len);
+	auto remotePtr = getRemotePtr(offsets, len);
 	if (!remotePtr) return false;
 	WriteProcessMemory(hPvz, reinterpret_cast<LPVOID>(remotePtr), &val, sizeof(T), nullptr);
 	return true;
 }
 
 template<typename T>
-std::optional<std::enable_if_t<std::is_trivially_copyable_v<T>, T>>
-	Memory::readMemory(const uint32_t* offsets, uint32_t len)
+std::enable_if_t<std::is_trivial_v<T>, 
+	std::optional<T>> Memory::readMemory(const uint32_t* offsets, uint32_t len, bool forceRemote)
 {
 	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
+	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets, len);
 	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("readMemory: offsets too long");
-	if (!hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets, len);
 	auto p = _readMemory(sizeof(T), offsets, len);
 	if (!p) return {};
 	return *static_cast<volatile T*>(p);
 }
 
 template<typename T>
-std::enable_if_t<std::is_trivially_copyable_v<std::remove_reference_t<T>>, bool>
-	Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len)
+std::enable_if_t<std::is_trivial_v<std::remove_reference_t<T>>, 
+	bool> Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len, bool forceRemote)
 {
 	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
+	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) 
+		return _writeRemoteMemory(std::forward<T>(val), offsets, len);
 	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("writeMemory: offsets too long");
-	if (!hookConnected(HookPosition::MAIN_LOOP)) return _writeRemoteMemory(std::forward<T>(val), offsets, len);
 	return _writeMemory(&val, sizeof(T), offsets, len);
 }
