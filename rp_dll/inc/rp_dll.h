@@ -14,12 +14,12 @@ template <typename T, typename... Args>
 std::optional<T> readMemory(Args&&... offsets)
 {
 	static_assert(sizeof...(Args) >= 1, "at least one offset is required");
-	auto offsets_ = std::array<uint32_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
+	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
 	{
 		if (base == 0) return {};
-		base = *reinterpret_cast<uint32_t*>(base) + offsets_[i];
+		base = *reinterpret_cast<uintptr_t*>(base) + offsets_[i];
 	}
 	if (base == 0) return {};
 	return T(*reinterpret_cast<T*>(base));
@@ -29,12 +29,12 @@ template <typename T, typename... Args>
 bool writeMemory(T&& val, Args&&... offsets)
 {
 	static_assert(sizeof...(Args) >= 1, "at least one offset is required");
-	auto offsets_ = std::array<uint32_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
+	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
 	{
 		if (base == 0) return false;
-		base = *reinterpret_cast<uint32_t*>(base) + offsets_[i];
+		base = *reinterpret_cast<uintptr_t*>(base) + offsets_[i];
 	}
 	if (base == 0) return false;
 	*reinterpret_cast<T*>(base) = T(std::forward<T>(val));

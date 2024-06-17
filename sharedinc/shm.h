@@ -1,6 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <limits>
 #include <cstddef>
 
 constexpr wchar_t UU_NAME_AFFIX[] = L"__rp_dll_shared_affix_";
@@ -59,7 +58,7 @@ enum class ShmError: int32_t
 
 inline size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }
 
-#pragma pack(push, 4)
+#pragma pack(push, 1)
 struct Shm
 {
     volatile PhaseCode phaseCode;
@@ -70,7 +69,7 @@ struct Shm
     volatile uint32_t memoryNum; // size of memory to be read & writed
 
     static constexpr size_t OFFSETS_LEN = 16;
-    static constexpr uint32_t OFFSET_END = std::numeric_limits<uint32_t>::max();
+    static constexpr uint32_t OFFSET_END = UINT32_MAX;
     volatile uint32_t offsets[OFFSETS_LEN];  // offsets of memory be read & writed
 
     volatile HookState globalState;

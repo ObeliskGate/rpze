@@ -7,7 +7,7 @@
 #include <MinHook.h>
 
 
-#pragma pack(push, 4)
+#pragma pack(push, 1)
 struct HookContext
 {
 	DWORD addr;

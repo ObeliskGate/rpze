@@ -10,11 +10,9 @@ class Controller
 	uint32_t offset_buffer[128] = {};
 
 	template <typename T>
-	std::enable_if_t<
-		std::is_base_of_v<py::tuple, T> ||
-		std::is_base_of_v<py::list, T>, uint32_t>
-		set_offset_arr_of_py_sequence(const T& offsets)
+	uint32_t set_offset_arr_of_py_sequence(const T& offsets)
 	{
+		static_assert(std::is_base_of_v<py::tuple, T> || std::is_base_of_v<py::list, T>, "offsets must be a Python sequence");
 		auto len_ = static_cast<uint32_t>(offsets.size());
 		for (size_t i = 0; i < len_; i++)
 		{

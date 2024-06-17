@@ -3,6 +3,7 @@
 #include "MemoryException.h"
 #include "shm.h" 
 #include <cstdint>
+#include <type_traits>
 
 class Memory
 {
@@ -93,13 +94,11 @@ public:
 	// 形如<int>({0x6a9ec0, 0x768})这样调用
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>
-	std::enable_if_t<std::is_trivial_v<T>, 
-		std::optional<T>> readMemory(const uint32_t* offsets, uint32_t len, bool forceRemote = false);
+	std::optional<T> readMemory(const uint32_t* offsets, uint32_t len, bool forceRemote = false);
 
 	// **直接**将传入的val写入游戏指定地址
 	template<typename T>
-	std::enable_if_t<std::is_trivial_v<std::remove_reference_t<T>>, 
-		bool> writeMemory(T&& val, const uint32_t* offsets, uint32_t len, bool forceRemote = false);
+	bool writeMemory(T&& val, const uint32_t* offsets, uint32_t len, bool forceRemote = false);
 
 	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, const uint32_t* offsets, uint32_t len, bool forceRemote = false);
 
@@ -199,10 +198,10 @@ bool Memory::_writeRemoteMemory(T&& val, const uint32_t* offsets, uint32_t len)
 }
 
 template<typename T>
-std::enable_if_t<std::is_trivial_v<T>, 
-	std::optional<T>> Memory::readMemory(const uint32_t* offsets, uint32_t len, bool forceRemote)
+std::optional<T> Memory::readMemory(const uint32_t* offsets, uint32_t len, bool forceRemote)
 {
-	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
+	static_assert(sizeof(T) <= Shm::BUFFER_SIZE, "readMemory: sizeof(T) too large");
+	static_assert(std::is_standard_layout_v<T>, "readMemory: T is not standard layout");
 	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets, len);
 	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("readMemory: offsets too long");
 	auto p = _readMemory(sizeof(T), offsets, len);
@@ -211,10 +210,10 @@ std::enable_if_t<std::is_trivial_v<T>,
 }
 
 template<typename T>
-std::enable_if_t<std::is_trivial_v<std::remove_reference_t<T>>, 
-	bool> Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len, bool forceRemote)
+bool Memory::writeMemory(T&& val, const uint32_t* offsets, uint32_t len, bool forceRemote)
 {
-	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
+	static_assert(sizeof(T) <= Shm::BUFFER_SIZE, "writeMemory: sizeof(T) too large");
+	static_assert(std::is_standard_layout_v<std::remove_reference_t<T>>, "writeMemory: T is not standard layout");
 	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) 
 		return _writeRemoteMemory(std::forward<T>(val), offsets, len);
 	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("writeMemory: offsets too long");
