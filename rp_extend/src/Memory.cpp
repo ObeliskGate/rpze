@@ -31,7 +31,10 @@ Memory::Memory(DWORD pid) : pid(pid)
 	if (!pShm)
 		throw MemoryException(
 			("create shared memory failed: " + std::to_string(GetLastError())).c_str(), pid);
-	
+
+	if (shm().already_shared)
+		throw MemoryException("memory: shared memory has already been connected", pid);
+	shm().already_shared = true;
 
 	pCurrentPhaseCode = &shm().phaseCode;
 	pCurrentRunState = &shm().runState;
@@ -66,6 +69,7 @@ Memory::~Memory()
 {
 	endControl();
 	shm().globalState = HookState::NOT_CONNECTED;
+	shm().already_shared = false;
 	UnmapViewOfFile(pShm);
 	CloseHandle(hMemory);
 	CloseHandle(hPvz);

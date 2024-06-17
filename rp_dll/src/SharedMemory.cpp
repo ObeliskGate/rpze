@@ -29,15 +29,14 @@ SharedMemory::SharedMemory()
 	}
 
 	for (size_t i = 0; i < Shm::OFFSETS_LEN; i++)
-	{
 		shm().offsets[i] = Shm::OFFSET_END;
-	}
+	
 	shm().globalState = HookState::NOT_CONNECTED;
 	shm().isBoardPtrValid = false;
+	shm().already_shared = false;
 	for (size_t i = 0; i < Shm::HOOK_LEN; i++)
-	{
 		shm().hookStateArr[i] = HookState::NOT_CONNECTED;
-	}
+
 
 	hMutex = CreateMutexW(nullptr, FALSE, (nameAffix + L"_mutex").c_str());
 	if (!hMutex)
