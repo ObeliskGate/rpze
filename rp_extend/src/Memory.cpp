@@ -100,11 +100,7 @@ bool Memory::_writeMemory(const void* pVal, uint32_t size, const uint32_t* offse
 void Memory::before() const
 {
 	waitMutex<>();
-	while (isBlocked())
-	{
-		if (!globalConnected())
-			throw MemoryException("before: global not connected", this->pid);
-	}
+	while (isBlocked()) waiting("before");
 }
 
 void Memory::next() const
@@ -193,15 +189,6 @@ bool Memory::endJumpFrame()
 	if (shm().jumpingSyncMethod == SyncMethod::MUTEX && shm().syncMethod == SyncMethod::MUTEX)
 		waitMutex<false>();
 	return true;
-}
-
-void Memory::untilGameExecuted() const
-{
-	while (getCurrentPhaseCode() != PhaseCode::WAIT)
-	{
-		if (!globalConnected())
-			throw MemoryException("untilGameExecuted: global hook not connected", this->pid);
-	}
 }
 
 void* Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
@@ -336,4 +323,14 @@ std::pair<bool, uint32_t> Memory::getPBoard() const
 	auto t = shm().isBoardPtrValid;
 	shm().isBoardPtrValid = true;
 	return { t, shm().boardPtr };
+}
+
+void Memory::waiting(const char* callerName) const
+{
+	if (!globalConnected())
+	{
+		auto str = std::string{ "waiting at " } + callerName + 
+			": main loop not connected, errno " + std::to_string(static_cast<int32_t>(shm().error));
+		throw MemoryException(str.c_str(), this->pid);
+	}
 }

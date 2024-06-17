@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "MemoryException.h"
 #include "shm.h" 
+#include <cstdint>
 
 class Memory
 {
@@ -49,8 +50,9 @@ class Memory
 	template <bool check_sync = true>
 	void releaseMutex() const;
 
-
 	Shm& shm() const { return *pShm; }
+
+	void waiting(const char* callerName) const;
 
 	// 主要接口
 public:
@@ -78,9 +80,11 @@ public:
 	// 结束跳帧, 若不在跳帧返回false
 	bool endJumpFrame();
 
-	bool isBlocked() const { return *pCurrentRunState == RunState::RUNNING || *pCurrentPhaseCode == PhaseCode::CONTINUE; }
+	bool isBlocked() const {
+			 return *pCurrentRunState == RunState::RUNNING || *pCurrentPhaseCode == PhaseCode::CONTINUE; }
 
-	void untilGameExecuted() const;
+	void untilGameExecuted() const { 
+			while (getCurrentPhaseCode() != PhaseCode::WAIT) waiting("untilGameExecuted");}
 
 	bool isShmPrepared() const { return hookConnected(HookPosition::MAIN_LOOP)
 		&& *pCurrentPhaseCode == PhaseCode::WAIT

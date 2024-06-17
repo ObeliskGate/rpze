@@ -45,6 +45,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 						return {};
 					return 0;
 				});
+
+			InsertHook::addInsert(reinterpret_cast<void*>(0x5A4760), 
+			[pSharedMemory](HookContext& reg)
+				{
+					pSharedMemory->shm().error = ShmError::CAUGHT_SEH;
+					SharedMemory::deleteInstance();
+				});
 		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:

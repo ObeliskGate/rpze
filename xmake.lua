@@ -19,6 +19,10 @@ target("prebuild")
             print(version:trim() .. ": " .. arch)  -- arch由Python版本决定而不是操作系统
             assert(is_arch(arch), "Python arch must be same with the project arch")
         end
+
+        if not os.isdir("./src/rpze/bin") then
+            os.mkdir("./src/rpze/bin")
+        end
     end)
     before_build(function(target)
         os.rm("./src/rpze/bin/*")

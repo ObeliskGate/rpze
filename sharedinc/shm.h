@@ -48,11 +48,16 @@ enum class HookPosition : int32_t
 enum class SyncMethod : int32_t
 {
 	SPIN = 0,
-	MUTEX = 1
+	MUTEX
+};
+
+enum class ShmError: int32_t
+{
+    NONE = 0,
+    CAUGHT_SEH
 };
 
 inline size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }
-
 
 #pragma pack(push, 4)
 struct Shm
@@ -76,9 +81,11 @@ struct Shm
     volatile SyncMethod syncMethod;
     volatile SyncMethod jumpingSyncMethod;
 
+    volatile ShmError error;
+
     volatile bool isBoardPtrValid;
 
-    static constexpr uint32_t BUFFER_OFFSET = 1024;
+    static constexpr uint32_t BUFFER_OFFSET = 256;
     static constexpr uint32_t ASM_OFFSET = 1024 * 4;
     static constexpr uint32_t BUFFER_SIZE = ASM_OFFSET - BUFFER_OFFSET;
     static constexpr uint32_t ASM_SIZE = SHARED_MEMORY_SIZE - ASM_OFFSET;
