@@ -333,8 +333,9 @@ void Memory::waiting(const char* callerName) const
 {
 	if (!globalConnected())
 	{
-		auto str = std::string{ "waiting at " } + callerName + 
-			": main loop not connected, errno " + std::to_string(static_cast<int32_t>(shm().error));
+		auto str = std::string{ "waiting at " } + callerName +  ": main loop not connected";
+		auto err = static_cast<int32_t>(shm().error);
+		if (err) str += ", errno: " + std::to_string(err);
 		throw MemoryException(str.c_str(), this->pid);
 	}
 }

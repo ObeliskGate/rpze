@@ -15,6 +15,7 @@ void init()
 	AllocConsole();
 	FILE* _;
 	freopen_s(&_, "CONOUT$", "w", stdout);
+	freopen_s(&_, "CONOUT$", "w", stderr);
 	freopen_s(&_, "CONIN$", "r", stdin);
 	std::ios::sync_with_stdio();
 	std::cout << "console set" << std::endl;

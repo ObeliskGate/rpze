@@ -2,7 +2,6 @@
 #include "InsertHook.h"
 #include "SharedMemory.h"
 
-
 BOOL APIENTRY DllMain(HMODULE hModule,
                       DWORD ul_reason_for_call,
                       LPVOID lpReserved
@@ -29,7 +28,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			 	[pSharedMemory](const HookContext& reg) // Board::Board
 			 	{
 					pSharedMemory->shm().isBoardPtrValid = false;
-					pSharedMemory->shm().boardPtr = *reinterpret_cast<uint32_t*>(reg.esp + 8); // stack is (... pBoard rta -1) now
+					pSharedMemory->shm().boardPtr = *reinterpret_cast<uint32_t*>(reg.esp + 8); // stack is (... pBoard rta -1) now	
 			 	});
 			InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), reinterpret_cast<void*>(0x42b967),
 				[pSharedMemory](const HookContext&) -> std::optional<uint32_t>
