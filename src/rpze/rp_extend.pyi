@@ -78,17 +78,15 @@ class Controller:
     def start(self) -> None: ...  # start control and get prepared; do nothing when connected
 
     def end(self) -> None: ...
-
     # assert prepared; end control (end jumping frame if necessary); do nothing when not connected
 
     def start_jump_frame(self) -> bool: ...
-
     # assert prepared and has board
     # return False if already jumping
-    # skip a frame and get prepared
+
     def is_jumping_frame(self) -> bool: ...
 
-    def end_jump_frame(self) -> bool: ...  # assert prepared; return False if not jumping
+    def end_jump_frame(self) -> bool: ...  # assert prepared; return False if not jumping, skip a frame
 
     def get_p_board(self) -> tuple[bool, int]: ...  # return (is_p_board_new, p_board)
 

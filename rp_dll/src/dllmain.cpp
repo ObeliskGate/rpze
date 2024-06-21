@@ -13,7 +13,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		{
 			init();
 			auto pSharedMemory = SharedMemory::getInstance();
-			InsertHook::addInsert(reinterpret_cast<void*>(0x45272b),
+			InsertHook::addInsert(reinterpret_cast<void*>(0x452650),
 				[pSharedMemory](const HookContext&)  // main loop LawnApp::UpdateFrames 
 				{
 					static bool flag = false; // at the first time, we need to get the mutex

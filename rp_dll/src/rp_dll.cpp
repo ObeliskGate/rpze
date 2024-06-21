@@ -103,6 +103,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 	auto pSharedMemory = SharedMemory::getInstance();
 	while (phaseCode == PhaseCode::JUMP_FRAME)
 	{
+		mainHook<1>(pSharedMemory);
 		__asm
 			{
 			mov edi, ds:[0x6a9ec0]
@@ -131,7 +132,6 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 				DispatchMessage(&msg);
 			}
 		}
-		mainHook<1>(pSharedMemory);
 	}
 }
 
