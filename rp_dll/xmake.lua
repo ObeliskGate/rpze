@@ -1,7 +1,7 @@
 add_requires("minhook", { arch = "x86" , configs = {cxflags = "/FIintrin.h"} })
 
 target("rp_dll")
-    set_languages("cxx17")
+    set_languages("cxx23")
     add_packages("minhook")
     add_syslinks("User32")
     set_encodings("utf-8")

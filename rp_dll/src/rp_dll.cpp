@@ -1,9 +1,13 @@
 #include "stdafx.h"
 #include "SharedMemory.h"
 #include "rp_dll.h"
+#include "InsertHook.h"
 
 #include <cstdint>
 #include <MinHook.h>
+#include <exception>
+#include <sstream>
+#include <string.h>
 
 
 #define __until(expr) do {} while (!(expr))
@@ -141,6 +145,57 @@ bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook)
 		pSharedMemory->shm().hookStateArr[getHookIndex(hook)] == HookState::NOT_CONNECTED)
 		return true;
 	return false;
+}
+
+static void* pTrampoline = nullptr;
+void __fastcall hookUpdateApp(DWORD lawnAppAddr)
+{
+	try 
+	{
+		__asm
+		{
+			mov ecx, lawnAppAddr
+			mov eax, pTrampoline
+			call eax
+		}
+	} 
+	catch (const std::exception& e) 
+	{
+		std::stringstream ss;
+		ss << "std::exception: " << e.what() << std::endl;
+		auto& shm = SharedMemory::getInstance()->shm();
+		auto str = ss.str();
+		shm.error = ShmError::CAUGHT_STD_EXCEPTION;
+		auto copySize = std::min(str.size(), Shm::BUFFER_SIZE - 1) + 1; // for \0
+		std::copy_n(str.c_str(), copySize, const_cast<char*>(shm.getReadWriteBuffer<char>()));
+ 		exit();
+		std::terminate();
+	}
+}
+
+void initInThread(const SharedMemory* pSharedMemory)
+{
+	pSharedMemory->waitMutex();
+
+	auto pUpdateApp = readMemory<void*>(0x6a9ec0, 0x0, 0x180).value();
+	if (MH_CreateHook(pUpdateApp, 
+			reinterpret_cast<void*>(&hookUpdateApp), &pTrampoline) != MH_OK)
+	{
+		std::cerr << "LawnApp::UpdateApp hook failed" << std::endl;
+		return;
+	}
+	if (MH_EnableHook(pUpdateApp) != MH_OK)
+	{
+		std::cerr << "LawnApp::UpdateApp enable hook failed" << std::endl;
+		return;
+	}
+}
+
+void exit()
+{
+	SharedMemory::deleteInstance();
+	InsertHook::deleteAll();
+	MH_Uninitialize();
 }
 
 #undef __until

@@ -1,3 +1,4 @@
+#include "shm.h"
 #include "stdafx.h"
 #include "Memory.h"
 #include "MemoryException.h"
@@ -333,9 +334,21 @@ void Memory::waiting(const char* callerName) const
 {
 	if (!globalConnected())
 	{
-		auto str = std::string{ "waiting at " } + callerName +  ": main loop not connected";
-		auto err = static_cast<int32_t>(shm().error);
-		if (err) str += ", errno: " + std::to_string(err);
+		auto str = std::string{ "waiting at " } + callerName +  ": ";
+		
+		switch (shm().error)
+		{
+		case ShmError::CAUGHT_SEH:
+			str += "caught seh";
+			break;
+		case ShmError::CAUGHT_STD_EXCEPTION:
+			str += "caught std exception, message: \n";
+			str += const_cast<char*>(shm().getReadWriteBuffer<char>());
+			break;
+		case ShmError::NONE:
+			str += "main loop not connected";
+			break;
+		}
 		throw MemoryException(str.c_str(), this->pid);
 	}
 }

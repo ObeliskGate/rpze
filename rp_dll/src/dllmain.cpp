@@ -1,6 +1,7 @@
 #include "rp_dll.h"
 #include "InsertHook.h"
 #include "SharedMemory.h"
+#include <stacktrace>
 
 BOOL APIENTRY DllMain(HMODULE hModule,
                       DWORD ul_reason_for_call,
@@ -19,8 +20,9 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 					static bool flag = false; // at the first time, we need to get the mutex
 					if (!flag)
 					{
-						pSharedMemory->waitMutex();
+						initInThread(pSharedMemory);
 						flag = true;
+						
 					}
 					mainHook<0>(pSharedMemory);
 				});
@@ -49,16 +51,19 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			[pSharedMemory](HookContext& reg)
 				{
 					pSharedMemory->shm().error = ShmError::CAUGHT_SEH;
-					SharedMemory::deleteInstance();
+					exit();
+				});
+			InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
+				[](HookContext& reg)
+				{
+					throw std::exception(std::to_string(std::stacktrace::current()).c_str());
 				});
 		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:
 		break;
 	case DLL_PROCESS_DETACH:
-		SharedMemory::deleteInstance();
-		InsertHook::deleteAll();
-		MH_Uninitialize();
+		exit();
 		break;
 	}
 	return TRUE;

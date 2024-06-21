@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [ -m32 ]  # specify 32-bit build for msvc compile_commands
+  Add: [ -m32, '-std:c++latest']  # specify 32-bit build for msvc compile_commands

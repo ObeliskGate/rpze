@@ -53,7 +53,8 @@ enum class SyncMethod : int32_t
 enum class ShmError: int32_t
 {
     NONE = 0,
-    CAUGHT_SEH
+    CAUGHT_SEH,
+    CAUGHT_STD_EXCEPTION
 };
 
 inline size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }

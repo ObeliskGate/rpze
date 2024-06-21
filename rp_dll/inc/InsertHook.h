@@ -51,7 +51,7 @@ public:
 
 	static void deleteAt(void* addr);
 
-	static void deleteAll();
+	static void deleteAll() { hooks.clear(); }
 	
 	template <typename T>
 	InsertHook(void* addr_, T&& callback);
@@ -141,10 +141,10 @@ template <typename T>
 void InsertHook::addReplace(void* addr, void* pEip, T&& callback)
 {
 	InsertHook::addInsert(addr, [cb = std::forward<T>(callback), pEip](HookContext& context) {
-		auto ret = std::optional<uint32_t>(cb(context));
+		auto ret = cb(context);
 		if (ret.has_value())
 		{
-			context.eax = *ret;
+			context.eax = uint32_t(*ret);
 			context.eip = reinterpret_cast<DWORD>(pEip);
 		}	
 	});

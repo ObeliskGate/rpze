@@ -86,3 +86,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode);
 // 可关闭的hook, 不与remote交互但是控制行为
 // 返回true则建议do nothing，false则不执行被hook的函数
 bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook);
+
+void initInThread(const SharedMemory* pSharedMemory);
+
+void exit();

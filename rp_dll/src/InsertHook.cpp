@@ -30,11 +30,6 @@ void InsertHook::deleteAt(void* addr)
     hooks.erase(it);
 }
 
-void InsertHook::deleteAll()
-{
-    hooks.clear();
-}
-
 HeapWrapper::HeapWrapper(DWORD flOptions)  : hHeap(HeapCreate(flOptions, 0, 0))
 {
     if (hHeap == nullptr)
