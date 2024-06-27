@@ -1,7 +1,7 @@
 #include "rp_dll.h"
 #include "InsertHook.h"
 #include "SharedMemory.h"
-#include <stacktrace>
+#include <exception>
 
 BOOL APIENTRY DllMain(HMODULE hModule,
                       DWORD ul_reason_for_call,
@@ -53,11 +53,13 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 					pSharedMemory->shm().error = ShmError::CAUGHT_SEH;
 					exit();
 				});
+#ifndef NDEBUG
 			InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 				[](HookContext& reg)
 				{
-					throw std::exception(std::to_string(std::stacktrace::current()).c_str());
+					throw std::exception("test at dll");
 				});
+#endif
 		}
 	case DLL_THREAD_ATTACH:
 	case DLL_THREAD_DETACH:

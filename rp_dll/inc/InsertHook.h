@@ -2,7 +2,7 @@
 #include "stdafx.h"
 #include <functional>
 #include <memory>
-#include <optional>
+#include <print>
 #include <unordered_map>
 #include <MinHook.h>
 
@@ -103,7 +103,7 @@ InsertHook::InsertHook(void* addr_, T&& callback)
 	: callFunc(std::forward<T>(callback)), addr(addr_),  hookCode(new (executableHeap.alloc(sizeof(HookCode))) HookCode())
 {
 #ifndef NDEBUG
-	std::cout << "generating hook at " << addr_ << std::endl;
+	std::println("generating hook at {}", addr_);
 #endif
 	hookCode->callAddr = reinterpret_cast<DWORD>(&InsertHook::callBackFunc) 
 		- reinterpret_cast<DWORD>(&hookCode->popEax);
@@ -111,17 +111,15 @@ InsertHook::InsertHook(void* addr_, T&& callback)
 	hookCode->thisPtr = reinterpret_cast<DWORD>(this);
 
 	if (MH_CreateHook(addr, hookCode, &pTrampoline) != MH_OK) {
-		std::cerr << "MH_CreateHook failed, addr: " << addr << std::endl;
-		throw std::runtime_error("MH_CreateHook failed");
+		throw std::runtime_error(std::format("MH_CreateHook failed: {}", addr).c_str());
 	}
 
 	if (MH_EnableHook(addr) != MH_OK) {
-		std::cerr << "MH_EnableHook failed, addr: " << addr << std::endl;
-		throw std::runtime_error("MH_EnableHook failed");
+		throw std::runtime_error(std::format("MH_EmableHook failed: {}", addr).c_str());
 	}
 	hookCode->retAddr = reinterpret_cast<DWORD>(pTrampoline);
 #ifndef NDEBUG
-	std::cout << "hooked  " << pTrampoline <<  std::endl;
+	std::println("hooked, trampoline: {}", pTrampoline);
 #endif
 }
 
@@ -131,8 +129,7 @@ void InsertHook::addInsert(void* addr, T&& callback)
 	auto it = hooks.find(addr);
 	if (it != hooks.end())
 	{
-		std::cerr << "hook already exists, addr: " << addr << std::endl;
-		throw std::invalid_argument("hook already exists");
+		throw std::invalid_argument(std::format("hook already exists: {}", addr).c_str());
 	}
 	hooks[addr] = std::make_unique<InsertHook>(addr, std::forward<T>(callback));
 }

@@ -1,6 +1,6 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
+#include <stdint.h>
+#include <stddef.h>
 
 constexpr wchar_t UU_NAME_AFFIX[] = L"__rp_dll_shared_affix_";
 

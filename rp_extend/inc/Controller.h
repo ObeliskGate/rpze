@@ -1,6 +1,7 @@
 #pragma once
 #include "Memory.h"
 #include "stdafx.h"
+#include <span>
 
 // 给Python侧暴露的类型
 
@@ -10,15 +11,19 @@ class Controller
 	uint32_t offset_buffer[128] = {};
 
 	template <typename T>
-	uint32_t set_offset_arr_of_py_sequence(const T& offsets)
+	requires requires(T sequence, size_t i)
 	{
-		static_assert(std::is_base_of_v<py::tuple, T> || std::is_base_of_v<py::list, T>, "offsets must be a Python sequence");
-		auto len_ = static_cast<uint32_t>(offsets.size());
+		{ sequence[i] } -> std::convertible_to<py::handle>;
+		{ sequence.size() } -> std::convertible_to<size_t>;
+	}
+	std::span<uint32_t> set_offset_arr_of_py_sequence(const T& offsets)
+	{
+		auto len_ = offsets.size();
 		for (size_t i = 0; i < len_; i++)
 		{
 			offset_buffer[i] = offsets[i].template cast<uint32_t>();
 		}
-		return len_;
+		return { offset_buffer, len_ };
 	}
 
 public:
@@ -52,7 +57,7 @@ public:
 	template <typename T>
 	bool write_memory(T&& val, const py::args& offsets, bool force_remote = false);
 	
-	inline bool run_code(const py::bytes& codes) const;
+	inline bool run_code(const py::bytes& codes) const { return mem.runCode(codes); }
 
 	void end() { mem.endControl(); }
 
@@ -79,10 +84,12 @@ public:
 	void set_jumping_sync_method(SyncMethod val) { mem.setJumpingSyncMethod(val); }
 
 	template<typename T>
-	T get_result();
+	requires std::is_standard_layout_v<T> && (sizeof(T) <= Shm::BUFFER_SIZE)
+	T get_result() { return *static_cast<volatile T*>(mem.getReturnResult());}
 
 	template<typename T>
-	void set_result(T val);
+	requires std::is_standard_layout_v<std::decay_t<T>> && (sizeof(std::decay_t<T>) <= Shm::BUFFER_SIZE)
+	void set_result(T&& val) { *static_cast<volatile T*>(mem.getReturnResult()) = std::forward<T>(val);}
 
 	py::object read_bytes(uint32_t size, const py::args& offsets, bool force_remote = false);
 
@@ -92,27 +99,12 @@ public:
 template <typename T>
 std::optional<T> Controller::read_memory(const py::args& offsets, bool force_remote)
 {
-	auto len_ = set_offset_arr_of_py_sequence(offsets);
-	return mem.readMemory<T>(offset_buffer, len_, force_remote);
+	return mem.readMemory<T>(set_offset_arr_of_py_sequence(offsets), force_remote);
 }
 
 template <typename T>
 bool Controller::write_memory(T&& val, const py::args& offsets, bool force_remote)
 {
-	auto len_ = set_offset_arr_of_py_sequence(offsets);
-	return mem.writeMemory<T>(std::forward<T>(val), offset_buffer, len_, force_remote);
+	return mem.writeMemory(std::forward<T>(val), set_offset_arr_of_py_sequence(offsets), force_remote);
 }
 
-template <typename T>
-T Controller::get_result()
-{
-	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
-	return *static_cast<volatile T*>(mem.getReturnResult());
-}
-
-template <typename T>
-void Controller::set_result(T val)
-{
-	static_assert(sizeof(T) <= Shm::BUFFER_SIZE);
-	*static_cast<volatile T*>(mem.getReturnResult()) = val;
-}

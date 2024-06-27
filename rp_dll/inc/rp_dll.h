@@ -11,9 +11,9 @@ void init();
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory);
 
 template <typename T, typename... Args>
+requires (sizeof...(Args) >= 1) && (std::is_integral_v<Args> && ...)
 std::optional<T> readMemory(Args&&... offsets)
 {
-	static_assert(sizeof...(Args) >= 1, "at least one offset is required");
 	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
@@ -26,9 +26,9 @@ std::optional<T> readMemory(Args&&... offsets)
 }
 
 template <typename T, typename... Args>
+requires (sizeof...(Args) >= 1) && (std::is_integral_v<Args> && ...)
 bool writeMemory(T&& val, Args&&... offsets)
 {
-	static_assert(sizeof...(Args) >= 1, "at least one offset is required");
 	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
@@ -69,11 +69,11 @@ void mainHook(const SharedMemory* pSharedMemory)
 	*pPhaseCode = PhaseCode::WAIT;
 	*pRunState = RunState::OVER;
 #ifndef NDEBUG
-	std::cout << "start a control frame, sync mode: " << (DWORD)*pSyncMethod << std::endl;
+	std::println("start a main frame, sync mode: {}", (DWORD)*pSyncMethod);
 #endif
 	doAsPhaseCode(*pPhaseCode, pSharedMemory);
 #ifndef NDEBUG
-	std::cout << "end a control frame" << std::endl;
+	std::println("end a main frame");
 #endif
 	if (*pSyncMethod == SyncMethod::MUTEX)
 		pSharedMemory->waitMutex();

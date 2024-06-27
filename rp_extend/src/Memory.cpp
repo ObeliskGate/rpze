@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "Memory.h"
 #include "MemoryException.h"
+#include <string_view>
 
 void Memory::getRemoteMemoryAddress()
 {
@@ -62,7 +63,7 @@ Memory::Memory(DWORD pid) : pid(pid)
 	shm().syncMethod = SyncMethod::MUTEX; // 第一次通信切忌不能用mutex, game还没拿到锁
 	shm().jumpingSyncMethod = SyncMethod::SPIN;
 #ifndef NDEBUG
-	std::cout << "memory constructed, remote base_ptr is " << remoteMemoryAddress << std::endl;
+	std::println("memory constructed, remote base_ptr is {:x}", remoteMemoryAddress);
 #endif
 }
 
@@ -77,11 +78,11 @@ Memory::~Memory()
 	CloseHandle(hMutex);
 }
 
-volatile void* Memory::_readMemory(uint32_t size, const uint32_t* offsets, uint32_t len)
+volatile void* Memory::_readMemory(uint32_t size, const std::span<uint32_t> offsets)
 {
 	shm().memoryNum = size;
-	CopyMemory(const_cast<uint32_t*>(shm().offsets), offsets, sizeof(uint32_t) * len);
-	shm().offsets[len] = Shm::OFFSET_END;
+	memcpy(const_cast<uint32_t*>(shm().offsets), offsets.data(), offsets.size_bytes());
+	shm().offsets[offsets.size()] = Shm::OFFSET_END;
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	untilGameExecuted(); 
 	if (shm().executeResult == ExecuteResult::SUCCESS) return shm().getReadWriteBuffer();
@@ -89,12 +90,12 @@ volatile void* Memory::_readMemory(uint32_t size, const uint32_t* offsets, uint3
 	throw MemoryException("_readMemory: unexpected behavior", this->pid);
 }
 
-bool Memory::_writeMemory(const void* pVal, uint32_t size, const uint32_t* offsets, uint32_t len)
+bool Memory::_writeMemory(const void* pVal, uint32_t size, const std::span<uint32_t> offsets)
 {
 	shm().memoryNum = size;
 	CopyMemory(const_cast<void*>(shm().getReadWriteBuffer()), pVal, size);
-	CopyMemory(const_cast<uint32_t*>(shm().offsets), offsets, sizeof(uint32_t) * len);
-	shm().offsets[len] = Shm::OFFSET_END;
+	CopyMemory(const_cast<uint32_t*>(shm().offsets), offsets.data(), offsets.size_bytes());
+	shm().offsets[offsets.size()] = Shm::OFFSET_END;
 	getCurrentPhaseCode() = PhaseCode::WRITE_MEMORY;
 	untilGameExecuted();
 	if (shm().executeResult == ExecuteResult::SUCCESS) return true;
@@ -196,10 +197,10 @@ bool Memory::endJumpFrame()
 	return true;
 }
 
-void* Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
+void* Memory::getRemotePtr(const std::span<uint32_t> offsets)
 {
 	uint64_t basePtr = offsets[0];
-	for (size_t i = 1; i < len; i++)
+	for (size_t i = 1; i < offsets.size(); i++)
 	{
 		if (!basePtr) return nullptr;
 		ReadProcessMemory(hPvz, 
@@ -213,51 +214,51 @@ void* Memory::getRemotePtr(const uint32_t* offsets, uint32_t len)
 }
 
 
-std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const uint32_t* offsets, uint32_t len, bool forceRemote)
+std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !isShmPrepared())
 	{
-		auto remotePtr = getRemotePtr(offsets, len);
+		auto remotePtr = getRemotePtr(offsets);
 		if (!remotePtr) return {};
 		auto ret = std::make_unique<char[]>(size);
 		ReadProcessMemory(hPvz, remotePtr, ret.get(), size, nullptr);
 		return ret;
 	}
 	if (size > Shm::BUFFER_SIZE) throw std::invalid_argument("readBytes: too many bytes");
-	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("readBytes: too many offsets");
-	auto p = _readMemory(size, offsets, len);
+	if (offsets.size() > Shm::OFFSETS_LEN) throw std::invalid_argument("readBytes: too many offsets");
+	auto p = _readMemory(size, offsets);
 	if (!p) return {};
 	auto ret = std::make_unique<char[]>(size);
 	CopyMemory(ret.get(), const_cast<const void*>(p), size);
 	return ret;
 }
 
-bool Memory::writeBytes(const char* in, uint32_t size, const uint32_t* offsets, uint32_t len, bool forceRemote)
+bool Memory::writeBytes(const std::string_view inputBytes, const std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !isShmPrepared())
 	{
-		auto remotePtr = getRemotePtr(offsets, len);
+		auto remotePtr = getRemotePtr(offsets);
 		if (!remotePtr) return false;
-		WriteProcessMemory(hPvz, remotePtr, in, size, nullptr);
+		WriteProcessMemory(hPvz, remotePtr, inputBytes.data(), inputBytes.size(), nullptr);
 		return true;
 	}
-	if (size > Shm::BUFFER_SIZE) throw std::invalid_argument("writeBytes: too many bytes");
-	if (len > Shm::OFFSETS_LEN) throw std::invalid_argument("writeBytes: too many offsets");
-	return _writeMemory(in, size, offsets, len);
+	if (inputBytes.size() > Shm::BUFFER_SIZE) throw std::invalid_argument("writeBytes: too many bytes");
+	if (offsets.size() > Shm::OFFSETS_LEN) throw std::invalid_argument("writeBytes: too many offsets");
+	return _writeMemory(inputBytes.data(), inputBytes.size(), offsets);
 }
 
-bool Memory::runCode(const char* codes, size_t len) const
+bool Memory::runCode(const std::string_view codes) const
 {
-	if (len > SHARED_MEMORY_SIZE)
+	if (codes.size() > SHARED_MEMORY_SIZE)
 		throw std::invalid_argument("runCode: too many codes");
 	
 	if (!isShmPrepared())
 		throw MemoryException("runCode: main loop not prepared", this->pid);
 
 #ifndef NDEBUG
-	std::cout << "run code" << std::endl;
+	std::println("run code");
 #endif
-	memcpy(const_cast<void*>(shm().getAsmBuffer()), codes, len);
+	memcpy(const_cast<void*>(shm().getAsmBuffer()), codes.data(), codes.size());
 	getCurrentPhaseCode() = PhaseCode::RUN_CODE;
 	untilGameExecuted();
 	if (shm().executeResult == ExecuteResult::SUCCESS) return true;
@@ -269,7 +270,7 @@ void Memory::startControl()
 {
 	if (hookConnected(HookPosition::MAIN_LOOP)) return;
 #ifndef NDEBUG
-	std::cout << "start control" << std::endl;
+	std::println("start control");
 #endif
 	shm().phaseCode = PhaseCode::CONTINUE;
 	shm().jumpingPhaseCode = PhaseCode::CONTINUE;
@@ -283,7 +284,7 @@ void Memory::endControl()
 	if (!isShmPrepared())
 		throw MemoryException("endControl: main loop not prepared", this->pid);
 #ifndef NDEBUG
-	std::cout << "end control" << std::endl;
+	std::println("end control");
 #endif
 	if (jumpingFrame) endJumpFrame();
 	releaseMutex<>();

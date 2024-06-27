@@ -16,15 +16,15 @@ SharedMemory::SharedMemory()
 		(nameAffix + L"_shm").c_str());
 	if (!hMapFile)
 	{
-		std::cout << "cannot create shared memory: " << GetLastError() << std::endl;
+		std::println(std::cerr, "cannot create shared memory: {}", GetLastError());
 		throw std::runtime_error("cannot create shared memory");
 	}
 	sharedMemoryPtr = static_cast<Shm*>(MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE));
 	if (sharedMemoryPtr)
 	{
-		std::cout << "create shared memory success" << std::endl;
+		std::println("create shared memory success");
 #ifndef NDEBUG
-		std::cout << "shared memory ptr: " << sharedMemoryPtr << std::endl;
+		std::println("shared memory ptr: {}", static_cast<void*>(sharedMemoryPtr));
 #endif
 	}
 
@@ -41,7 +41,7 @@ SharedMemory::SharedMemory()
 	hMutex = CreateMutexW(nullptr, FALSE, (nameAffix + L"_mutex").c_str());
 	if (!hMutex)
 	{
-		std::cout << "cannot create mutex: " << GetLastError() << std::endl;
+		std::println(std::cerr, "cannot create mutex: {}", GetLastError());
 		throw std::exception();
 	}
 }
@@ -72,42 +72,36 @@ void* SharedMemory::getReadWritePtr() const
 void SharedMemory::waitMutex() const
 {
 #ifndef NDEBUG
-	switch (WaitForSingleObject(hMutex, 500))
+	switch (WaitForSingleObject(hMutex, 5000))
 #else
 	switch (WaitForSingleObject(hMutex, INFINITE))
 #endif
 	{
 	case WAIT_OBJECT_0:
 #ifndef NDEBUG
-		std::cout << "waitMutex: WAIT_OBJECT_0" << std::endl;
+		std::println("waitMutex: WAIT_OBJECT_0");
 #endif
 		break;
 	case WAIT_ABANDONED:
-		std::cout << "waitMutex: WAIT_ABANDONED" << std::endl;
-		throw std::exception();
+		throw std::exception("waitMutex: WAIT_ABANDONED");
 #ifndef NDEBUG
 	case WAIT_TIMEOUT:
-		std::cout << "waitMutex: WAIT_TIMEOUT" << std::endl;
-		throw std::exception();
+		throw std::exception("waitMutex: WAIT_TIMEOUT");
 #endif
 	case WAIT_FAILED:
-		std::cout << "waitMutex: WAIT_FAILED, error" << GetLastError() << std::endl;
-		throw std::exception();
+		throw std::exception(std::format("waitMutex: WAIT_FAILED, error {}", GetLastError()).c_str());
 	default:
-		std::cout << "waitMutex: unexpected behavior" << std::endl;
-		throw std::exception();
+		throw std::exception("waitMutex: unexpected behavior");
 	}
 }
 
 void SharedMemory::releaseMutex() const
 {
 	if (!ReleaseMutex(hMutex))
-	{
-		std::cout << "releaseMutex: failed, error: " << GetLastError() << std::endl;
-		throw std::exception();
-	}
+		throw std::exception(std::format("releaseMutex: failed, error {}", GetLastError()).c_str());
+	
 #ifndef NDEBUG
-	std::cout << "releaseMutex: success" << std::endl;
+	std::println("releaseMutex: success");
 #endif
 }
 

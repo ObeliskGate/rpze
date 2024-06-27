@@ -6,8 +6,8 @@
 #include <cstdint>
 #include <MinHook.h>
 #include <exception>
+#include <print>
 #include <sstream>
-#include <string.h>
 
 
 #define __until(expr) do {} while (!(expr))
@@ -22,11 +22,11 @@ void init()
 	freopen_s(&_, "CONOUT$", "w", stderr);
 	freopen_s(&_, "CONIN$", "r", stdin);
 	std::ios::sync_with_stdio();
-	std::cout << "console set" << std::endl;
+	std::println("console set");
 	auto p = SharedMemory::getInstance();
 	MH_Initialize();
 #ifndef NDEBUG
-	std::cout << "debug mode, base ptr: " << (DWORD)p->getSharedMemoryPtr() << std::endl;
+	std::println("debug mode, base ptr: {}", p->getSharedMemoryPtr());
 #endif
 }
 
@@ -44,7 +44,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 		case PhaseCode::RUN_CODE:
 			{
 #ifndef NDEBUG
-				std::cout << "start run code" << std::endl;
+				std::println("start run code");
 #endif
 				auto p = pSharedMemory->shm().getAsmBuffer();
 				__asm
@@ -55,7 +55,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 				pSharedMemory->shm().executeResult = ExecuteResult::SUCCESS;
 				phaseCode = PhaseCode::WAIT;
 #ifndef NDEBUG
-				std::cout << "run code success" << std::endl;
+				std::println("run code success");
 #endif
 				continue;
 			}
@@ -68,18 +68,18 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 				pSharedMemory->shm().jumpingSyncMethod == SyncMethod::MUTEX)
 				pSharedMemory->releaseMutex();
 #ifndef NDEBUG
-			std::cout << "end jmp frame" << std::endl;
+			std::println("end jmp frame");
 #endif
 
 			continue;
 		case PhaseCode::READ_MEMORY:
 #ifndef NDEBUG
-			std::cout << "read memory" << std::endl;
+			std::println("read memory");
 #endif
 			pSharedMemory->readMemory();
 			phaseCode = PhaseCode::WAIT;
 #ifndef NDEBUG
-			std::cout << "read memory success" << std::endl;
+			std::println("read memory success");
 #endif
 			continue;
 		case PhaseCode::WRITE_MEMORY:
@@ -90,7 +90,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 		case PhaseCode::READ_MEMORY_PTR:
 			{
 #ifndef NDEBUG
-				std::cout << "read memory ptr" << std::endl;
+				std::println("read memory ptr");
 #endif
 				*pSharedMemory->shm().getReadWriteBuffer<uint32_t>() = 
 					reinterpret_cast<uint32_t>(&pSharedMemory->shm());
@@ -161,13 +161,11 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 	} 
 	catch (const std::exception& e) 
 	{
-		std::stringstream ss;
-		ss << "std::exception: " << e.what() << std::endl;
+		auto str = std::format("std::exception: \n    {}", e.what());
 		auto& shm = SharedMemory::getInstance()->shm();
-		auto str = ss.str();
 		shm.error = ShmError::CAUGHT_STD_EXCEPTION;
 		auto copySize = std::min(str.size(), Shm::BUFFER_SIZE - 1) + 1; // for \0
-		std::copy_n(str.c_str(), copySize, const_cast<char*>(shm.getReadWriteBuffer<char>()));
+		memcpy(const_cast<char*>(shm.getReadWriteBuffer<char>()), str.c_str(), copySize);
  		exit();
 		std::terminate();
 	}
@@ -181,12 +179,12 @@ void initInThread(const SharedMemory* pSharedMemory)
 	if (MH_CreateHook(pUpdateApp, 
 			reinterpret_cast<void*>(&hookUpdateApp), &pTrampoline) != MH_OK)
 	{
-		std::cerr << "LawnApp::UpdateApp hook failed" << std::endl;
+		std::println(std::cerr, "LawnApp::UpdateApp create hook failed");
 		return;
 	}
 	if (MH_EnableHook(pUpdateApp) != MH_OK)
 	{
-		std::cerr << "LawnApp::UpdateApp enable hook failed" << std::endl;
+		std::println(std::cerr, "LawnApp::UpdateApp enable hook failed");
 		return;
 	}
 }

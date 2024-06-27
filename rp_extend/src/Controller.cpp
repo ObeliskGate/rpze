@@ -2,7 +2,6 @@
 #include "Controller.h"
 
 #include "MemoryException.h"
-
 PYBIND11_MODULE(rp_extend, m)
 {
 	py::enum_<HookPosition>(m, "HookPosition")
@@ -96,23 +95,16 @@ Controller::Controller(DWORD pid) : mem(pid),
 	result_mem(py::memoryview::from_memory(const_cast<void*>(mem.getReturnResult()), Shm::BUFFER_SIZE, false))
 { }
 
-bool Controller::run_code(const py::bytes& codes) const
-{
-	auto sw = std::string_view(codes);
-	return mem.runCode(sw.data(), sw.size());
-}
-
 py::object Controller::read_bytes(uint32_t size, const py::args& offsets, bool force_remote)
 {
-	auto len_ = set_offset_arr_of_py_sequence(offsets);
-	auto ret = mem.readBytes(size, offset_buffer, len_, force_remote);
+	auto off_ = set_offset_arr_of_py_sequence(offsets);
+	auto ret = mem.readBytes(size, off_, force_remote);
 	if (ret.has_value()) return py::bytes(ret->get(), size);
 	return py::none();
 }
 
 bool Controller::write_bytes(const py::bytes& in, const py::args& offsets, bool force_remote)
 {
-	auto sw = std::string_view(in);
-	auto len_ = set_offset_arr_of_py_sequence(offsets);
-	return mem.writeBytes(sw.data(), static_cast<uint32_t>(sw.size()), offset_buffer, len_, force_remote);
+	auto off_ = set_offset_arr_of_py_sequence(offsets);
+	return mem.writeBytes(in, off_, force_remote);
 }

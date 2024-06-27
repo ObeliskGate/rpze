@@ -1,4 +1,5 @@
 #include "InsertHook.h"
+#include <print>
 #include <stdexcept>
 
 void InsertHook::callBackFunc(InsertHook* this_, HookContext* hookContext)
@@ -10,14 +11,14 @@ InsertHook::~InsertHook()
 {
     if (MH_DisableHook(addr) != MH_OK)
     {
-        std::cerr << "unexpected behavior: failed to disable hook" << std::endl;
+        std::println(std::cerr, "failed to disable hook at {}", addr);
     }
     if (MH_RemoveHook(addr) != MH_OK)
     {
-        std::cerr << "unexpected behavior: failed to remove hook" << std::endl;
+        std::println(std::cerr, "failed to remove hook at {}", addr);
     }
 #ifndef NDEBUG
-    std::cout << "hook removed at " << addr << std::endl;
+    std::println("hook removed at {}", addr);
 #endif
     executableHeap.free(hookCode);
 }
@@ -33,10 +34,8 @@ void InsertHook::deleteAt(void* addr)
 HeapWrapper::HeapWrapper(DWORD flOptions)  : hHeap(HeapCreate(flOptions, 0, 0))
 {
     if (hHeap == nullptr)
-    {
-        std::cerr << "HeapCreate failed: " << GetLastError() << std::endl;
-        throw std::runtime_error("HeapCreate failed");
-    }
+        throw std::runtime_error(std::format("HeapCreate failed, err {}", GetLastError()));
+    
 }
 
 void* HeapWrapper::alloc(size_t size, bool zeroMemory)		
@@ -57,8 +56,6 @@ void HeapWrapper::free(void* p)
 { 
     auto ret = HeapFree(hHeap, 0, p); 
     if (!ret)
-    {
-        std::cerr << "HeapFree failed: " << GetLastError() << std::endl;
-        throw std::runtime_error("HeapFree failed");
-    }
+        throw std::runtime_error(std::format("HeapFree failed, err {}", GetLastError()));
+    
 }

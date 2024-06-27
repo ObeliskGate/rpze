@@ -1,4 +1,4 @@
-add_requires("minhook", { arch = "x86" , configs = {cxflags = "/FIintrin.h"} })
+add_requires("minhook", { arch = "x86", configs = { lto = true }})
 
 target("rp_dll")
     set_languages("cxx23")
@@ -9,3 +9,5 @@ target("rp_dll")
     add_includedirs("../sharedinc")
     add_includedirs("inc")
     add_files("src/*.cpp")
+    -- add_ldflags("/PDBALTPATH:%_PDB%")
+    -- add_shflags("/PDBALTPATH:%_PDB%")
