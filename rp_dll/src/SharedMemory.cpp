@@ -15,10 +15,8 @@ SharedMemory::SharedMemory()
 		SHARED_MEMORY_SIZE,
 		(nameAffix + L"_shm").c_str());
 	if (!hMapFile)
-	{
-		std::println(std::cerr, "cannot create shared memory: {}", GetLastError());
-		throw std::runtime_error("cannot create shared memory");
-	}
+		throw std::runtime_error(std::format("cannot create shared memory: {}", GetLastError()).c_str());
+	
 	sharedMemoryPtr = static_cast<Shm*>(MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE));
 	if (sharedMemoryPtr)
 	{
@@ -26,6 +24,11 @@ SharedMemory::SharedMemory()
 #ifndef NDEBUG
 		std::println("shared memory ptr: {}", static_cast<void*>(sharedMemoryPtr));
 #endif
+	}
+	else 
+	{
+		CloseHandle(hMapFile);
+		throw std::runtime_error(std::format("cannot create map view of file: {}", GetLastError()).c_str());
 	}
 
 	for (size_t i = 0; i < Shm::OFFSETS_LEN; i++)
@@ -41,8 +44,9 @@ SharedMemory::SharedMemory()
 	hMutex = CreateMutexW(nullptr, FALSE, (nameAffix + L"_mutex").c_str());
 	if (!hMutex)
 	{
-		std::println(std::cerr, "cannot create mutex: {}", GetLastError());
-		throw std::exception();
+		UnmapViewOfFile(sharedMemoryPtr);
+		CloseHandle(hMapFile);
+		throw std::runtime_error(std::format("cannot create mutex: {}", GetLastError()).c_str());
 	}
 }
 
