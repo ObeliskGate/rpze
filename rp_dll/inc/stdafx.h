@@ -11,4 +11,5 @@
 #include <Windows.h> // IWYU pragma: export
 #include <iostream>  // IWYU pragma: export
 #include <print>    // IWYU pragma: export
+#include <format>   // IWYU pragma: export
 

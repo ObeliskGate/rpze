@@ -54,7 +54,7 @@ def inject(pids: Iterable[int],
     try:
         os.chdir(os.path.dirname(__file__))
         dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
-        s = f'..\\bin\\rp_injector.exe \"{dll_path}\" '
+        s = f'..\\bin\\rp_injector.exe {1} \"{dll_path}\" '
         s += ' '.join(str(i) for i in pids)
         subprocess.run(s, stdout=stdout)
     finally:

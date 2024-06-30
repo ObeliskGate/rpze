@@ -4,6 +4,8 @@
 #include <optional>
 #include <array>
 
+extern volatile uint32_t initOptions;
+
 // 设置
 void init();
 
@@ -12,9 +14,9 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 
 template <typename T, typename... Args>
 requires (sizeof...(Args) >= 1) && (std::is_integral_v<Args> && ...)
-std::optional<T> readMemory(Args&&... offsets)
+std::optional<T> readMemory(Args... offsets)
 {
-	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
+	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t(offsets)...};
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
 	{
@@ -22,14 +24,14 @@ std::optional<T> readMemory(Args&&... offsets)
 		base = *reinterpret_cast<uintptr_t*>(base) + offsets_[i];
 	}
 	if (base == 0) return {};
-	return T(*reinterpret_cast<T*>(base));
+	return *reinterpret_cast<T*>(base);
 }
 
 template <typename T, typename... Args>
 requires (sizeof...(Args) >= 1) && (std::is_integral_v<Args> && ...)
-bool writeMemory(T&& val, Args&&... offsets)
+bool writeMemory(T&& val, Args... offsets)
 {
-	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t(std::forward<Args>(offsets))...};
+	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t((offsets))...};
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
 	{
