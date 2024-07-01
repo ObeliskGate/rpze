@@ -2,6 +2,7 @@
 #include "SharedMemory.h"
 #include "rp_dll.h"
 #include "InsertHook.h"
+#include "RpDllException.h"
 
 #include <cstdint>
 #include <MinHook.h>
@@ -26,6 +27,11 @@ void init()
 	MH_Initialize();
 #ifndef NDEBUG
 	std::println("debug mode, base ptr: {}", p->getSharedMemoryPtr());
+	auto hMod = GetModuleHandleA("rp_dll.dll");
+	std::println("addr of GetProcAddress: {}", (void*)&GetProcAddress);
+	std::println("get module handle success, base ptr: {}", (void*)hMod);
+	auto setEnvPtr = GetProcAddress(hMod, "setEnv");
+	std::println("get setEnv address success: {}", (void*)setEnvPtr);
 #endif
 }
 
@@ -160,9 +166,13 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 	} 
 	catch (const std::exception& e) 
 	{
-		auto str = std::format("std::exception: \n    {}", e.what());
+		std::string str;
+		if (auto p = dynamic_cast<const RpDllException*>(&e))
+			str = p->whatNotCaught();
+		else
+			str = printStlException(e);
 		auto& shm = SharedMemory::getInstance()->shm();
-		shm.error = ShmError::CAUGHT_STD_EXCEPTION;
+		shm.error = ShmError::CAUGHT_CPP_EXCEPTION;
 		auto copySize = std::min(str.size(), Shm::BUFFER_SIZE - 1) + 1; // for \0
 		memcpy(const_cast<char*>(shm.getReadWriteBuffer<char>()), str.c_str(), copySize);
  		exit();
@@ -173,6 +183,9 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 void initInThread(const SharedMemory* pSharedMemory)
 {
 	pSharedMemory->waitMutex();
+#ifndef NDEBUG
+	std::println("start init");
+#endif
 
 	auto pUpdateApp = readMemory<void*>(0x6a9ec0, 0x0, 0x180).value();
 	if (MH_CreateHook(pUpdateApp, 
@@ -186,6 +199,10 @@ void initInThread(const SharedMemory* pSharedMemory)
 		std::println(std::cerr, "LawnApp::UpdateApp enable hook failed");
 		return;
 	}
+#ifndef NDEBUG
+	std::println("LawnApp::UpdateApp hooked, trampoline: {}", pTrampoline);
+#endif
+
 }
 
 void exit()

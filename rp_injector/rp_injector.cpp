@@ -14,6 +14,7 @@ class HandleWrapper
 public:
     HandleWrapper(HANDLE h) : h(h) {}
     HandleWrapper(const HandleWrapper&) = delete;
+    HandleWrapper(HandleWrapper&& other) : HandleWrapper(other.h) { other.h = nullptr; }
     ~HandleWrapper() { if (bool(*this)) CloseHandle(h); }
     operator HANDLE() const { return h; }
     operator bool() const { return h != 0 && h != INVALID_HANDLE_VALUE; }
@@ -27,6 +28,8 @@ class VMemoryWrapper
 public:
     VMemoryWrapper(HANDLE hProc, LPVOID p) : p(p), hProc(hProc) {}
     VMemoryWrapper(const VMemoryWrapper&) = delete;
+    VMemoryWrapper(VMemoryWrapper&& other) : VMemoryWrapper(other.hProc, other.p) { other.p = nullptr; }
+
     ~VMemoryWrapper() { if (bool(*this)) VirtualFreeEx(hProc, p, 0, MEM_RELEASE); }
     operator LPVOID() const { return p; }
     operator bool() const { return p != nullptr; }
@@ -56,10 +59,9 @@ public:
         auto tmp = static_cast<BYTE*>(p);
         (
             [&]() {
-                auto t = std::forward<Args>(args);
-                if (!WriteProcessMemory(hProc, tmp, &t, sizeof(t), nullptr))
+                if (!WriteProcessMemory(hProc, tmp, &args, sizeof(std::decay_t<Args>), nullptr))
                     throw std::runtime_error("write v-memory failed");
-                tmp += sizeof(t);
+                tmp += sizeof(std::decay_t<Args>);
             }(), ...
         );
         return { hProc, p };
@@ -151,7 +153,7 @@ bool setOptions(DWORD pid, uint32_t options, HMODULE hMod)
     auto vSetOptionStr = VMemoryWrapper::newStr(hProcess, "setEnv");
     FARPROC pGetProcAddress = getModuleProcAddress("KERNEL32.DLL", "GetProcAddress");
     if (!pGetProcAddress) return false;
-    auto vGetProcAddressArgs = VMemoryWrapper::newMemory(hProcess, hMod, (LPVOID)vSetOptionStr, pGetProcAddress);
+    auto vGetProcAddressArgs = VMemoryWrapper::newMemory(hProcess, hMod, (LPVOID)vSetOptionStr, (LPVOID)pGetProcAddress);
 
     VMemoryWrapper vGetProcAddrWrapper = { hProcess, 
        VirtualAllocEx(hProcess, nullptr, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE) };
@@ -167,8 +169,8 @@ bool setOptions(DWORD pid, uint32_t options, HMODULE hMod)
         std::println(std::cerr, "write v-memory for callGetProcAddressAsThread failed, err {}", GetLastError());
         return false;
     }
-    
-    auto ret = waitRemoteThread(hProcess, (FARPROC)(LPVOID)vGetProcAddrWrapper, vGetProcAddressArgs);
+   
+    auto ret = waitRemoteThread(hProcess, reinterpret_cast<FARPROC>((LPVOID)vGetProcAddrWrapper), vGetProcAddressArgs);
     if (!ret)
     {
         std::println(std::cerr, "GetProcAddress failed, err {}", GetLastError());

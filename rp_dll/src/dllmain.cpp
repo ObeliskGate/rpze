@@ -19,11 +19,6 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 					static bool flag = false; // at the first time, we need to get the mutex
 					if (!flag)
 					{
-						std::cout << "init in thread, options: " << initOptions << std::endl;
-						auto hMod = GetModuleHandleA("rp_dll.dll");
-						std::println("get module handle success, base ptr: {}", (void*)hMod);
-						auto setEnvPtr = GetProcAddress(hMod, "setEnv");
-						std::println("get setEnv address success: {}", (void*)setEnvPtr);
 						initInThread(pSharedMemory);
 						flag = true;
 						
