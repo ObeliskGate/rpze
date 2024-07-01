@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "Memory.h"
 #include "MemoryException.h"
+#include <errhandlingapi.h>
 #include <string_view>
 
 void Memory::getRemoteMemoryAddress()
@@ -23,7 +24,7 @@ Memory::Memory(DWORD pid) : pid(pid)
 		(nameAffix + L"_shm").c_str());
 	if (!hMemory)
 		throw MemoryException(
-			("find shared memory failed: " + std::to_string(GetLastError())).c_str(), pid);
+			std::format("failed to find shared memory, err {}", GetLastError()), pid);
 	
 	pShm = static_cast<Shm*>(MapViewOfFile(hMemory, 
 		FILE_MAP_ALL_ACCESS, 
@@ -32,10 +33,10 @@ Memory::Memory(DWORD pid) : pid(pid)
 		SHARED_MEMORY_SIZE));
 	if (!pShm)
 		throw MemoryException(
-			("create shared memory failed: " + std::to_string(GetLastError())).c_str(), pid);
+			std::format("failed tocreate shared memory, err {}", GetLastError()), pid);
 
 	if (shm().already_shared)
-		throw MemoryException("memory: shared memory has already been connected", pid);
+		throw MemoryException("shared memory has already been connected", pid);
 	shm().already_shared = true;
 
 	pCurrentPhaseCode = &shm().phaseCode;
@@ -44,7 +45,7 @@ Memory::Memory(DWORD pid) : pid(pid)
 	hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 	if (!hPvz)
 		throw MemoryException(
-			("cannot find game process: " + std::to_string(GetLastError())).c_str(), pid);
+			std::format("failed to find game process, err {}", GetLastError()), pid);
 	
 
 	hMutex = OpenMutexW(MUTEX_ALL_ACCESS, 
@@ -52,7 +53,7 @@ Memory::Memory(DWORD pid) : pid(pid)
 		(nameAffix + L"_mutex").c_str());
 	if (!hMutex)
 		throw MemoryException(
-			("cannot find mutex: " + std::to_string(GetLastError())).c_str(), pid);
+			std::format("failed to find mutex, err {}", GetLastError()), pid);
 
 
 	shm().globalState = HookState::CONNECTED;
@@ -324,25 +325,24 @@ std::pair<bool, uint32_t> Memory::getPBoard() const
 	return { t, shm().boardPtr };
 }
 
-void Memory::waiting(const char* callerName) const
+void Memory::waiting(std::string_view callerName) const
 {
 	if (!globalConnected()) [[unlikely]]
 	{
-		auto str = std::string{ "waiting at " } + callerName +  ": ";
-		
+		std::string_view sw;
 		switch (shm().error)
 		{
 		case ShmError::CAUGHT_SEH:
-			str += "got seh";
+			sw = "got seh";
 			break;
 		case ShmError::CAUGHT_CPP_EXCEPTION:
-			str += "got c++ exception, message: \n";
-			str += const_cast<char*>(shm().getReadWriteBuffer<char>());
+			sw = "got c++ exception, message: \n";
+			sw = const_cast<char*>(shm().getReadWriteBuffer<char>());
 			break;
 		case ShmError::NONE:
-			str += "main loop not connected";
+			sw = "main loop not connected";
 			break;
 		}
-		throw MemoryException(str.c_str(), this->pid);
+		throw MemoryException {std::format("waiting at `{}`: {}", callerName, sw), this->pid };
 	}
 }

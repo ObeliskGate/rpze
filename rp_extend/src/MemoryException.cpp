@@ -1,4 +1,4 @@
 ﻿#include "MemoryException.h"
 
-MemoryException::MemoryException(const char* message_, DWORD pid_) :
-	std::exception(("pid " + std::to_string(pid_) + " - " + message_).c_str()), pid(pid_) {}
+MemoryException::MemoryException(std::string_view message_, DWORD pid_) :
+	message(std::format("pid {} - {}", pid_, message_)), pid(pid_) {}

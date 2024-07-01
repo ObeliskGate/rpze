@@ -3,9 +3,11 @@
 
 class MemoryException : public std::exception
 {
-	using std::exception::exception;
 	DWORD pid;
+	std::string message;
 public:
-	explicit MemoryException(const char* message_, DWORD pid_);
-	DWORD processId() const { return pid; }
+	explicit MemoryException(std::string_view messageView, DWORD pid_);
+
+	DWORD getPid() const { return pid; }
+	virtual const char* what() const override { return message.c_str(); }
 };

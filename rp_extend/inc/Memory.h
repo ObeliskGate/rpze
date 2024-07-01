@@ -3,6 +3,7 @@
 #include "MemoryException.h"
 #include "shm.h" 
 #include <cstdint>
+#include <errhandlingapi.h>
 #include <span>
 #include <type_traits>
 
@@ -54,7 +55,7 @@ class Memory
 
 	Shm& shm() const { return *pShm; }
 
-	void waiting(const char* callerName) const;
+	void waiting(std::string_view callerName) const;
 
 	// 主要接口
 public:
@@ -100,7 +101,7 @@ public:
 
 	// **直接**将传入的val写入游戏指定地址
 	template<typename T>
-	requires std::is_standard_layout_v<std::decay_t<T>> && (sizeof(T) <= Shm::BUFFER_SIZE)
+	requires std::is_standard_layout_v<std::decay_t<T>> && (sizeof(std::decay_t<T>) <= Shm::BUFFER_SIZE)
 	bool writeMemory(T&& val, const std::span<uint32_t> offsets, bool forceRemote = false);
 
 	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, const std::span<uint32_t> offsets, bool forceRemote = false);
@@ -155,7 +156,7 @@ void Memory::waitMutex() const
 		break;
 	case WAIT_FAILED:
 		throw MemoryException(
-			(std::format("waitMutex: failed, error {}", GetLastError())).c_str(), pid);
+			std::format("waitMutex: failed, error {}", GetLastError()).c_str(), pid);
 	case WAIT_ABANDONED:
 		throw MemoryException("waitMutex: abandoned", pid);
 #ifndef NDEBUG
@@ -174,7 +175,7 @@ void Memory::releaseMutex() const
 		if (*pCurrentSyncMethod != SyncMethod::MUTEX) return;
 	if (!ReleaseMutex(hMutex)) [[unlikely]]
 		throw MemoryException(
-			("releaseMutex: failed, error " + std::to_string(GetLastError())).c_str(), pid);
+			std::format("releaseMutex: failed, err {}", GetLastError()).c_str(), pid);
 #ifndef NDEBUG
 	std::println("mutex released");
 #endif
@@ -212,7 +213,7 @@ std::optional<T> Memory::readMemory(const std::span<uint32_t> offsets, bool forc
 }
 
 template<typename T>
-requires std::is_standard_layout_v<std::decay_t<T>> && (sizeof(T) <= Shm::BUFFER_SIZE)
+requires std::is_standard_layout_v<std::decay_t<T>> && (sizeof(std::decay_t<T>) <= Shm::BUFFER_SIZE)
 bool Memory::writeMemory(T&& val, const std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) 

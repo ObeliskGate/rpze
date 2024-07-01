@@ -87,22 +87,22 @@ void SharedMemory::waitMutex() const
 #endif
 		break;
 	case WAIT_ABANDONED:
-		throw std::exception("waitMutex: WAIT_ABANDONED");
+		throw std::runtime_error("waitMutex: WAIT_ABANDONED");
 #ifndef NDEBUG
 	case WAIT_TIMEOUT:
-		throw std::exception("waitMutex: WAIT_TIMEOUT");
+		throw std::runtime_error("waitMutex: WAIT_TIMEOUT");
 #endif
 	case WAIT_FAILED:
-		throw std::exception(std::format("waitMutex: WAIT_FAILED, error {}", GetLastError()).c_str());
+		throw std::runtime_error(std::format("waitMutex: WAIT_FAILED, error {}", GetLastError()).c_str());
 	default:
-		throw std::exception("waitMutex: unexpected behavior");
+		throw std::runtime_error("waitMutex: unexpected behavior");
 	}
 }
 
 void SharedMemory::releaseMutex() const
 {
 	if (!ReleaseMutex(hMutex))
-		throw std::exception(std::format("releaseMutex: failed, error {}", GetLastError()).c_str());
+		throw std::runtime_error(std::format("releaseMutex: failed, error {}", GetLastError()).c_str());
 	
 #ifndef NDEBUG
 	std::println("releaseMutex: success");

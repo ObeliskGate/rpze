@@ -166,7 +166,7 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 	catch (const std::exception& e) 
 	{
 		std::string str;
-		if (auto p = dynamic_cast<const RpDllException*>(&e))
+		if (auto p = dynamic_cast<const RpDllBaseException*>(&e))
 			str = p->whatWhenNotCaught();
 		else
 			str = printStlException(e);
