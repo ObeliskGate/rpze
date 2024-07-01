@@ -1,6 +1,8 @@
 #include "RpDllException.h"
 
 
-RpDllException::RpDllException(const char* message) : RpDllException(message, 
-    std::format("Uncaught {}, message: \n{}", typeid(*this).name(), message))
-{ }
+RpDllException::RpDllException(const char* message) : std::exception(message)
+{ 
+    auto& self = *this;
+    self.messageWhenNotCaught = std::format("Uncaught {}, message: \n{}", typeid(self).name(), message);
+}

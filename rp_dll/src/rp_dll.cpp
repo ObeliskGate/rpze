@@ -4,7 +4,6 @@
 #include "InsertHook.h"
 #include "RpDllException.h"
 
-#include <cstdint>
 #include <MinHook.h>
 #include <exception>
 #include <print>

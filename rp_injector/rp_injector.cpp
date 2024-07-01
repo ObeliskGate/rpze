@@ -130,16 +130,22 @@ HMODULE injectDll(DWORD pid, LPCSTR dllPath)
 
 }
 
-struct GetProcAddrParams
-{
-    HMODULE hModule;
-    LPCSTR procName;
-    decltype(&GetProcAddress) pGetProcAddress;
-};
 
-FARPROC WINAPI callGetProcAddressAsThread(GetProcAddrParams* params)
+extern "C"
 {
-    return params->pGetProcAddress(params->hModule, params->procName);
+#pragma pack(push, 1)
+    struct GetProcAddrParams
+    {
+        HMODULE hModule;
+        LPCSTR procName;
+        decltype(&GetProcAddress) pGetProcAddress;
+    };
+#pragma pack(pop)
+
+    FARPROC WINAPI callGetProcAddressAsThread(GetProcAddrParams* params) noexcept
+    {
+        return params->pGetProcAddress(params->hModule, params->procName);
+    }
 }
 
 bool setOptions(DWORD pid, uint32_t options, HMODULE hMod)

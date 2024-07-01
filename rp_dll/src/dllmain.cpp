@@ -1,6 +1,7 @@
 #include "rp_dll.h"
 #include "InsertHook.h"
 #include "SharedMemory.h"
+#include "RpDllException.h"
 
 BOOL APIENTRY DllMain(HMODULE hModule,
                       DWORD ul_reason_for_call,
@@ -56,7 +57,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 			InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 				[](HookContext& reg)
 				{
-					throw std::exception("test at dll");
+					throw RpDllException("test at dll");
 				});
 #endif
 		}

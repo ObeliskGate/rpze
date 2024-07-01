@@ -340,10 +340,10 @@ void Memory::waiting(const char* callerName) const
 		switch (shm().error)
 		{
 		case ShmError::CAUGHT_SEH:
-			str += "caught seh";
+			str += "got seh";
 			break;
 		case ShmError::CAUGHT_CPP_EXCEPTION:
-			str += "caught std exception, message: \n";
+			str += "got c++ exception, message: \n";
 			str += const_cast<char*>(shm().getReadWriteBuffer<char>());
 			break;
 		case ShmError::NONE:
