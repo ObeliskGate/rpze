@@ -111,7 +111,7 @@ void SharedMemory::releaseMutex() const
 
 SharedMemory* SharedMemory::getInstance()
 {
-	if (instancePtr != nullptr) return instancePtr;
+	if (instancePtr != nullptr) [[likely]] return instancePtr;
 	instancePtr = new SharedMemory();
 	return instancePtr;
 }

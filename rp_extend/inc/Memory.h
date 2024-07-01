@@ -86,7 +86,7 @@ public:
 			 return *pCurrentRunState == RunState::RUNNING || *pCurrentPhaseCode == PhaseCode::CONTINUE; }
 
 	void untilGameExecuted() const { 
-			while (getCurrentPhaseCode() != PhaseCode::WAIT) waiting("untilGameExecuted");}
+			while (getCurrentPhaseCode() != PhaseCode::WAIT) waiting("untilGameExecuted"); }
 
 	bool isShmPrepared() const { return hookConnected(HookPosition::MAIN_LOOP)
 		&& *pCurrentPhaseCode == PhaseCode::WAIT
@@ -148,7 +148,7 @@ void Memory::waitMutex() const
 	switch (WaitForSingleObject(hMutex, INFINITE))
 #endif // DEBUG
 	{
-	case WAIT_OBJECT_0:
+	case WAIT_OBJECT_0: [[likely]]
 #ifndef NDEBUG
 		std::println("mutex waited");
 #endif
@@ -172,7 +172,7 @@ void Memory::releaseMutex() const
 {
 	if constexpr (check_sync)
 		if (*pCurrentSyncMethod != SyncMethod::MUTEX) return;
-	if (!ReleaseMutex(hMutex))
+	if (!ReleaseMutex(hMutex)) [[unlikely]]
 		throw MemoryException(
 			("releaseMutex: failed, error " + std::to_string(GetLastError())).c_str(), pid);
 #ifndef NDEBUG

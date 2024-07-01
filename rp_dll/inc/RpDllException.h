@@ -12,7 +12,7 @@ public:
 
     explicit RpDllException(const char* message);
 
-    virtual const char* whatNotCaught() const { return messageWhenNotCaught.c_str(); }
+    virtual const char* whatWhenNotCaught() const { return messageWhenNotCaught.c_str(); }
 };
 
 template <typename T>

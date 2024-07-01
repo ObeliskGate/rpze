@@ -59,9 +59,10 @@ public:
         auto tmp = static_cast<BYTE*>(p);
         (
             [&]() {
-                if (!WriteProcessMemory(hProc, tmp, &args, sizeof(std::decay_t<Args>), nullptr))
+                using T = std::decay_t<Args>;
+                if (!WriteProcessMemory(hProc, tmp, &args, sizeof(T), nullptr))
                     throw std::runtime_error("write v-memory failed");
-                tmp += sizeof(std::decay_t<Args>);
+                tmp += sizeof(T);
             }(), ...
         );
         return { hProc, p };
@@ -209,8 +210,8 @@ int main(int argc, char* argv[])
     {
         DWORD pid = atoi(argv[i]);
         auto hMod = injectDll(pid, dllAbsolutePath);
-        if (setOptions(pid, options, hMod))
-            std::println("setOptions success");
+        // if (setOptions(pid, options, hMod))
+        //     std::println("setOptions success");
         
     }
 	return 0;
