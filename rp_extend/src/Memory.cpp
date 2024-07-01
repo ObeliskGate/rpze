@@ -2,8 +2,6 @@
 #include "stdafx.h"
 #include "Memory.h"
 #include "MemoryException.h"
-#include <errhandlingapi.h>
-#include <string_view>
 
 void Memory::getRemoteMemoryAddress()
 {
@@ -35,9 +33,9 @@ Memory::Memory(DWORD pid) : pid(pid)
 		throw MemoryException(
 			std::format("failed tocreate shared memory, err {}", GetLastError()), pid);
 
-	if (shm().already_shared)
+	if (shm().alreadyShared)
 		throw MemoryException("shared memory has already been connected", pid);
-	shm().already_shared = true;
+	shm().alreadyShared = true;
 
 	pCurrentPhaseCode = &shm().phaseCode;
 	pCurrentRunState = &shm().runState;
@@ -72,7 +70,7 @@ Memory::~Memory()
 {
 	endControl();
 	shm().globalState = HookState::NOT_CONNECTED;
-	shm().already_shared = false;
+	shm().alreadyShared = false;
 	UnmapViewOfFile(pShm);
 	CloseHandle(hMemory);
 	CloseHandle(hPvz);
@@ -329,20 +327,19 @@ void Memory::waiting(std::string_view callerName) const
 {
 	if (!globalConnected()) [[unlikely]]
 	{
-		std::string_view sw;
+		std::string message;
 		switch (shm().error)
 		{
 		case ShmError::CAUGHT_SEH:
-			sw = "got seh";
+			message = "got seh";
 			break;
 		case ShmError::CAUGHT_CPP_EXCEPTION:
-			sw = "got c++ exception, message: \n";
-			sw = const_cast<char*>(shm().getReadWriteBuffer<char>());
+			message = std::format("got c++ exception, message: \n{}", const_cast<const char*>(shm().getReadWriteBuffer<char>()));
 			break;
 		case ShmError::NONE:
-			sw = "main loop not connected";
+			message = "main loop not connected";
 			break;
 		}
-		throw MemoryException {std::format("waiting at `{}`: {}", callerName, sw), this->pid };
+		throw MemoryException(std::format("waiting at `{}`: {}", callerName, message), this->pid);
 	}
 }

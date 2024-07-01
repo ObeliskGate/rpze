@@ -84,7 +84,7 @@ struct Shm
     volatile ShmError error;
 
     volatile bool isBoardPtrValid;
-    volatile bool already_shared;
+    volatile bool alreadyShared;
 
     static constexpr uint32_t BUFFER_OFFSET = 256;
     static constexpr uint32_t ASM_OFFSET = 1024 * 4;

@@ -36,7 +36,7 @@ SharedMemory::SharedMemory()
 	
 	shm().globalState = HookState::NOT_CONNECTED;
 	shm().isBoardPtrValid = false;
-	shm().already_shared = false;
+	shm().alreadyShared = false;
 	for (size_t i = 0; i < Shm::HOOK_LEN; i++)
 		shm().hookStateArr[i] = HookState::NOT_CONNECTED;
 
