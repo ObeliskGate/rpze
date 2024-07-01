@@ -16,7 +16,7 @@ template <typename T, typename... Args>
 requires (sizeof...(Args) >= 1) && (std::is_integral_v<Args> && ...)
 std::optional<T> readMemory(Args... offsets)
 {
-	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t(offsets)...};
+	auto offsets_ = std::array { static_cast<uintptr_t>(offsets)... };
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
 	{
@@ -31,7 +31,7 @@ template <typename T, typename... Args>
 requires (sizeof...(Args) >= 1) && (std::is_integral_v<Args> && ...)
 bool writeMemory(T&& val, Args... offsets)
 {
-	auto offsets_ = std::array<uintptr_t, sizeof...(Args)> {uintptr_t((offsets))...};
+	auto offsets_ = std::array { static_cast<uintptr_t>(offsets)... };
 	auto base = offsets_[0];
 	for (size_t i = 1; i < sizeof...(Args); i++)
 	{
@@ -39,7 +39,7 @@ bool writeMemory(T&& val, Args... offsets)
 		base = *reinterpret_cast<uintptr_t*>(base) + offsets_[i];
 	}
 	if (base == 0) return false;
-	*reinterpret_cast<T*>(base) = T(std::forward<T>(val));
+	*reinterpret_cast<T*>(base) = std::forward<T>(val);
 	return true;
 }
 

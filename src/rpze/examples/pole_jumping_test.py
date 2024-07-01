@@ -8,7 +8,7 @@ from ..rp_extend import Controller
 from ..structs.zombie import ZombieStatus
 
 
-def pole_jumping_test(ctler: Controller, row=8):  # izs对这种记录性多行兼容不是很好. 秀一下.
+def pole_jumping_test(ctler: Controller, jump_frame=True, row=8):  # izs对这种记录性多行兼容不是很好. 秀一下.
     t = IzTest(ctler).init_by_str(f"""
         1000 -1
         
@@ -27,9 +27,13 @@ def pole_jumping_test(ctler: Controller, row=8):  # izs对这种记录性多行�
 
     @t.flow_factory.add_tick_runner()
     def tag_walking_pvz(fm: FlowManager):
-        for idx, z in enumerate(~t.game_board.zombie_list):
+        for idx in range(5):
+            z = t.ground.zombie(idx)
             if (not tmp_time[idx]) and z.status == ZombieStatus.pole_vaulting_walking:
-                tmp_time[idx] = fm.time
+                tmp_time[idx] = fm.time          
+        # for idx, z in enumerate(~t.game_board.zombie_list):
+        #     if (not tmp_time[idx]) and z.status == ZombieStatus.pole_vaulting_walking:
+        #         tmp_time[idx] = fm.time
 
     @t.flow_factory.add_tick_runner()
     def check_end(_):
@@ -39,5 +43,5 @@ def pole_jumping_test(ctler: Controller, row=8):  # izs对这种记录性多行�
             tmp_time = [None] * 5
             return t.end(True)
 
-    t.start_test(True, print_interval=100)
+    t.start_test(jump_frame, print_interval=100)
     print(sum(times) / len(times), len(times))

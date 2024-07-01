@@ -27,7 +27,7 @@ def dancing_example(ctler: Controller, jump_frame=False):
 
     @iz_test.flow_factory.add_tick_runner()
     def extra_check_end(_):
-        if iz_test.ground.zombie(0).is_dead:  # mj死亡直接判负, 以免测试卡死
+        if iz_test.ground.zombie(0) is None:  # mj死亡直接判负, 以免测试卡死
             return iz_test.end(False)
 
     @iz_test.flow_factory.add_flow()
@@ -75,6 +75,6 @@ def dancing_example(ctler: Controller, jump_frame=False):
     @iz_test.on_game_end()
     def on_game_end(result):
         if not result:  # 过率是完爆, 死率疑似来源于后伴舞和mj一起走的时候步伐不同步导致mj被打(?
-            print(iz_test.ground.zombie(0).is_dead.x, iz_test.ground.zombie(0).is_dead.y)
+            print("mj is dead" if (z := iz_test.ground.zombie(0)) is None else (z.x, z.y))
 
-    iz_test.start_test(jump_frame=jump_frame, speed_rate=2)
+    print(iz_test.start_test(jump_frame=jump_frame, speed_rate=2))

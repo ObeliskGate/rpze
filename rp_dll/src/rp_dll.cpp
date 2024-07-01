@@ -121,8 +121,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 			call edx
 			mov ecx, esi
 			mov edx, [esi]
-			mov edx, [edx + 0x58] // Board::Update
-			call edx
+			call [edx + 0x58] // Board::Update
 			mov esi, edi
 			push dword ptr [esi + 0x820]
 			mov edx, 0x445680 // EffectSystem::ProcessDeleteQueue
@@ -145,10 +144,8 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 
 bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook)
 {
-	if (pSharedMemory->shm().globalState == HookState::NOT_CONNECTED ||
-		pSharedMemory->shm().hookStateArr[getHookIndex(hook)] == HookState::NOT_CONNECTED)
-		return true;
-	return false;
+	return (pSharedMemory->shm().globalState == HookState::NOT_CONNECTED ||
+		pSharedMemory->shm().hookStateArr[getHookIndex(hook)] == HookState::NOT_CONNECTED);
 }
 
 static void* pTrampoline = nullptr;
@@ -165,13 +162,13 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 	} 
 	catch (const std::exception& e) 
 	{
+		auto& shm = SharedMemory::getInstance()->shm();
+		shm.error = ShmError::CAUGHT_CPP_EXCEPTION;
 		std::string str;
 		if (auto p = dynamic_cast<const RpDllBaseException*>(&e))
 			str = p->whatWhenNotCaught();
 		else
 			str = printStlException(e);
-		auto& shm = SharedMemory::getInstance()->shm();
-		shm.error = ShmError::CAUGHT_CPP_EXCEPTION;
 		auto copySize = std::min(str.size(), Shm::BUFFER_SIZE - 1) + 1; // for \0
 		memcpy(const_cast<char*>(shm.getReadWriteBuffer<char>()), str.c_str(), copySize);
  		exit();
@@ -189,15 +186,11 @@ void initInThread(const SharedMemory* pSharedMemory)
 	auto pUpdateApp = readMemory<void*>(0x6a9ec0, 0x0, 0x180).value();
 	if (MH_CreateHook(pUpdateApp, 
 			reinterpret_cast<void*>(&hookUpdateApp), &pTrampoline) != MH_OK)
-	{
-		std::println(std::cerr, "LawnApp::UpdateApp create hook failed");
-		return;
-	}
+		throw std::runtime_error("LawnApp::UpdateApp create hook failed");
+	
 	if (MH_EnableHook(pUpdateApp) != MH_OK)
-	{
-		std::println(std::cerr, "LawnApp::UpdateApp enable hook failed");
-		return;
-	}
+		throw std::runtime_error("LawnApp::UpdateApp enable hook failed");
+	
 #ifndef NDEBUG
 	std::println("LawnApp::UpdateApp hooked, trampoline: {}", pTrampoline);
 #endif

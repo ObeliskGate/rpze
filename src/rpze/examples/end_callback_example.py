@@ -6,7 +6,7 @@ from ..iztest.iztest import IzTest
 from ..rp_extend import Controller
 
 
-def end_test(ctler: Controller):
+def end_test(ctler: Controller, jump_frame=True):
     iz_test = IzTest(ctler).init_by_str('''
                  -1 -1
                  2-0
@@ -27,4 +27,4 @@ def end_test(ctler: Controller):
             return None
         return (ns + z * z / 2) / (n + z * z)
 
-    print(iz_test.start_test(True, print_interval=50))
+    print(iz_test.start_test(jump_frame=jump_frame, print_interval=50))

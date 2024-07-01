@@ -6,7 +6,7 @@ else
 end
 
 
-add_rules("mode.debug", "mode.releasedbg")
+add_rules("mode.debug", "mode.releasedbg", "mode.release")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode", lsp = "clangd"})
 
 
