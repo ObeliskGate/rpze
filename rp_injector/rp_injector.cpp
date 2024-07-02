@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <print>
+#include <span>
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
@@ -35,19 +36,19 @@ public:
     operator bool() const { return p != nullptr; }
     bool operator!() const { return !bool(*this); }
 
-    static VMemoryWrapper newStr(HANDLE hProc, std::string_view str)
+    template <typename T, size_t Extent>
+    requires std::is_standard_layout_v<T>
+    static VMemoryWrapper newArr(HANDLE hProc, std::span<T, Extent> arr)
     {
-        auto size = str.size() + 1;
-        auto p = VirtualAllocEx(hProc, nullptr, size, MEM_COMMIT, PAGE_READWRITE);
+        auto p = VirtualAllocEx(hProc, nullptr, arr.size_bytes(), MEM_COMMIT, PAGE_READWRITE);
         if (!p) throw std::runtime_error("alloc v-memory failed");
-        if (!WriteProcessMemory(hProc, p, str.data(), size, nullptr)) 
+        if (!WriteProcessMemory(hProc, p, arr.data(), arr.size_bytes(), nullptr)) 
             throw std::runtime_error("write v-memory failed");
-        // auto test = std::string(size, '\0');
-        // if (!ReadProcessMemory(hProc, p, test.data(), size, nullptr))
-        //     throw std::runtime_error("read v-memory failed");
-        // std::println("test: {}", test);
         return { hProc, p };
     }
+
+    static VMemoryWrapper newStr(HANDLE hProc, std::string_view str) 
+        { return newArr(hProc, std::span<const char> {str.data(), str.size() + 1}); }
 
     template <typename... Args>
     requires (std::is_standard_layout_v<std::decay_t<Args>> && ...)
@@ -58,7 +59,8 @@ public:
         if (!p) throw std::runtime_error("alloc v-memory failed");
         auto tmp = static_cast<BYTE*>(p);
         (
-            [&]() {
+            [&]
+            {
                 using T = std::decay_t<Args>;
                 if (!WriteProcessMemory(hProc, tmp, &args, sizeof(T), nullptr))
                     throw std::runtime_error("write v-memory failed");

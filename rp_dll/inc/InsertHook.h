@@ -110,13 +110,13 @@ InsertHook::InsertHook(void* addr_, T&& callback)
 	hookCode->oriAddr = reinterpret_cast<DWORD>(addr);
 	hookCode->thisPtr = reinterpret_cast<DWORD>(this);
 
-	if (MH_CreateHook(addr, hookCode, &pTrampoline) != MH_OK) {
-		throw std::runtime_error(std::format("MH_CreateHook failed: {}", addr).c_str());
-	}
+	if (MH_CreateHook(addr, hookCode, &pTrampoline) != MH_OK) 
+		throw std::runtime_error(std::format("MH_CreateHook failed: {}", addr));
+	
 
-	if (MH_EnableHook(addr) != MH_OK) {
-		throw std::runtime_error(std::format("MH_EmableHook failed: {}", addr).c_str());
-	}
+	if (MH_EnableHook(addr) != MH_OK) 
+		throw std::runtime_error(std::format("MH_EmableHook failed: {}", addr));
+	
 	hookCode->retAddr = reinterpret_cast<DWORD>(pTrampoline);
 #ifndef NDEBUG
 	std::println("hooked, trampoline: {}", pTrampoline);
@@ -129,7 +129,7 @@ void InsertHook::addInsert(void* addr, T&& callback)
 	auto it = hooks.find(addr);
 	if (it != hooks.end())
 	{
-		throw std::invalid_argument(std::format("hook already exists: {}", addr).c_str());
+		throw std::invalid_argument(std::format("hook already exists: {}", addr));
 	}
 	hooks[addr] = std::make_unique<InsertHook>(addr, std::forward<T>(callback));
 }
