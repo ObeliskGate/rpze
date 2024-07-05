@@ -235,8 +235,8 @@ class IzTest:
         self.ground: _IzGround | None = None
 
         # 运行时候会时刻改变的量. 不建议修改
-        self._target_plants: list[Plant] = []  # 所有目标脑子
-        self._target_brains: list[Griditem] = []  # 所有目标植物
+        self._target_plant_ids: list[tuple[int, int]] = []  # 所有目标脑子
+        self._target_brain_ids: list[tuple[int, int]] = []  # 所有目标植物
         self._last_test_ended: bool = False  # 用于判断是否结束一次测试
         self._success_count: int = 0  # 成功次数
         self._test_time: int = 0  # 测试次数
@@ -344,8 +344,8 @@ class IzTest:
             self._success_count += 1
         self._test_time += 1
 
-        self._target_plants = []
-        self._target_brains = []
+        self._target_plant_ids = []
+        self._target_brain_ids = []
 
         return TickRunnerResult.BREAK_DONE
 
@@ -356,10 +356,11 @@ class IzTest:
         Returns:
             如果结束则返回TickRunnerResult.BREAK_RUN, 否则返回None
         """
-        if (all(plant.is_dead for plant in self._target_plants) and
-                all(brain.id.rank == 0 for brain in self._target_brains)):
+        board = self.game_board
+        if (all(board.griditem_list.find(*brain) is None for brain in self._target_brain_ids) and
+                all(board.plant_list.find(*plant) is None for plant in self._target_plant_ids)):
             return self.end(True)
-        if self.game_board.zombie_list.obj_num == 0:
+        if board.zombie_list.obj_num == 0:
             return self.end(False)
 
     def check_tests_end(self) \
@@ -418,13 +419,13 @@ class IzTest:
                         if self.reset_generate_cd:
                             randomize_generate_cd(plant)
                         if (row, col) in self.target_plants_pos:
-                            self._target_plants.append(plant)
+                            self._target_plant_ids.append(plant.id.tpl())
 
             for i in range(5):
                 brain = self.game_board.new_iz_brain(i)
                 origin_brain_ids[i] = brain.id.tpl()
                 if i in self.target_brains_pos:
-                    self._target_brains.append(brain)
+                    self._target_brain_ids.append(brain.id.tpl())
 
             self.ground = _IzGround(origin_plant_ids, origin_brain_ids, self)
 

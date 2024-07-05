@@ -518,26 +518,21 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
 
         def find(self, *args) -> _T_node | None:
             match args:
-                case (idx,):
+                case (index, rank):  # index: int; rank: int
+                    target = self.at(index)
+                    # try:  # unbearable slow...
+                    #     target = self[index]
+                    # except IndexError:
+                    #     return None
+                    return target if target.id.rank == rank else None
+                case (idx, ):
                     if isinstance(idx, SupportsIndex):
-                        try:
-                            target = self[idx]
-                        except IndexError:
-                            return None
+                        target = self.at(idx.__index__())
                         return target if target.id.rank != 0 else None
                     if isinstance(idx, ObjId):
-                        try:
-                            target = self[idx.index]
-                        except IndexError:
-                            return None
+                        target = self.at(idx.index)
                         return target if target.id == idx else None
                     raise TypeError("index must be int or ObjId instance")
-                case (index, rank):
-                    try:
-                        target = self[index]
-                    except IndexError:
-                        return None
-                    return target if target.id.rank == rank else None
                 case _:
                     raise ValueError("the function should have 1 or 2 parameters, "
                                      f"not {len(args)} parameters")

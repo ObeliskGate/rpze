@@ -57,7 +57,7 @@ enum class ShmError: int32_t
     CAUGHT_CPP_EXCEPTION
 };
 
-inline size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }
+inline constexpr size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }
 
 #pragma pack(push, 1)
 struct Shm
