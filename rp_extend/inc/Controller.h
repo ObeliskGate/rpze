@@ -1,7 +1,7 @@
 #pragma once
 #include "Memory.h"
 #include "stdafx.h"
-#include <span>
+#include <concepts>
 
 // 给Python侧暴露的类型
 
@@ -13,17 +13,17 @@ class Controller
 	template <typename T>
 	requires requires(T sequence, size_t i)
 	{
-		{ sequence[i] } -> std::convertible_to<py::handle>;
-		{ sequence.size() } -> std::convertible_to<size_t>;
+		{ sequence[i] } -> std::convertible_to<py::object>;
+		{ sequence.size() } -> std::integral;
 	}
-	std::span<uint32_t> set_offset_arr_of_py_sequence(const T& offsets)
+	size_t set_offset_arr_of_py_sequence(const T& offsets)
 	{
 		auto len_ = offsets.size();
 		for (size_t i = 0; i < len_; i++)
 		{
-			offset_buffer[i] = offsets[i].template cast<uint32_t>();
+			offset_buffer[i] = py::cast<uint32_t>(offsets[i]);
 		}
-		return { offset_buffer, len_ };
+		return len_;
 	}
 
 public:
@@ -99,12 +99,12 @@ public:
 template <typename T>
 std::optional<T> Controller::read_memory(const py::args& offsets, bool force_remote)
 {
-	return mem.readMemory<T>(set_offset_arr_of_py_sequence(offsets), force_remote);
+	return mem.readMemory<T>({offset_buffer, set_offset_arr_of_py_sequence(offsets)}, force_remote);
 }
 
 template <typename T>
 bool Controller::write_memory(T&& val, const py::args& offsets, bool force_remote)
 {
-	return mem.writeMemory(std::forward<T>(val), set_offset_arr_of_py_sequence(offsets), force_remote);
+	return mem.writeMemory(std::forward<T>(val), {offset_buffer, set_offset_arr_of_py_sequence(offsets)}, force_remote);
 }
 

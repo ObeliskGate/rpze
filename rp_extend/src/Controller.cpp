@@ -98,7 +98,7 @@ Controller::Controller(DWORD pid) : mem(pid),
 py::object Controller::read_bytes(uint32_t size, const py::args& offsets, bool force_remote)
 {
 	auto off_ = set_offset_arr_of_py_sequence(offsets);
-	auto ret = mem.readBytes(size, off_, force_remote);
+	auto ret = mem.readBytes(size, {offset_buffer, set_offset_arr_of_py_sequence(offsets)}, force_remote);
 	if (ret.has_value()) return py::bytes(ret->get(), size);
 	return py::none();
 }
@@ -106,5 +106,5 @@ py::object Controller::read_bytes(uint32_t size, const py::args& offsets, bool f
 bool Controller::write_bytes(const py::bytes& in, const py::args& offsets, bool force_remote)
 {
 	auto off_ = set_offset_arr_of_py_sequence(offsets);
-	return mem.writeBytes(in, off_, force_remote);
+	return mem.writeBytes(in, {offset_buffer, set_offset_arr_of_py_sequence(offsets)}, force_remote);
 }

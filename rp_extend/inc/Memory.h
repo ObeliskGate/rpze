@@ -25,27 +25,28 @@ class Memory
 	uint32_t remoteMemoryAddress = 0;
 	void getRemoteMemoryAddress();
 
-	void* getRemotePtr(const std::span<uint32_t> offsets);
+	void* getRemotePtr(std::span<uint32_t> offsets);
 
 	// pvz进程id
 	DWORD pid = 0;
 
 	volatile PhaseCode& getCurrentPhaseCode() const { return *pCurrentPhaseCode; }
 	
-	volatile RunState& getCurrentRunState() const { return *pCurrentRunState; }
+	volatile RunState& getCurrentRunState() const { return *pCurrentRunState; }\
 
+	void setReadWriteOffsets(std::span<uint32_t> offsets);
 
 	// 读取内存, 但是没有杂七杂八的检查
-	volatile void* _readMemory(uint32_t size, const std::span<uint32_t> offsets);
+	volatile void* _readMemory(uint32_t size, std::span<uint32_t> offsets);
 
 	// 写入内存, 但是没有杂七杂八的检查
-	bool _writeMemory(const void* pVal, uint32_t size, const std::span<uint32_t> offsets);
+	bool _writeMemory(const void* pVal, uint32_t size, std::span<uint32_t> offsets);
 
 	template<typename T>
-	std::optional<T> _readRemoteMemory(const std::span<uint32_t> offsets);
+	std::optional<T> _readRemoteMemory(std::span<uint32_t> offsets);
 
 	template<typename T>
-	bool _writeRemoteMemory(T&& val, const std::span<uint32_t> offsets);
+	bool _writeRemoteMemory(T&& val, std::span<uint32_t> offsets);
 
 	template <bool check_sync = true>
 	void waitMutex() const;
@@ -97,16 +98,16 @@ public:
 	// 仅支持sizeof(T)<=8且offsets数量不超过10
 	template <typename T>
 	requires std::is_standard_layout_v<T> && (sizeof(T) <= Shm::BUFFER_SIZE)
-	std::optional<T> readMemory(const std::span<uint32_t> offsets, bool forceRemote = false);
+	std::optional<T> readMemory(std::span<uint32_t> offsets, bool forceRemote = false);
 
 	// **直接**将传入的val写入游戏指定地址
 	template<typename T>
 	requires std::is_standard_layout_v<std::decay_t<T>> && (sizeof(std::decay_t<T>) <= Shm::BUFFER_SIZE)
-	bool writeMemory(T&& val, const std::span<uint32_t> offsets, bool forceRemote = false);
+	bool writeMemory(T&& val, std::span<uint32_t> offsets, bool forceRemote = false);
 
-	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, const std::span<uint32_t> offsets, bool forceRemote = false);
+	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, std::span<uint32_t> offsets, bool forceRemote = false);
 
-	bool writeBytes(const std::string_view inputBytes, const std::span<uint32_t> offsets, bool forceRemote = false);
+	bool writeBytes(const std::string_view inputBytes, std::span<uint32_t> offsets, bool forceRemote = false);
 
 	bool runCode(const std::string_view codes) const;
 
@@ -183,7 +184,7 @@ void Memory::releaseMutex() const
 }
 
 template <typename T>
-std::optional<T> Memory::_readRemoteMemory(const std::span<uint32_t> offsets)
+std::optional<T> Memory::_readRemoteMemory(std::span<uint32_t> offsets)
 {
 	auto remotePtr = getRemotePtr(offsets);
 	if (!remotePtr) return {};
@@ -193,7 +194,7 @@ std::optional<T> Memory::_readRemoteMemory(const std::span<uint32_t> offsets)
 }
 
 template <typename T>
-bool Memory::_writeRemoteMemory(T&& val, const std::span<uint32_t> offsets)
+bool Memory::_writeRemoteMemory(T&& val, std::span<uint32_t> offsets)
 {
 	auto remotePtr = getRemotePtr(offsets);
 	if (!remotePtr) return false;
@@ -203,7 +204,7 @@ bool Memory::_writeRemoteMemory(T&& val, const std::span<uint32_t> offsets)
 
 template<typename T>
 requires std::is_standard_layout_v<T> && (sizeof(T) <= Shm::BUFFER_SIZE)
-std::optional<T> Memory::readMemory(const std::span<uint32_t> offsets, bool forceRemote)
+std::optional<T> Memory::readMemory(std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets);
 	if (offsets.size() > Shm::OFFSETS_LEN) throw std::invalid_argument("readMemory: offsets too long");
@@ -214,7 +215,7 @@ std::optional<T> Memory::readMemory(const std::span<uint32_t> offsets, bool forc
 
 template<typename T>
 requires std::is_standard_layout_v<std::decay_t<T>> && (sizeof(std::decay_t<T>) <= Shm::BUFFER_SIZE)
-bool Memory::writeMemory(T&& val, const std::span<uint32_t> offsets, bool forceRemote)
+bool Memory::writeMemory(T&& val, std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) 
 		return _writeRemoteMemory(std::forward<T>(val), offsets);

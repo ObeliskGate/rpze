@@ -77,11 +77,16 @@ Memory::~Memory()
 	CloseHandle(hMutex);
 }
 
-volatile void* Memory::_readMemory(uint32_t size, const std::span<uint32_t> offsets)
+inline void Memory::setReadWriteOffsets(std::span<uint32_t> offsets)
 {
-	shm().memoryNum = size;
 	memcpy(const_cast<uint32_t*>(shm().offsets), offsets.data(), offsets.size_bytes());
 	shm().offsets[offsets.size()] = Shm::OFFSET_END;
+}
+
+volatile void* Memory::_readMemory(uint32_t size, std::span<uint32_t> offsets)
+{
+	shm().memoryNum = size;
+	setReadWriteOffsets(offsets);
 	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
 	untilGameExecuted(); 
 	if (shm().executeResult == ExecuteResult::SUCCESS) return shm().getReadWriteBuffer();
@@ -89,12 +94,11 @@ volatile void* Memory::_readMemory(uint32_t size, const std::span<uint32_t> offs
 	throw MemoryException("_readMemory: unexpected behavior", this->pid);
 }
 
-bool Memory::_writeMemory(const void* pVal, uint32_t size, const std::span<uint32_t> offsets)
+bool Memory::_writeMemory(const void* pVal, uint32_t size, std::span<uint32_t> offsets)
 {
 	shm().memoryNum = size;
-	CopyMemory(const_cast<void*>(shm().getReadWriteBuffer()), pVal, size);
-	CopyMemory(const_cast<uint32_t*>(shm().offsets), offsets.data(), offsets.size_bytes());
-	shm().offsets[offsets.size()] = Shm::OFFSET_END;
+	memcpy(const_cast<void*>(shm().getReadWriteBuffer()), pVal, size);
+	setReadWriteOffsets(offsets);
 	getCurrentPhaseCode() = PhaseCode::WRITE_MEMORY;
 	untilGameExecuted();
 	if (shm().executeResult == ExecuteResult::SUCCESS) return true;
@@ -191,7 +195,7 @@ bool Memory::endJumpFrame()
 	return true;
 }
 
-void* Memory::getRemotePtr(const std::span<uint32_t> offsets)
+void* Memory::getRemotePtr(std::span<uint32_t> offsets)
 {
 	uint64_t basePtr = offsets[0];
 	for (size_t i = 1; i < offsets.size(); i++)
@@ -208,7 +212,7 @@ void* Memory::getRemotePtr(const std::span<uint32_t> offsets)
 }
 
 
-std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const std::span<uint32_t> offsets, bool forceRemote)
+std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !isShmPrepared())
 	{
@@ -223,11 +227,11 @@ std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, const st
 	auto p = _readMemory(size, offsets);
 	if (!p) return {};
 	auto ret = std::make_unique<char[]>(size);
-	CopyMemory(ret.get(), const_cast<const void*>(p), size);
+	memcpy(ret.get(), const_cast<const void*>(p), size);
 	return ret;
 }
 
-bool Memory::writeBytes(const std::string_view inputBytes, const std::span<uint32_t> offsets, bool forceRemote)
+bool Memory::writeBytes(const std::string_view inputBytes, std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !isShmPrepared())
 	{

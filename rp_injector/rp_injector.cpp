@@ -184,7 +184,7 @@ bool setOptions(DWORD pid, uint32_t options, HMODULE hMod)
 #endif
     auto vOptions = VMemoryWrapper::newMemory(hProcess, options);
     auto ret2 = waitRemoteThread(hProcess, pSetOptions, vOptions);
-    if (!ret2)
+    if (ret2) // return 0 for success
     {
         std::println(std::cerr, "setOptions failed, err {}", GetLastError());
         return false;

@@ -136,7 +136,7 @@ bool SharedMemory::readMemory() const
 			b = false;
 			break;
 		}
-		CopyMemory(const_cast<void*>(shm().getReadWriteBuffer<>()), p, shm().memoryNum);
+		memcpy(const_cast<void*>(shm().getReadWriteBuffer<>()), p, shm().memoryNum);
 		b = true;
 	} while (false);
 	shm().executeResult = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
@@ -153,7 +153,7 @@ bool SharedMemory::writeMemory() const
 			b = false;
 			break;
 		}
-		CopyMemory(p, const_cast<void*>(shm().getReadWriteBuffer<>()), shm().memoryNum);
+		memcpy(p, const_cast<void*>(shm().getReadWriteBuffer<>()), shm().memoryNum);
 		b = true;
 	} while (false);
 	shm().executeResult = b ? ExecuteResult::SUCCESS : ExecuteResult::FAIL;
