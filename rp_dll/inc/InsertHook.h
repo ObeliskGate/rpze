@@ -7,6 +7,18 @@
 #include <MinHook.h>
 
 
+class HeapWrapper
+{
+	HANDLE hHeap;
+public:
+	HANDLE heap() const { return hHeap; }
+	explicit HeapWrapper(DWORD flOptions);
+	~HeapWrapper() { HeapDestroy(hHeap); }
+	void* alloc(size_t size, bool zeroMemory = false);
+	void* realloc(void* p, size_t size, bool zeroMemory = false);
+	void free(void* p);
+};
+
 #pragma pack(push, 1)
 struct HookContext
 {
@@ -25,18 +37,6 @@ struct HookContext
 	HookContext() = delete;
 };
 #pragma pack(pop)
-
-class HeapWrapper
-{
-	HANDLE hHeap;
-public:
-	HANDLE heap() const { return hHeap; }
-	explicit HeapWrapper(DWORD flOptions);
-	~HeapWrapper() { HeapDestroy(hHeap); }
-	void* alloc(size_t size, bool zeroMemory = false);
-	void* realloc(void* p, size_t size, bool zeroMemory = false);
-	void free(void* p);
-};
 
 class InsertHook
 {
@@ -128,9 +128,8 @@ void InsertHook::addInsert(void* addr, T&& callback)
 {
 	auto it = hooks.find(addr);
 	if (it != hooks.end())
-	{
 		throw std::invalid_argument(std::format("hook already exists: {}", addr));
-	}
+	
 	hooks[addr] = std::make_unique<InsertHook>(addr, std::forward<T>(callback));
 }
 

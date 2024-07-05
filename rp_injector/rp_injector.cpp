@@ -40,7 +40,7 @@ public:
     requires std::is_standard_layout_v<T>
     static VMemoryWrapper newArr(HANDLE hProc, std::span<T, Extent> arr)
     {
-        auto p = VirtualAllocEx(hProc, nullptr, arr.size_bytes(), MEM_COMMIT, PAGE_READWRITE);
+        auto p = VirtualAllocEx(hProc, nullptr, arr.size_bytes(), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         if (!p) throw std::runtime_error("alloc v-memory failed");
         if (!WriteProcessMemory(hProc, p, arr.data(), arr.size_bytes(), nullptr)) 
             throw std::runtime_error("write v-memory failed");
@@ -50,12 +50,14 @@ public:
     static VMemoryWrapper newStr(HANDLE hProc, std::string_view str) 
         { return newArr(hProc, std::span<const char> {str.data(), str.size() + 1}); }
 
+
+    // NOLINTBEGIN(bugprone-sizeof-expression): sizeof(ptr) is the expected behavior
     template <typename... Args>
     requires (std::is_standard_layout_v<std::decay_t<Args>> && ...)
     static VMemoryWrapper newMemory(HANDLE hProc, Args&&... args)
     {
         constexpr auto size = (sizeof(std::decay_t<Args>) + ...);
-        auto p = VirtualAllocEx(hProc, nullptr, size, MEM_COMMIT, PAGE_READWRITE);
+        auto p = VirtualAllocEx(hProc, nullptr, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         if (!p) throw std::runtime_error("alloc v-memory failed");
         auto tmp = static_cast<BYTE*>(p);
         (
@@ -67,6 +69,7 @@ public:
                 tmp += sizeof(T);
             }(), ...
         );
+        // NOLINTEND(bugprone-sizeof-expression)
         return { hProc, p };
     }
 };
@@ -79,7 +82,7 @@ DWORD waitRemoteThread(HANDLE hProc, FARPROC func, LPVOID vMemory)
         std::println(std::cerr, "create remote thread failed, err {}", GetLastError());
         return 0;
     }
-    DWORD ret = WaitForSingleObject(hRemoteThread, INFINITE);
+    DWORD ret = WaitForSingleObject(hRemoteThread, 5000);
     if (ret != WAIT_OBJECT_0)
     {
         std::println(std::cerr, "wait failed, err {}", GetLastError());
@@ -133,23 +136,21 @@ HMODULE injectDll(DWORD pid, LPCSTR dllPath)
 
 }
 
+//     __declspec(naked) DWORD WINAPI callGetProcAddressAsThread(LPVOID params)
+//     {
+//         __asm
+//         {
+//             mov ecx, [esp + 4]
+//             push [ecx + 4]
+//             push [ecx]
+//             call [ecx + 8]
+//             ret 4
+//         }
+//     }
 
-extern "C"
-{
-#pragma pack(push, 1)
-    struct GetProcAddrParams
-    {
-        HMODULE hModule;
-        LPCSTR procName;
-        decltype(&GetProcAddress) pGetProcAddress;
-    };
-#pragma pack(pop)
+//     static_assert(std::is_same_v<decltype(&callGetProcAddressAsThread), LPTHREAD_START_ROUTINE>);
 
-    FARPROC WINAPI callGetProcAddressAsThread(GetProcAddrParams* params) noexcept
-    {
-        return params->pGetProcAddress(params->hModule, params->procName);
-    }
-}
+constexpr static unsigned char callGetProcAddressAsThread[] = "\x8bL$\x04\xffq\x04\xff""1\xffQ\x08\xc2\x04\x00"; // same as above
 
 bool setOptions(DWORD pid, uint32_t options, HMODULE hMod)
 {
@@ -162,22 +163,14 @@ bool setOptions(DWORD pid, uint32_t options, HMODULE hMod)
     auto vSetOptionStr = VMemoryWrapper::newStr(hProcess, "setEnv");
     FARPROC pGetProcAddress = getModuleProcAddress("KERNEL32.DLL", "GetProcAddress");
     if (!pGetProcAddress) return false;
+#ifndef NDEBUG
+    std::println("GetProcAddress: {}", (LPVOID)pGetProcAddress);
+#endif
+
+    auto vGetProcAddrWrapper = VMemoryWrapper::newArr(hProcess, 
+        std::span{reinterpret_cast<const BYTE*>(&callGetProcAddressAsThread), 512});
+
     auto vGetProcAddressArgs = VMemoryWrapper::newMemory(hProcess, hMod, (LPVOID)vSetOptionStr, (LPVOID)pGetProcAddress);
-
-    VMemoryWrapper vGetProcAddrWrapper = { hProcess, 
-       VirtualAllocEx(hProcess, nullptr, 1024, MEM_COMMIT, PAGE_EXECUTE_READWRITE) };
-
-    if (!vGetProcAddrWrapper)
-    {
-        std::println(std::cerr, "alloc v-memory for callGetProcAddressAsThread failed, err {}", GetLastError());
-        return false;
-    }
-
-    if (!WriteProcessMemory(hProcess, vGetProcAddrWrapper, reinterpret_cast<void*>(&callGetProcAddressAsThread), 1024, nullptr))
-    {
-        std::println(std::cerr, "write v-memory for callGetProcAddressAsThread failed, err {}", GetLastError());
-        return false;
-    }
    
     auto ret = waitRemoteThread(hProcess, reinterpret_cast<FARPROC>((LPVOID)vGetProcAddrWrapper), vGetProcAddressArgs);
     if (!ret)
@@ -185,8 +178,10 @@ bool setOptions(DWORD pid, uint32_t options, HMODULE hMod)
         std::println(std::cerr, "GetProcAddress failed, err {}", GetLastError());
         return false;
     }
-    std::println("get GetProcAddress success {:x}", ret);
     auto pSetOptions = reinterpret_cast<FARPROC>(ret);
+#ifndef NDEBUG
+    std::println("get GetProcAddress success , addr {}", (LPVOID)pSetOptions);
+#endif
     auto vOptions = VMemoryWrapper::newMemory(hProcess, options);
     auto ret2 = waitRemoteThread(hProcess, pSetOptions, vOptions);
     if (!ret2)
@@ -212,8 +207,8 @@ int main(int argc, char* argv[])
     {
         DWORD pid = atoi(argv[i]);
         auto hMod = injectDll(pid, dllAbsolutePath);
-        // if (setOptions(pid, options, hMod))
-        //     std::println("setOptions success");
+        if (setOptions(pid, options, hMod))
+            std::println("setOptions {} success", options);
         
     }
 	return 0;

@@ -10,7 +10,9 @@ extern "C"
     {
         // std::cout << "setEnv in thread, options: " << *options << std::endl;
         initOptions = *options;
-        // std::cout << *options << "  init in thread, options: " << initOptions << std::endl;
-        return 1;
+#ifndef NDEBUG
+        std::cout << *options << "  init in thread, options: " << initOptions << std::endl;
+#endif
+        return 0;
     }
 }

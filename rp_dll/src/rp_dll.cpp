@@ -169,6 +169,7 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 			str = p->whatWhenNotCaught();
 		else
 			str = printStlException(e);
+		std::println(std::cerr, "Uncaught exception: {}", str);
 		auto copySize = std::min(str.size(), Shm::BUFFER_SIZE - 1) + 1; // for \0
 		memcpy(const_cast<char*>(shm.getReadWriteBuffer<char>()), str.c_str(), copySize);
  		exit();

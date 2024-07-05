@@ -10,7 +10,7 @@ SharedMemory::SharedMemory()
 	hMapFile = CreateFileMappingW(
 		INVALID_HANDLE_VALUE,
 		nullptr,                
-		PAGE_READWRITE,    
+		PAGE_EXECUTE_READWRITE,    
 		0,                      
 		SHARED_MEMORY_SIZE,
 		(nameAffix + L"_shm").c_str());
