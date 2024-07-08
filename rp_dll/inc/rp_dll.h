@@ -13,7 +13,7 @@ void init();
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory);
 
 template <typename T, typename... Args>
-requires (sizeof...(Args) >= 1) && (std::is_integral_v<Args> && ...)
+requires (sizeof...(Args) >= 1) && (std::integral<Args> && ...)
 std::optional<T> readMemory(Args... offsets)
 {
 	auto offsets_ = std::array { static_cast<uintptr_t>(offsets)... };
@@ -28,7 +28,7 @@ std::optional<T> readMemory(Args... offsets)
 }
 
 template <typename T, typename... Args>
-requires (sizeof...(Args) >= 1) && (std::is_integral_v<Args> && ...)
+requires (sizeof...(Args) >= 1) && (std::integral<Args> && ...)
 bool writeMemory(T&& val, Args... offsets)
 {
 	auto offsets_ = std::array { static_cast<uintptr_t>(offsets)... };

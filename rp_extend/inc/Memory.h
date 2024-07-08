@@ -105,7 +105,8 @@ public:
 	requires std::is_standard_layout_v<std::decay_t<T>> && (sizeof(std::decay_t<T>) <= Shm::BUFFER_SIZE)
 	bool writeMemory(T&& val, std::span<uint32_t> offsets, bool forceRemote = false);
 
-	std::optional<std::unique_ptr<char[]>> readBytes(uint32_t size, std::span<uint32_t> offsets, bool forceRemote = false);
+	std::optional<std::unique_ptr<char[]>> 
+		readBytes(uint32_t size, std::span<uint32_t> offsets, bool forceRemote = false);
 
 	bool writeBytes(const std::string_view inputBytes, std::span<uint32_t> offsets, bool forceRemote = false);
 
@@ -119,7 +120,8 @@ public:
 
 	void closeHook(HookPosition hook);
 
-	bool hookConnected(HookPosition hook) const { return globalConnected() && shm().hookStateArr[getHookIndex(hook)] == HookState::CONNECTED; }
+	bool hookConnected(HookPosition hook) const 
+		{ return globalConnected() && shm().hookStateArr[getHookIndex(hook)] == HookState::CONNECTED; }
 
 	bool globalConnected() const { return shm().globalState == HookState::CONNECTED; }
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <concepts>
 #include <exception>
 #include <string>
 #include <format>
@@ -25,7 +26,8 @@ public:
 };
 
 template <typename T>
-requires std::is_base_of_v<std::exception, std::decay_t<T>> && (!std::is_base_of_v<RpDllBaseException, std::decay_t<T>>)
+requires std::derived_from<std::decay_t<T>, std::exception> 
+    && (!std::derived_from<std::decay_t<T>, RpDllBaseException>)
 std::string printStlException(T&& e)
 {
     return std::format("Uncaught STL exception {}, message: \n{}", typeid(e).name(), e.what());
