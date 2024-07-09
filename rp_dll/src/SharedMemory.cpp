@@ -81,7 +81,7 @@ void SharedMemory::waitMutex() const
 	switch (WaitForSingleObject(hMutex, INFINITE))
 #endif
 	{
-	case WAIT_OBJECT_0:
+	case WAIT_OBJECT_0: [[likely]]
 #ifndef NDEBUG
 		std::println("waitMutex: WAIT_OBJECT_0");
 #endif

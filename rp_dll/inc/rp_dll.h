@@ -91,4 +91,4 @@ bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook);
 
 void initInThread(const SharedMemory* pSharedMemory);
 
-void exit();
+void dllExit();

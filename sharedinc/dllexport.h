@@ -13,7 +13,9 @@
 extern "C" {
 #endif
 
-RP_API uint32_t setEnv(uint32_t* options);
+typedef uint32_t InitArgs;
+
+RP_API uint32_t setEnv(InitArgs* options);
 
 #ifdef __cplusplus
 }

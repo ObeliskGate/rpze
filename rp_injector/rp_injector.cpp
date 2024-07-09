@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <print>
 #include <span>
+#include <winerror.h>
 
 #define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
@@ -8,6 +9,8 @@
 #ifdef _WIN64
 #error please build in x86 mode
 #endif
+
+#include "dllexport.h"
 
 class HandleWrapper
 {
@@ -82,12 +85,20 @@ DWORD waitRemoteThread(HANDLE hProc, FARPROC func, LPVOID vMemory)
         std::println(std::cerr, "create remote thread failed, err {}", GetLastError());
         return 0;
     }
-    DWORD ret = WaitForSingleObject(hRemoteThread, 5000);
-    if (ret != WAIT_OBJECT_0)
+    switch (WaitForSingleObject(hRemoteThread, 5000))
     {
-        std::println(std::cerr, "wait failed, err {}", GetLastError());
+    case WAIT_OBJECT_0: [[likely]]
+        break;
+    case WAIT_TIMEOUT:
+        std::println(std::cerr, "remote thread: wait timeout");
         return 0;
-    }
+    case WAIT_FAILED:
+        std::println(std::cerr, "remote thread: wait failed, err {}", GetLastError());
+        return 0;
+    default:
+        std::println(std::cerr, "remot thread: unexpected behavior");
+        return 0;
+    }   
     DWORD r;
     GetExitCodeThread(hRemoteThread, &r);
     return r;
@@ -152,7 +163,7 @@ HMODULE injectDll(DWORD pid, LPCSTR dllPath)
 
 constexpr static unsigned char callGetProcAddressAsThread[] = "\x8bL$\x04\xffq\x04\xff""1\xffQ\x08\xc2\x04\x00"; // same as above
 
-bool setOptions(DWORD pid, uint32_t options, HMODULE hMod)
+bool setOptions(DWORD pid, InitArgs options, HMODULE hMod)
 {
     HandleWrapper hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (!hProcess)

@@ -14,7 +14,10 @@
 void init()
 {
 	DWORD tmp;
-	VirtualProtect(reinterpret_cast<void*>(0x400000), 0x394000, PAGE_EXECUTE_READWRITE, &tmp);
+	VirtualProtect(reinterpret_cast<void*>(0x400000), 
+		0x394000, 
+		PAGE_EXECUTE_READWRITE,
+		 &tmp);
 	AllocConsole();
 	FILE* _;
 	freopen_s(&_, "CONOUT$", "w", stdout);
@@ -172,7 +175,7 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 		std::println(std::cerr, "Uncaught exception: {}", str);
 		auto copySize = std::min(str.size(), Shm::BUFFER_SIZE - 1) + 1; // for \0
 		memcpy(const_cast<char*>(shm.getReadWriteBuffer<char>()), str.c_str(), copySize);
- 		exit();
+ 		dllExit();
 		std::terminate();
 	}
 }
@@ -220,7 +223,7 @@ InsertHook::addInsert(reinterpret_cast<void*>(0x5A4760),
 [pSharedMemory](HookContext& reg)
 	{
 		pSharedMemory->shm().error = ShmError::CAUGHT_SEH;
-		exit();
+		dllExit();
 	});
 #ifndef NDEBUG
 InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
@@ -232,7 +235,7 @@ InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 
 }
 
-void exit()
+void dllExit()
 {
 	SharedMemory::deleteInstance();
 	InsertHook::deleteAll();
