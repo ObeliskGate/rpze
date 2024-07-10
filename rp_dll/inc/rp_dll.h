@@ -2,8 +2,8 @@
 #include "stdafx.h"
 #include "SharedMemory.h"
 #include "dllexport.h"
+#include <stdint.h>
 #include <optional>
-#include <array>
 
 constexpr char ERR_FILE_NAME[] = "rpze_err.log";
 
@@ -13,34 +13,38 @@ void init(InitArgs args);
 // 根据PhaseCode控制本帧应该做什么
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory);
 
-template <typename T, typename... Args>
-requires (sizeof...(Args) >= 1) && (std::integral<Args> && ...)
-std::optional<T> readMemory(Args... offsets)
+template <std::integral T>
+inline uintptr_t __get_offset_impl(T base) { return base; }
+
+template <std::integral T, std::integral U>
+inline uintptr_t __get_offset_impl(T base, U offset)
 {
-	auto offsets_ = std::array { static_cast<uintptr_t>(offsets)... };
-	auto base = offsets_[0];
-	for (size_t i = 1; i < sizeof...(Args); i++)
-	{
-		if (base == 0) return {};
-		base = *reinterpret_cast<uintptr_t*>(base) + offsets_[i];
-	}
-	if (base == 0) return {};
-	return *reinterpret_cast<T*>(base);
+	// if (!base) return 0;
+	auto t = *reinterpret_cast<uintptr_t*>(base);
+	if (!t) return 0;
+	return t + offset;
 }
 
-template <typename T, typename... Args>
-requires (sizeof...(Args) >= 1) && (std::integral<Args> && ...)
-bool writeMemory(T&& val, Args... offsets)
+template <std::integral T, std::integral U, std::integral... Args>
+inline uintptr_t __get_offset_impl(T base, U offset, Args... args)
 {
-	auto offsets_ = std::array { static_cast<uintptr_t>(offsets)... };
-	auto base = offsets_[0];
-	for (size_t i = 1; i < sizeof...(Args); i++)
-	{
-		if (base == 0) return false;
-		base = *reinterpret_cast<uintptr_t*>(base) + offsets_[i];
-	}
-	if (base == 0) return false;
-	*reinterpret_cast<T*>(base) = std::forward<T>(val);
+	return __get_offset_impl(__get_offset_impl(base, offset), args...);
+}
+
+template <typename T, std::integral U, std::integral... Args>
+std::optional<T> readMemory(U base, Args... offsets)
+{
+	auto ptr = __get_offset_impl(base, offsets...);
+	if (!ptr) return {};
+	return *reinterpret_cast<T*>(ptr);
+}
+
+template <typename T, std::integral U, std::integral... Args>
+bool writeMemory(T&& val, U base, Args... offsets)
+{
+	auto ptr = __get_offset_impl(base, offsets...);
+	if (!ptr) return false;
+	*reinterpret_cast<T*>(ptr) = std::forward<T>(val);
 	return true;
 }
 

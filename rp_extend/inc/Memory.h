@@ -2,7 +2,7 @@
 #include "stdafx.h"
 #include "MemoryException.h"
 #include "shm.h" 
-#include <cstdint>
+#include <stdint.h>
 #include <errhandlingapi.h>
 #include <span>
 #include <type_traits>
@@ -209,7 +209,8 @@ requires std::is_standard_layout_v<T> && (sizeof(T) <= Shm::BUFFER_SIZE)
 std::optional<T> Memory::readMemory(std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) return _readRemoteMemory<T>(offsets);
-	if (offsets.size() > Shm::OFFSETS_LEN) throw std::invalid_argument("readMemory: offsets too long");
+	if (offsets.size() > Shm::OFFSETS_LEN) [[unlikely]]
+		throw std::invalid_argument("readMemory: offsets too long");
 	auto p = _readMemory(sizeof(T), offsets);
 	if (!p) return {};
 	return *static_cast<volatile T*>(p);
@@ -221,6 +222,7 @@ bool Memory::writeMemory(T&& val, std::span<uint32_t> offsets, bool forceRemote)
 {
 	if (forceRemote || !hookConnected(HookPosition::MAIN_LOOP)) 
 		return _writeRemoteMemory(std::forward<T>(val), offsets);
-	if (offsets.size() > Shm::OFFSETS_LEN) throw std::invalid_argument("writeMemory: offsets too long");
+	if (offsets.size() > Shm::OFFSETS_LEN) [[unlikely]]
+		throw std::invalid_argument("writeMemory: offsets too long");
 	return _writeMemory(&val, sizeof(T), offsets);
 }

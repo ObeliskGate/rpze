@@ -197,15 +197,16 @@ bool Memory::endJumpFrame()
 
 void* Memory::getRemotePtr(std::span<uint32_t> offsets)
 {
-	uint64_t basePtr = offsets[0];
+	uintptr_t basePtr = offsets[0];
 	for (size_t i = 1; i < offsets.size(); i++)
 	{
-		if (!basePtr) return nullptr;
+		// if (!basePtr) return nullptr;
 		ReadProcessMemory(hPvz, 
 			reinterpret_cast<LPCVOID>(basePtr), 
 			&basePtr, 
 			sizeof(uint32_t), 
 			nullptr);
+		if (!basePtr) return nullptr;
 		basePtr += offsets[i];
 	}
 	return reinterpret_cast<void*>(basePtr);
