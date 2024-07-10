@@ -161,7 +161,8 @@ HMODULE injectDll(DWORD pid, LPCSTR dllPath)
 
 //     static_assert(std::is_same_v<decltype(&callGetProcAddressAsThread), LPTHREAD_START_ROUTINE>);
 
-constexpr static unsigned char callGetProcAddressAsThread[] = "\x8bL$\x04\xffq\x04\xff""1\xffQ\x08\xc2\x04\x00"; // same as above
+constexpr static unsigned char callGetProcAddressAsThread[] = 
+    "\x8bL$\x04\xffq\x04\xff""1\xffQ\x08\xc2\x04\x00"; // same as above
 
 bool setOptions(DWORD pid, InitArgs options, HMODULE hMod)
 {

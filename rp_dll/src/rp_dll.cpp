@@ -60,12 +60,8 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 #ifndef NDEBUG
 				std::println("start run code");
 #endif
-				auto p = pSharedMemory->shm().getAsmBuffer();
-				__asm
-				{
-					mov edx, p
-					call edx
-				}
+				auto p = (void(*)())pSharedMemory->shm().getAsmBuffer<>();
+				p();
 				pSharedMemory->shm().executeResult = ExecuteResult::SUCCESS;
 				phaseCode = PhaseCode::WAIT;
 #ifndef NDEBUG
@@ -163,12 +159,8 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 {
 	try 
 	{
-		__asm
-		{
-			mov ecx, lawnAppAddr
-			mov eax, pTrampoline
-			call eax
-		}
+		auto p = (decltype(&hookUpdateApp))pTrampoline;
+		p(lawnAppAddr);
 	} 
 	catch (const std::exception& e) 
 	{
