@@ -7,6 +7,7 @@ from collections.abc import Callable
 from msvcrt import kbhit, getwch
 from random import randint
 from typing import TypeAlias, Self, overload, NamedTuple, SupportsIndex
+import warnings
 
 from .consts import plant_abbr_to_type, zombie_abbr_to_type
 from .operations import enter_ize
@@ -447,7 +448,8 @@ class IzTest:
     def start_test(self, jump_frame: bool = False,
                    speed_rate: float = 1.0,
                    print_interval: int = 10,
-                   control_speed_key: str = '\x12') -> tuple[float, float]:
+                   control_speed_key: str = '\x12'  # deprecated
+                   ) -> tuple[float, float]:
         """
         开始测试
 
@@ -455,10 +457,12 @@ class IzTest:
             jump_frame: True则开启跳帧测试.
             speed_rate: 速度倍率. 仅当jump_frame = False时有效.
             print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
-            control_speed_key: 非跳帧时切换原速/倍速的按键. 默认值为Ctrl+R
+            control_speed_key: [[deprecated]] 非跳帧时切换原速/倍速的按键. 默认值为Ctrl+R
         Returns:
             (测试概率, 使用时间)元组
         """
+        if control_speed_key != '\x12':
+            warnings.warn("deprecated param `control_speed_key`", DeprecationWarning)
         if self.controller.read_i32(0x6a9ec0, 0x7f8) != 70:  # gLawnApp->mGameMode == ize
             enter_ize(self.controller)
         start_time = time.time()
