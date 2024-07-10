@@ -63,7 +63,7 @@ void* SharedMemory::getReadWritePtr() const
 	for (size_t i = 1; i < Shm::OFFSETS_LEN; i++)
 	{
 		if (shm().offsets[i] == Shm::OFFSET_END) break;
-		// if (!ptr) return nullptr;
+		if (!ptr) return nullptr;
 		ptr = *reinterpret_cast<uint32_t*>(ptr);
 		if (!ptr) return nullptr;
 		ptr += shm().offsets[i];

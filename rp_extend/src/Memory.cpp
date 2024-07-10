@@ -200,7 +200,7 @@ void* Memory::getRemotePtr(std::span<uint32_t> offsets)
 	uintptr_t basePtr = offsets[0];
 	for (size_t i = 1; i < offsets.size(); i++)
 	{
-		// if (!basePtr) return nullptr;
+		if (!basePtr) return nullptr;
 		ReadProcessMemory(hPvz, 
 			reinterpret_cast<LPCVOID>(basePtr), 
 			&basePtr, 

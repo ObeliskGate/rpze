@@ -19,7 +19,7 @@ inline uintptr_t __get_offset_impl(T base) { return base; }
 template <std::integral T, std::integral U>
 inline uintptr_t __get_offset_impl(T base, U offset)
 {
-	// if (!base) return 0;
+	if (!base) return 0;
 	auto t = *reinterpret_cast<uintptr_t*>(base);
 	if (!t) return 0;
 	return t + offset;
