@@ -10,13 +10,11 @@ void InsertHook::callBackFunc(InsertHook* this_, HookContext* hookContext)
 InsertHook::~InsertHook()
 {
     if (MH_DisableHook(addr) != MH_OK)
-    {
         std::println(std::cerr, "failed to disable hook at {}", addr);
-    }
+    
     if (MH_RemoveHook(addr) != MH_OK)
-    {
         std::println(std::cerr, "failed to remove hook at {}", addr);
-    }
+    
 #ifndef NDEBUG
     std::println("hook removed at {}", addr);
 #endif

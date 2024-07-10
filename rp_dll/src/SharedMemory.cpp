@@ -20,7 +20,6 @@ SharedMemory::SharedMemory()
 	sharedMemoryPtr = static_cast<Shm*>(MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE));
 	if (sharedMemoryPtr)
 	{
-		std::println("create shared memory success");
 #ifndef NDEBUG
 		std::println("shared memory ptr: {}", static_cast<void*>(sharedMemoryPtr));
 #endif

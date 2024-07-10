@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-typedef uint32_t InitArgs;
+typedef uint32_t InitArgs; // currently 0 for no console; 1 for console
 
 RP_API uint32_t setEnv(InitArgs* options);
 

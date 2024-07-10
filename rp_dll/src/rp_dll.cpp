@@ -5,36 +5,44 @@
 #include "RpDllException.h"
 
 #include <MinHook.h>
+#include <cstdlib>
 #include <exception>
 #include <print>
 
 
 #define __until(expr) do {} while (!(expr))
 
-void init()
+void init(InitArgs args)
 {
 	DWORD tmp;
 	VirtualProtect(reinterpret_cast<void*>(0x400000), 
 		0x394000, 
 		PAGE_EXECUTE_READWRITE,
-		 &tmp);
-	AllocConsole();
+		&tmp);
+
 	FILE* _;
-	freopen_s(&_, "CONOUT$", "w", stdout);
-	freopen_s(&_, "CONOUT$", "w", stderr);
-	freopen_s(&_, "CONIN$", "r", stdin);
-	std::ios::sync_with_stdio();
-	std::println("console set");
+	if (args == 1)
+	{
+		AllocConsole();
+		freopen_s(&_, "CONOUT$", "w", stdout);
+		freopen_s(&_, "CONOUT$", "w", stderr);
+		freopen_s(&_, "CONIN$", "r", stdin);
+		std::ios::sync_with_stdio();
+		std::println("console set");
+	}
+	else
+	{
+		if (freopen_s(&_, ERR_FILE_NAME, "w", stderr))
+		{
+			MessageBoxA(nullptr, "error file set failed", "rp_dll", MB_OK);
+			dllExit();
+			std::terminate();
+		}
+		std::ios::sync_with_stdio();
+		std::println(std::cerr, "error file set");
+	}
 	auto p = SharedMemory::getInstance();
 	MH_Initialize();
-#ifndef NDEBUG
-	std::println("debug mode, base ptr: {}", p->getSharedMemoryPtr());
-	auto hMod = GetModuleHandleA("rp_dll.dll");
-	std::println("addr of GetProcAddress: {}", (void*)&GetProcAddress);
-	std::println("get module handle success, base ptr: {}", (void*)hMod);
-	auto setEnvPtr = GetProcAddress(hMod, "setEnv");
-	std::println("get setEnv address success: {}", (void*)setEnvPtr);
-#endif
 }
 
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory)
@@ -237,6 +245,7 @@ InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 
 void dllExit()
 {
+	fclose(stderr);
 	SharedMemory::deleteInstance();
 	InsertHook::deleteAll();
 	MH_Uninitialize();

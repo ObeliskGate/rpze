@@ -7,9 +7,9 @@ volatile uint32_t initOptions = 0;
 
 extern "C"
 {
-    RP_API uint32_t setEnv(uint32_t* options)
+    RP_API uint32_t setEnv(InitArgs* options)
     {
-        init();
+        init(*options);
         InsertHook::addInsert(reinterpret_cast<void*>(0x452650),
             [](const HookContext&)  // main loop LawnApp::UpdateFrames 
             {

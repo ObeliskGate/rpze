@@ -40,13 +40,15 @@ def open_game(game_path: str, num: int = 1) -> list[int]:
 
 
 def inject(pids: Iterable[int],
-           stdout=subprocess.DEVNULL) -> list[Controller]:
+           stdout=subprocess.DEVNULL,
+           set_console: bool = True) -> list[Controller]:
     """
     对pids中的每一个进程注入dll
     
     Args:
         pids: 所有process id
         stdout: inject程序标准输出流, 默认丢弃
+        set_console: 是否设置控制台, 默认为True
     Returns:
         所有进程的Controller对象组成的列表
     """
@@ -54,7 +56,7 @@ def inject(pids: Iterable[int],
     try:
         os.chdir(os.path.dirname(__file__))
         dll_path = os.path.abspath("..\\bin\\rp_dll.dll")
-        s = f'..\\bin\\rp_injector.exe {1} \"{dll_path}\" '
+        s = f'..\\bin\\rp_injector.exe {1 if set_console else 0} \"{dll_path}\" '
         s += ' '.join(str(i) for i in pids)
         subprocess.run(s, stdout=stdout)
     finally:
@@ -110,7 +112,7 @@ class InjectedGame(AbstractContextManager):
             close_when_exit: 是否在退出时关闭pvz进程
         """
 
-    def __init__(self, arg, close_when_exit: bool = True):
+    def __init__(self, arg, /, close_when_exit: bool = True):
         self._close_when_exit = close_when_exit
         if isinstance(arg, int):
             self.controller: Controller = Controller(arg)

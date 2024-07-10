@@ -1,13 +1,14 @@
 #pragma once
 #include "stdafx.h"
 #include "SharedMemory.h"
+#include "dllexport.h"
 #include <optional>
 #include <array>
 
-extern volatile uint32_t initOptions;
+constexpr char ERR_FILE_NAME[] = "rpze_err.log";
 
 // 设置
-void init();
+void init(InitArgs args);
 
 // 根据PhaseCode控制本帧应该做什么
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory);
