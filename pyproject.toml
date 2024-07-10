@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "rpze"
@@ -22,5 +22,11 @@ classifiers = [
 [project.urls]
 Repository = "https://github.com/ObeliskGate/rpze.git" 
 
-[tool.setuptools.package-data]
-"*" = ["*.pyd", "*.pyi", "rp_dll.dll", "rp_injector.exe"] 
+[tool.hatch.build.targets.wheel]
+artifacts = [
+  "*.pyd",
+  "*.pdb",
+  "/src/rpze/bin",
+]
+
+[tool.hatch.build.targets.wheel.hooks.custom]

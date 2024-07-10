@@ -26,7 +26,7 @@ if __name__ == "__main__":
         for entry in dir_.iterdir():
             if entry.is_file():
                 file_names.add(entry.name)
-        if file_names != {"rp_dll.dll", "rp_injector.exe"}:
+        if not {"rp_dll.dll", "rp_injector.exe"} <= file_names:
             raise IOError("miss binary dependencies! "
                           "please turn off the antivirus program and add exclusions.")
         try:

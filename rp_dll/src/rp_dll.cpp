@@ -5,7 +5,6 @@
 #include "RpDllException.h"
 
 #include <MinHook.h>
-#include <cstdlib>
 #include <exception>
 #include <print>
 
