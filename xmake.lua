@@ -1,11 +1,7 @@
 set_xmakever("2.7.1")
+add_requires("python 3.x", {system = true})
 
 includes("**/xmake.lua")
-if is_mode("release") or is_mode("releasedbg") then
-    set_runtimes("MT")
-else 
-    set_runtimes("MTd")
-end
 
 
 add_rules("mode.debug", "mode.releasedbg", "mode.release")
