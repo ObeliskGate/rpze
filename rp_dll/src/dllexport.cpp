@@ -15,7 +15,7 @@ extern "C"
             {
                 static bool flag = false; // at the first time, we need to get the mutex
                 static auto pSharedMemory = SharedMemory::getInstance();
-                if (!flag)
+                if (!flag) [[unlikely]]
                 {
                     initInThread(pSharedMemory);
                     flag = true;

@@ -1,3 +1,5 @@
+set_xmakever("2.7.1")
+
 includes("**/xmake.lua")
 if is_mode("release") or is_mode("releasedbg") then
     set_runtimes("MT")

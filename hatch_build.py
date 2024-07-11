@@ -4,17 +4,21 @@ import sys
 from typing import Any
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
+def config_xmake(arglist):
+    subprocess.run(["xmake", "f",  
+                    "-a",  'x86' if sys.maxsize < 2**32 else 'x64'] 
+                    + arglist)
+
 
 class CustomBuildHook(BuildHookInterface):
-    PLUGIN_NAME = 'xmake'
+    PLUGIN_NAME = 'custom'
 
     def clean(self, versions: list[str]):
         subprocess.run("xmake c")
 
     def initialize(self, version: str, build_data: dict[str, Any]) -> None:
-        subprocess.run(f"xmake f -c -m release -a {'x86' if sys.maxsize < 2**32 else 'x64'}")
+        config_xmake(["-m", "release", "-c"])
         subprocess.run("xmake")
-        return
 
     def dependencies(self):
         try:
@@ -43,3 +47,6 @@ class CustomBuildHook(BuildHookInterface):
             os.rename(file_name, new_file_name)
         finally:
             os.chdir(cwd)
+
+if __name__ == "__main__":
+    config_xmake(sys.argv[1:])
