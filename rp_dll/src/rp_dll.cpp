@@ -33,12 +33,12 @@ void init(InitArgs args)
 	{
 		if (freopen_s(&_, ERR_FILE_NAME, "w", stderr))
 		{
-			MessageBoxA(nullptr, "error file set failed", "rp_dll", MB_OK);
+			MessageBoxA(nullptr, "failed to set error log file", "rp_dll", MB_OK);
 			dllExit();
 			std::terminate();
 		}
 		std::ios::sync_with_stdio();
-		std::println(std::cerr, "error file set");
+		std::println(std::cerr, "error log file set");
 	}
 	auto p = SharedMemory::getInstance();
 	MH_Initialize();

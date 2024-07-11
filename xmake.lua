@@ -15,19 +15,6 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode", lsp = "c
 target("prebuild")
     set_kind("phony")
     on_config(function(target)
-        import("lib.detect.find_tool")
-        assert(is_plat("windows"), "Only support windows")
-
-        local python = assert(find_tool("python3"), "Python3 not found")
-        local arch = try { function() return os.iorunv(python.program, {"-c", 
-            "import sys; print('x86' if sys.maxsize < 2**32 else 'x64')"}) end}
-        local version = os.iorunv(python.program, {"--version"})
-        if arch and version then
-            local arch = arch:trim()
-            print(version:trim() .. ": " .. arch)  -- arch由Python版本决定而不是操作系统
-            assert(is_arch(arch), "Python arch must be same with the project arch")
-        end
-
         if not os.isdir("./src/rpze/bin") then
             os.mkdir("./src/rpze/bin")
         end

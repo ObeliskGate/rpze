@@ -15,7 +15,8 @@ SharedMemory::SharedMemory()
 		SHARED_MEMORY_SIZE,
 		(nameAffix + L"_shm").c_str());
 	if (!hMapFile)
-		throw std::runtime_error(std::format("cannot create shared memory: {}", GetLastError()));
+		throw std::runtime_error(
+			std::format("failed to create shared memory, err: {}", GetLastError()));
 	
 	sharedMemoryPtr = static_cast<Shm*>(MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, SHARED_MEMORY_SIZE));
 	if (sharedMemoryPtr)
@@ -27,7 +28,8 @@ SharedMemory::SharedMemory()
 	else 
 	{
 		CloseHandle(hMapFile);
-		throw std::runtime_error(std::format("cannot create map view of file: {}", GetLastError()));
+		throw std::runtime_error(
+			std::format("failed to create map view of file, err: {}", GetLastError()));
 	}
 
 	for (size_t i = 0; i < Shm::OFFSETS_LEN; i++)
@@ -45,7 +47,8 @@ SharedMemory::SharedMemory()
 	{
 		UnmapViewOfFile(sharedMemoryPtr);
 		CloseHandle(hMapFile);
-		throw std::runtime_error(std::format("cannot create mutex: {}", GetLastError()));
+		throw std::runtime_error(
+			std::format("failed to create mutex, err: {}", GetLastError()));
 	}
 }
 
@@ -93,7 +96,7 @@ void SharedMemory::waitMutex() const
 		throw std::runtime_error("waitMutex: WAIT_TIMEOUT");
 #endif
 	case WAIT_FAILED:
-		throw std::runtime_error(std::format("waitMutex: WAIT_FAILED, error {}", GetLastError()));
+		throw std::runtime_error(std::format("waitMutex: WAIT_FAILED, err: {}", GetLastError()));
 	default:
 		throw std::runtime_error("waitMutex: unexpected behavior");
 	}
@@ -102,7 +105,7 @@ void SharedMemory::waitMutex() const
 void SharedMemory::releaseMutex() const
 {
 	if (!ReleaseMutex(hMutex))
-		throw std::runtime_error(std::format("releaseMutex: failed, error {}", GetLastError()));
+		throw std::runtime_error(std::format("releaseMutex: failed, err: {}", GetLastError()));
 	
 #ifndef NDEBUG
 	std::println("releaseMutex: success");

@@ -82,7 +82,7 @@ DWORD waitRemoteThread(HANDLE hProc, FARPROC func, LPVOID vMemory)
     HandleWrapper hRemoteThread = CreateRemoteThread(hProc, NULL, 0, (LPTHREAD_START_ROUTINE)func, vMemory, 0, NULL);
     if (!hRemoteThread)
     {
-        std::println(std::cerr, "create remote thread failed, err {}", GetLastError());
+        std::println(std::cerr, "create remote thread failed, err: {}", GetLastError());
         return 0;
     }
     switch (WaitForSingleObject(hRemoteThread, 5000))
@@ -93,7 +93,7 @@ DWORD waitRemoteThread(HANDLE hProc, FARPROC func, LPVOID vMemory)
         std::println(std::cerr, "remote thread: wait timeout");
         return 0;
     case WAIT_FAILED:
-        std::println(std::cerr, "remote thread: wait failed, err {}", GetLastError());
+        std::println(std::cerr, "remote thread: wait failed, err: {}", GetLastError());
         return 0;
     default:
         std::println(std::cerr, "remot thread: unexpected behavior");
@@ -109,13 +109,13 @@ FARPROC getModuleProcAddress(LPCSTR moduleName, LPCSTR procName)
     HMODULE hModule = GetModuleHandleA(moduleName);
     if (!hModule)
     {
-        std::println(std::cerr, "get module handle failed, err {}", GetLastError());
+        std::println(std::cerr, "get module handle failed, err: {}", GetLastError());
         return nullptr;
     }
     FARPROC p = GetProcAddress(hModule, procName);
     if (!p)
     {
-        std::println(std::cerr, "get proc address failed, err {}", GetLastError());
+        std::println(std::cerr, "get proc address failed, err: {}", GetLastError());
         return nullptr;
     }
     return p;
@@ -127,7 +127,7 @@ HMODULE injectDll(DWORD pid, LPCSTR dllPath)
     HandleWrapper hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (!hProc)
     {
-        std::println(std::cerr, "open process failed, err {}", GetLastError());
+        std::println(std::cerr, "open process failed, err: {}", GetLastError());
         return nullptr;
     }
 
@@ -169,7 +169,7 @@ bool setOptions(DWORD pid, InitArgs options, HMODULE hMod)
     HandleWrapper hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (!hProcess)
     {
-        std::println(std::cerr, "open process failed, err {}", GetLastError());
+        std::println(std::cerr, "open process failed, err: {}", GetLastError());
         return false;
     }
     auto vSetOptionStr = VMemoryWrapper::newStr(hProcess, "setEnv");
@@ -187,7 +187,7 @@ bool setOptions(DWORD pid, InitArgs options, HMODULE hMod)
     auto ret = waitRemoteThread(hProcess, reinterpret_cast<FARPROC>((LPVOID)vGetProcAddrWrapper), vGetProcAddressArgs);
     if (!ret)
     {
-        std::println(std::cerr, "GetProcAddress failed, err {}", GetLastError());
+        std::println(std::cerr, "GetProcAddress failed, err: {}", GetLastError());
         return false;
     }
     auto pSetOptions = reinterpret_cast<FARPROC>(ret);
@@ -198,7 +198,7 @@ bool setOptions(DWORD pid, InitArgs options, HMODULE hMod)
     auto ret2 = waitRemoteThread(hProcess, pSetOptions, vOptions);
     if (ret2) // return 0 for success
     {
-        std::println(std::cerr, "setOptions failed, err {}", GetLastError());
+        std::println(std::cerr, "setOptions failed, err: {}", GetLastError());
         return false;
     }
     return true;

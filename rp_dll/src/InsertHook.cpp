@@ -32,7 +32,7 @@ void InsertHook::deleteAt(void* addr)
 HeapWrapper::HeapWrapper(DWORD flOptions)  : hHeap(HeapCreate(flOptions, 0, 0))
 {
     if (hHeap == nullptr)
-        throw std::runtime_error(std::format("HeapCreate failed, err {}", GetLastError()));
+        throw std::runtime_error(std::format("HeapCreate failed, err: {}", GetLastError()));
     
 }
 
@@ -54,6 +54,6 @@ void HeapWrapper::free(void* p)
 { 
     auto ret = HeapFree(hHeap, 0, p); 
     if (!ret)
-        throw std::runtime_error(std::format("HeapFree failed, err {}", GetLastError()));
+        throw std::runtime_error(std::format("HeapFree failed, err: {}", GetLastError()));
     
 }

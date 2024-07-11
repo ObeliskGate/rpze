@@ -159,7 +159,7 @@ void Memory::waitMutex() const
 		break;
 	case WAIT_FAILED:
 		throw MemoryException(
-			std::format("waitMutex: failed, error {}", GetLastError()), pid);
+			std::format("waitMutex: failed, err: {}", GetLastError()), pid);
 	case WAIT_ABANDONED:
 		throw MemoryException("waitMutex: abandoned", pid);
 #ifndef NDEBUG
@@ -178,7 +178,7 @@ void Memory::releaseMutex() const
 		if (*pCurrentSyncMethod != SyncMethod::MUTEX) return;
 	if (!ReleaseMutex(hMutex)) [[unlikely]]
 		throw MemoryException(
-			std::format("releaseMutex: failed, err {}", GetLastError()), pid);
+			std::format("releaseMutex: failed, err: {}", GetLastError()), pid);
 #ifndef NDEBUG
 	std::println("mutex released");
 #endif

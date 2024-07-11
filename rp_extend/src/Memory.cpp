@@ -22,7 +22,7 @@ Memory::Memory(DWORD pid) : pid(pid)
 		(nameAffix + L"_shm").c_str());
 	if (!hMemory)
 		throw MemoryException(
-			std::format("failed to find shared memory, err {}", GetLastError()), pid);
+			std::format("failed to find shared memory, err: {}", GetLastError()), pid);
 	
 	pShm = static_cast<Shm*>(MapViewOfFile(hMemory, 
 		FILE_MAP_ALL_ACCESS, 
@@ -31,7 +31,7 @@ Memory::Memory(DWORD pid) : pid(pid)
 		SHARED_MEMORY_SIZE));
 	if (!pShm)
 		throw MemoryException(
-			std::format("failed tocreate shared memory, err {}", GetLastError()), pid);
+			std::format("failed to create shared memory, err: {}", GetLastError()), pid);
 
 	if (shm().alreadyShared)
 		throw MemoryException("shared memory has already been connected", pid);
@@ -43,7 +43,7 @@ Memory::Memory(DWORD pid) : pid(pid)
 	hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 	if (!hPvz)
 		throw MemoryException(
-			std::format("failed to find game process, err {}", GetLastError()), pid);
+			std::format("failed to find game process, err: {}", GetLastError()), pid);
 	
 
 	hMutex = OpenMutexW(MUTEX_ALL_ACCESS, 
@@ -51,7 +51,7 @@ Memory::Memory(DWORD pid) : pid(pid)
 		(nameAffix + L"_mutex").c_str());
 	if (!hMutex)
 		throw MemoryException(
-			std::format("failed to find mutex, err {}", GetLastError()), pid);
+			std::format("failed to find mutex, err: {}", GetLastError()), pid);
 
 
 	shm().globalState = HookState::CONNECTED;
