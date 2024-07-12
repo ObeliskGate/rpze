@@ -1,4 +1,3 @@
-import os
 import subprocess
 import sys
 from typing import Any
@@ -22,7 +21,7 @@ class CustomBuildHook(BuildHookInterface):
         build_data["tag"] = f"{pyver}-{pyver}-{platfrom}"
         build_data["pure_python"] = False
         config_xmake(["-m", "release", "-c", "-y"])
-        subprocess.run("xmake")
+        subprocess.run("xmake -r")
 
     def dependencies(self):
         try:
