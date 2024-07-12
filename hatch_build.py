@@ -26,8 +26,8 @@ class CustomBuildHook(BuildHookInterface):
     def dependencies(self):
         try:
             subprocess.run("xmake --version", stdout=subprocess.DEVNULL, check=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            raise RuntimeError("xmake is not installed")
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            raise RuntimeError("xmake is not installed") from e
         return []
     
 if __name__ == "__main__":

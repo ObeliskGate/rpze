@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "rpze"
-version = "0.2.2"
+dynamic = ["version"]
 dependencies = [
     "keystone-engine>=0.9.2",
 ]
@@ -21,6 +21,9 @@ classifiers = [
 
 [project.urls]
 Repository = "https://github.com/ObeliskGate/rpze.git" 
+
+[tool.hatch.version]
+path = "src/rpze/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 artifacts = [
