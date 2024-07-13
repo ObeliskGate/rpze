@@ -43,12 +43,11 @@ def split_await_func_ret(rets: bool | tuple[bool, *tuple[Any, ...]]) -> tuple[bo
     """
     match rets:  # rets should be False / True / (True, *rets)
         case (_, __):
-            return rets;
+            return rets
         case (b, *args):
             return b, tuple(args)
         case b:
             return b, None
-
 
 
 class FlowManager:
