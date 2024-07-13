@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*-
 """
-ize常数, 常见表
+ize 常数, 常见表
 """
 from enum import Enum, auto
 
@@ -28,7 +28,7 @@ ize_plant_types: set[PlantType] = {
     PlantType.kernelpult,
     PlantType.umbrella_leaf
 }
-"""所有ize中出现的植物"""
+"""所有 ize 中出现的植物"""
 
 ize_zombie_types: set[ZombieType] = {
     ZombieType.imp,
@@ -41,7 +41,7 @@ ize_zombie_types: set[ZombieType] = {
     ZombieType.football,
     ZombieType.dancing
 }
-"""所有ize中出现的僵尸"""
+"""所有 ize 中出现的僵尸"""
 
 plant_abbr_to_type: dict[str, PlantType | None] = {
     ".": None,

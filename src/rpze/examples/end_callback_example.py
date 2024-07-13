@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*-
 """
-暂停测试过率演示.
+暂停测试过率演示
 """
 from ..iztest.iztest import IzTest
 from ..rp_extend import Controller

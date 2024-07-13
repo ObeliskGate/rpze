@@ -15,35 +15,35 @@ from ..structs.game_board import GameBoard, get_board
 from ..structs.zombie import Zombie, ZombieStatus
 
 BackupPos: TypeAlias = Literal["w", "s", "a", "d"]
-"""伴舞相对位置, w上, s下, a前, d后"""
+"""伴舞相对位置, w 上, s 下, a 前, d 后"""
 
 
 @overload
 def partner(mj: Zombie, item: SupportsIndex | BackupPos) -> Zombie | None:
     """
-    获得mj的伴舞位置
+    获得 mj 的伴舞位置
 
     Args:
-        mj: 目标mj
+        mj: 目标 mj
         item: 伴舞位置, 支持下标和字符串; 使用下表时按照伴舞位置的顺序, 0上, 1下, 2前, 3后
     Returns:
-        伴舞位置的Zombie对象, 如果没有则返回None
+        伴舞位置的 Zombie 对象, 如果没有则返回 None
     Raises:
-        ValueError: 如果item不是有效位置
+        ValueError: 如果 item 不是有效位置
     """
 
 
 @overload
 def partner(mj: Zombie, item: str) -> tuple[Zombie | None, ...]:
     """
-    获得mj的伴舞位置
+    获得 mj 的伴舞位置
 
     Args:
-        mj: 目标mj
+        mj: 目标 mj
         item: 伴舞位置字符串, 按顺序返回
 
     Returns:
-        一个元组, 按item中顺序返回伴舞位置的Zombie对象, 如果没有则返回None
+        一个元组, 按 item 中顺序返回伴舞位置的 Zombie 对象, 如果没有则返回 None
     Examples:
         >>> partner(mj, "ws") == tuple(partner(mj, "w"), partner(mj, "s"))
         True
@@ -76,7 +76,7 @@ def get_clock(board: GameBoard | None = None) -> int:
     获取当前时钟
 
     Args:
-        board: 默认None为使用get_board()
+        board: 默认为使用 get_board()
     Returns:
         当前时钟
     """
@@ -89,7 +89,7 @@ def get_clock(board: GameBoard | None = None) -> int:
 
 def get_dancing_status(clock: int) -> ZombieStatus:
     """
-    获取时钟对应的dancing状态
+    获取时钟对应的 dancing 状态
 
     Args:
         clock: 时钟时间
@@ -121,7 +121,7 @@ class DancingPhase(Enum):
 
 
 DancingPhaseLiteral: TypeAlias = DancingPhase | Literal["summon", "dance", "move", "s", "d", "m"]
-"""mj相位字面量"""
+"""mj 相位字面量"""
 
 
 def to_dancing_phase(literal: DancingPhaseLiteral) -> DancingPhase:
@@ -131,9 +131,9 @@ def to_dancing_phase(literal: DancingPhaseLiteral) -> DancingPhase:
     Args:
         literal: 字面量
     Returns:
-        转换后的DancingPhase对象
+        转换后的 DancingPhase 对象
     Raises
-        ValueError: 如果literal不是有效的相位字面量
+        ValueError: 如果 literal 不是有效的相位字面量
     """
     match literal:
         case "summon" | "s" | DancingPhase.TRYING_CALLING_PARTNER:
@@ -148,14 +148,14 @@ def to_dancing_phase(literal: DancingPhaseLiteral) -> DancingPhase:
 
 def dancing_status_to_phase(status: ZombieStatus) -> DancingPhase:
     """
-    将僵尸状态转换为DancingPhase
+    将僵尸状态转换为 DancingPhase
 
     Args:
         status: 僵尸状态
     Returns:
-        转换后的DancingPhase对象
+        转换后的 DancingPhase 对象
     Raises:
-        ValueError: 如果status不是mj特有的状态
+        ValueError: 如果 status 不是 mj 特有的状态
     """
     match status:
         case ZombieStatus.dancing_walking:
@@ -171,12 +171,12 @@ def dancing_status_to_phase(status: ZombieStatus) -> DancingPhase:
 
 def get_dancing_phase(board: GameBoard | None = None) -> DancingPhase:
     """
-    获取当前时钟对应的DancingPhase
+    获取当前时钟对应的 DancingPhase
 
     Args:
-        board: 游戏板对象, 默认None为使用get_board()
+        board: 游戏板对象, 默认为使用get_board()
     Returns:
-        当前时钟对应的DancingPhase
+        当前时钟对应的 DancingPhase
     """
     return dancing_status_to_phase(get_dancing_status(get_clock(board)))
 
@@ -227,14 +227,14 @@ class _DmTr(Callable):
 
 class DancingManipulator(AbstractContextManager):
     """
-    mj相位控制器, 即, "女仆秘籍".
+    mj 相位控制器, 即, "女仆秘籍".
 
-    与avz不同, DancingManipulator目前依托于一个TickRunner控制mj时钟工作.
-    构造函数为protected.
+    与 AvZ 不同, DancingManipulator 目前依托于一个T ickRunner 控制mj时钟工作.
+    构造函数为 protected interface.
 
     Attributes:
-        start_phase: with语句开始时的相位
-        end_phase: with语句结束时的相位
+        start_phase: with 语句开始时的相位
+        end_phase: with 语句结束时的相位
     """
     def __init__(self, tr: _DmTr,
                  start_phase: DancingPhaseLiteral,
@@ -257,7 +257,7 @@ class DancingManipulator(AbstractContextManager):
 
     async def until_next_phase(self, phase: DancingPhaseLiteral, condition: CondFunc):
         """
-        等待到下一个相位, 用于flow内部
+        等待到下一个相位, 用于 flow 内部
 
         使用中等效于:
         >>> async def flow(_):
@@ -308,16 +308,16 @@ def get_dancing_manipulator(iz_test: IzTest,
                             end_phase: DancingPhaseLiteral = DancingPhase.MOVING,
                             priority: int = DEFAULT_PRIORITY + 1) -> DancingManipulator:
     """
-    获取一个DancingManipulator
+    获取一个 DancingManipulator
 
     Args:
-        iz_test: 和DancingManipulator对应的IzTest对象
+        iz_test: 和 DancingManipulator 对应的 IzTest 对象
         start_phase: 开始时的相位
         end_phase: 结束时的相位
-        priority: DancingManipulator依托的TickRunner优先级.
-            默认为add默认值 + 1以确保默认时DancingManipulator在本cs生效
+        priority: DancingManipulator 依托的 TickRunner 优先级.
+            默认为 default + 1, 以确保默认时 DancingManipulator 在本帧生效
     Returns:
-        构造的DancingManipulator对象
+        构造的 DancingManipulator 对象
     """
     dm_tr = _DmTr(iz_test)
     iz_test.flow_factory.add_tick_runner(priority)(dm_tr)

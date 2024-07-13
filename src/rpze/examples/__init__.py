@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*-
 """
-ize测试功能示例
+ize 测试功能示例; everything in this package have no compability
 """
 from .botanical_clock import botanical_clock  # noqa
 from .dancing_example import dancing_example  # noqa

@@ -3,15 +3,15 @@
 简化flow编写的工具函数
 """
 import warnings
-from collections.abc import Callable, Awaitable, Generator
-from typing import overload, Self, Any, TypeVar, TypeAlias
+from collections.abc import Awaitable, Generator
+from typing import overload, Self, Any, TypeVar
 
-from .flow import CondFunc, FlowManager
+from .flow import CondFunc, FlowManager, AwaitFunc, split_await_func_ret
 
 
 class VariablePool:  # thanks Reisen
     """
-    用于表示CondFunc中用于"伴随状态"的默认参数的变量池.
+    用于表示 AwaitFunc 中用于"伴随状态"的默认参数的变量池.
     具体属性由构造函数而定
     """
 
@@ -59,7 +59,6 @@ class VariablePool:  # thanks Reisen
 
 
 _T_co = TypeVar("_T_co", covariant=True)
-AwaitFunc: TypeAlias = Callable[[FlowManager], bool | tuple[bool, *tuple[Any, ...]]]
 
 
 def _await_generator(t) -> Generator[Any, Any, _T_co]:
@@ -67,17 +66,14 @@ def _await_generator(t) -> Generator[Any, Any, _T_co]:
     return ret
 
 
-class AwaitableCondFunc(Awaitable[_T_co]):
+class AwaitableCondFunc(Awaitable[_T_co], CondFunc):
     """
-    包装Awaitable对象用于在flow中await 调用.
+    包装 Func 对象用于在 flow 中 await 调用.
 
-    泛型变量用于表示reveal_type(await AwaitableCondFunc[bool]) is bool
-    这个type hint在PyCharm和mypy工作正常, pylance不工作.
-
-    内层func应当返回bool或者(True, _T_co).
+    泛型变量用于表示: reveal_type(await AwaitableCondFunc[T]) is T
 
     Attributes:
-        func: 内层CondFunc函数
+        func: 内层 CondFunc 函数
     """
     __slots__ = ("func",)
 
@@ -86,22 +82,18 @@ class AwaitableCondFunc(Awaitable[_T_co]):
 
     def __call__(self, fm: FlowManager) -> bool:
         """
-        调用内层func. 确保AwaitableCondFunc自己也为CondFunc函数.
+        调用内层 func. 确保 AwaitableCondFunc 自己也为 CondFunc 函数.
 
-        忽略可能作为await返回值的_T_co而只返回第一位bool.
+        忽略可能作为 await 返回值的 _T_co 而只返回第一位 bool.
         """
-        match self.func(fm):
-            case (b, *_):
-                return b
-            case b:
-                return b
+        return split_await_func_ret(self.func(fm))[0]
 
     def __await__(self) -> Generator[AwaitFunc, Any, _T_co]:
         """
-        让AwaitableCondFunc对象可以await.
+        让 AwaitableCondFunc 对象可以 await.
 
         Returns:
-            生成器对象. 唯一一个生成结果为self.func.
+            生成器对象. 唯一一个生成结果为 self.func.
         """
         return _await_generator(self.func)
 
@@ -110,10 +102,10 @@ class AwaitableCondFunc(Awaitable[_T_co]):
         重载&运算符, 使得对象可以用&运算符, 像逻辑和运算一样连接
 
         Args:
-            other: 另一个CondFunc对象
+            other: 另一个 CondFunc 对象
 
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为self() and other.func
+            一个新的 AwaitableCondFunc 对象. 该对象的func为self() and other()
         """
         return AwaitableCondFunc(lambda fm: self(fm) and other(fm))
 
@@ -122,10 +114,10 @@ class AwaitableCondFunc(Awaitable[_T_co]):
         重载&运算符, 使得对象可以用&运算符, 像逻辑和运算一样连接
 
         Args:
-            other: 另一个CondFunc对象
+            other: 另一个 CondFunc 对象
 
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为other.func and self()
+            一个新的 AwaitableCondFunc 对象. 该对象的 func 为 other() and self()
         """
         return AwaitableCondFunc(lambda fm: other(fm) and self(fm))
 
@@ -136,7 +128,7 @@ class AwaitableCondFunc(Awaitable[_T_co]):
         Args:
             other: 另一个CondFunc对象
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为self() or other.func
+            一个新的 AwaitableCondFunc 对象. 该对象的 func 为 self() or other()
         """
         return AwaitableCondFunc(lambda fm: self(fm) or other(fm))
 
@@ -145,9 +137,9 @@ class AwaitableCondFunc(Awaitable[_T_co]):
         重载|运算符, 使得对象可以用|运算符, 像逻辑或运算一样连接
 
         Args:
-            other: 另一个CondFunc对象
+            other: 另一个 CondFunc 对象
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为other.func or self()
+            一个新的 AwaitableCondFunc 对象. 该对象的 func 为 other.func or self()
         """
         return AwaitableCondFunc(lambda fm: other(fm) or self(fm))
 
@@ -156,25 +148,27 @@ class AwaitableCondFunc(Awaitable[_T_co]):
         重载~运算符, 使得对象可以用~运算符, 像逻辑非运算一样.
 
         Returns:
-            一个新的AwaitableCondFunc对象. 该对象的func为not self()
+            一个新的 AwaitableCondFunc 对象. 该对象的 func 为 not self()
         """
         return AwaitableCondFunc(lambda fm: not self(fm))
 
     def after(self, delay_time: int) -> Self:
         """
-        生成一个 在满足原条件后过delay_time帧返回True的对象.
+        生成一个 在满足原条件后过 delay_time 帧返回原返回值的对象.
         Args:
             delay_time: 延迟时间
         Returns:
-            一个新的AwaitableCondFunc对象.
+            一个新的 AwaitableCondFunc 对象.
         """
 
-        def _await_func(fm: FlowManager, p=VariablePool(event_time=None, ret=None)):
-            if p.event_time is None and (t := self.func(fm)):
-                p.event_time = fm.time
-                p.ret = t
-            if p.event_time is not None and p.event_time + delay_time <= fm.time:
-                return p.ret
+        def _await_func(fm: FlowManager, p=VariablePool(end_time=None, ret=None)):
+            if p.end_time is None:  # end_time未赋值即self.func未返回True
+                b, ret = split_await_func_ret(self.func(fm))
+                if b:
+                    p.end_time = fm.time + delay_time
+                    p.ret = ret
+            if p.end_time is not None and p.end_time <= fm.time:
+                return True, p.ret  # end_time赋值则按时间返回
             return False
 
         return AwaitableCondFunc(_await_func)

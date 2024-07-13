@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*-
 """
-描述pvz中数据结构的基类和基本函数.
+描述 pvz 中数据结构的基类和基本函数.
 """
 import abc
 from collections.abc import Sequence, Iterator, Callable
@@ -14,23 +14,23 @@ from ..rp_extend import Controller
 
 class ObjBase(abc.ABC):
     """
-    pvz中的一个对象
+    pvz 中的一个对象
 
     Attributes:
-        base_ptr: 对应pvz中对象的指针
-        controller: 对应pvz的Controller对象
+        base_ptr: 对应 pvz 中对象的指针
+        controller: 对应 pvz 的 Controller 对象
     """
     __slots__ = ("base_ptr", "controller")
 
     def __init__(self, base_ptr: int, ctler: Controller):
         """
-        一个ObjBase对象由一个指向pvz中的对象的指针, 和对应游戏的Controller构造
+        一个 ObjBase 对象由一个指向 pvz 中的对象的指针, 和对应游戏的 Controller 构造
         
         Args:
             base_ptr: 游戏中对象的基址
-            ctler: 游戏对应的Controller对象
+            ctler: 游戏对应的 Controller 对象
         Raises:
-            ValueError: base_ptr为空时抛出
+            ValueError: base_ptr 为空时抛出
         """
         if base_ptr == 0:
             raise ValueError(f"base_ptr of an {type(self).__name__} object cannot be 0")
@@ -39,16 +39,16 @@ class ObjBase(abc.ABC):
         self.controller = ctler
 
     OBJ_SIZE: ClassVar[int] = NotImplemented
-    """对应pvz类在pvz中的大小, 必须在所有非抽象子类中赋值"""
+    """对应 pvz 类在 pvz 中的大小, 必须在所有非抽象子类中赋值"""
 
     def __eq__(self, other: Self) -> bool:
         """
-        判断二个ObjBase对象是否指向同一游戏的同一位置
+        判断二个 ObjBase 对象是否指向同一游戏的同一位置
 
-        功能更接近于Python中的is.
+        功能更接近于 Python 中的 is.
 
         Args:
-            other : 另一个ObjBase对象
+            other : 另一个 ObjBase 对象
         """
         return self.base_ptr == other.base_ptr and (self.controller == other.controller)
 
@@ -71,9 +71,9 @@ _T_con = TypeVar("_T_con", contravariant=True)
 
 class OffsetProperty(property, Generic[_T_co, _T_con]):
     """
-    ObjBase对象在pvz内的属性
+    ObjBase对象在 pvz 内的属性
 
-    两个泛型参数分别表示: 通过对象调用的__get__返回值, __set__入参.
+    两个泛型参数分别表示: 通过对象调用的 __get__ 返回值, __set__ 入参.
 
     Attributes:
         offset: 属性在游戏中的偏移
@@ -108,7 +108,7 @@ class OffsetProperty(property, Generic[_T_co, _T_con]):
 _OffsetProp: TypeAlias = OffsetProperty[_T, _T]
 
 
-# property factories 用于生成ObjBase对象在pvz内的属性
+# property factories 用于生成 ObjBase 对象在 pvz 内的 attribute
 def property_bool(offset: int, doc: str) -> _OffsetProp[bool]:
     def _get(self: ObjBase) -> bool:
         return self.controller.read_bool(self.base_ptr + offset)
@@ -227,7 +227,7 @@ def property_int_enum(offset: int, cls: type[_T_int_enum], doc: str) \
     def _get(self: ObjBase) -> _T_int_enum:
         return cls(self.controller.read_i32(self.base_ptr + offset))
 
-    def _set(self: ObjBase, value: _T_int_enum) -> None:
+    def _set(self: ObjBase, value: SupportsInt) -> None:
         self.controller.write_i32(int(value), self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
@@ -237,7 +237,7 @@ _T_obj = TypeVar("_T_obj", bound=ObjBase)
 
 
 def property_obj(offset: int, cls: type[_T_obj], doc: str) -> _OffsetProp[_T_obj]:
-    def _get(self: ObjBase):
+    def _get(self: ObjBase) -> _T_obj:
         return cls(self.controller.read_i32(self.base_ptr + offset), self.controller)
 
     def _set(self: ObjBase, value: _T_obj) -> None:
@@ -250,9 +250,9 @@ def property_obj(offset: int, cls: type[_T_obj], doc: str) -> _OffsetProp[_T_obj
 
 class ObjId(ObjBase):
     """
-    ObjNode对象末尾的(index, rank)对象
+    ObjNode 对象末尾的(index, rank)对象
 
-    游戏内用于ObjNode的识别和储存.
+    游戏内用于 ObjNode 的识别和储存.
     """
 
     OBJ_SIZE = 4
@@ -263,12 +263,12 @@ class ObjId(ObjBase):
 
     def __eq__(self, val: Self | tuple[int, int]) -> bool:
         """
-        ObjId比较相等 与其他ObjId比较或与(index, rank)比较
+        ObjId 比较相等 与其他 ObjId 比较或与(index, rank)比较
 
         Args:
-            val: 另一个ObjId对象或(index, rank)一样的可解包对象
+            val: 另一个 ObjId 对象或(index, rank)一样的可解包对象
         Returns:
-            "表示相同对象"返回True
+            "表示相同对象"返回 True
         """
         if isinstance(val, ObjId):
             return ((self.controller.read_u32(self.base_ptr) ==
@@ -293,10 +293,10 @@ class ObjId(ObjBase):
 
 class ObjNode(ObjBase, abc.ABC):
     """
-    Plant Zombie等等, 在pvz中由ObjList数组进行内存管理的对象
+    Plant Zombie 等等, 在 pvz 中由 ObjList 数组进行内存管理的对象
 
     Attributes:
-        id: ObjNode对象末尾的ObjId对象
+        id: ObjNode 对象末尾的 ObjId 对象
     """
     __slots__ = ("id",)
 
@@ -305,10 +305,10 @@ class ObjNode(ObjBase, abc.ABC):
         self.id = ObjId(base_ptr + self.OBJ_SIZE - 4, ctler)
 
     ITERATOR_FUNC_ADDRESS: ClassVar[int] = NotImplemented
-    """返回pvz中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
+    """返回 pvz 中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
     ITERATOR_P_BOARD_REG: ClassVar[str] = "edx"
-    """迭代对象函数用于存储Board指针的寄存器, reanimation和粒子系统为eax, 其他为edx"""
+    """迭代对象函数用于存储 Board 指针的寄存器, reanimation 和粒子系统为 eax, 其他为 edx"""
 
     is_dead: OffsetProperty = NotImplemented
     """对象是否存活, 必须在所有非抽象子类中赋值"""
@@ -319,9 +319,9 @@ _T_node = TypeVar("_T_node", bound=ObjNode)
 
 class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
     """
-    游戏中管理各类对象内存的数组, 即函数表中DataArray对象
+    游戏中管理各类对象内存的数组, 即函数表中 DataArray 对象
 
-    仅帮助type hint用, 请勿直接使用, 而是使用obj_list函数构造.
+    仅帮助 type hint 用, 请勿直接使用, 而是使用 obj_list 函数构造.
     """
     OBJ_SIZE = 28
 
@@ -335,7 +335,7 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
 
     def __len__(self) -> int:
         """
-        返回最大时对象数, 与max_length相同
+        返回最大时对象数, 与 max_length 相同
 
         Returns:
             最大时对象数
@@ -344,7 +344,7 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
 
     def at(self, index: int) -> _T_node:
         """
-        返回index对应下标的元素
+        返回 index 对应下标的元素
 
         Args:
             index: 非负索引, 不做任何检查
@@ -353,22 +353,22 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
         """
 
     @overload
-    def __getitem__(self, index: SupportsIndex, /) -> _T_node:
+    def __getitem__(self, index: SupportsIndex) -> _T_node:
         """
-        返回index对应下标的元素
+        返回 index 对应下标的元素
 
         Args:
             index: 整数索引, 即支持负数索引
         Returns:
             对应下标的元素, 不确保存活
         Raises:
-            IndexError: 若index超出范围抛出
+            IndexError: 若 index 超出范围抛出
         """
 
     @overload
-    def __getitem__(self, index: slice, /) -> list[_T_node]:
+    def __getitem__(self, index: slice) -> list[_T_node]:
         """
-        返回slice切片对应的列表
+        返回 slice 切片对应的列表
 
         若在遍历返回值的时候有新对象生成或死亡, 该方法没法动态调整.
 
@@ -395,26 +395,26 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
 
     @property
     def alive_iterator(self) -> Iterator[_T_node]:
-        """与__invert__()相同"""
+        """与 __invert__() 相同"""
         return ~self
 
     @overload
     def find(self, index: SupportsIndex | ObjId, /) -> _T_node | None:
         """
-        通过index查找对象
+        通过 index 查找对象
 
-        用SupportsIndex查找时, 未回收对象返回T.
-        用ObjId查找时, 在对应index位置对象rank相同时返回T.
+        用 SupportsIndex 查找时, 未回收对象返回 T.
+        用 ObjId 查找时, 在对应 index 位置对象 rank 相同时返回 T.
 
         Args:
-            index: 整数索引, ObjId对象或(index, rank)可解包对象
+            index: 整数索引, ObjId 对象或(index, rank)可解包对象
         Returns:
-            存在未回收的对应对象返回, 否则返回None.
+            存在未回收的对应对象返回, 否则返回 None.
         Raises:
-            TypeError: index不是int和ObjId
+            TypeError: index 不是 int 和 ObjId
         Example:
             >>> self.find(-1)
-            当前最后一个对象(len(self) - 1)未回收时返回, 否则返回None
+            当前最后一个对象(len(self) - 1)未回收时返回, 否则返回 None
         """
 
     @overload
@@ -426,17 +426,17 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
             idx: 整数索引
             rank: 序列号
         Returns:
-            存在未回收的对应对象返回, 否则返回None.
+            存在对应对象返回, 否则返回 None.
         Example:
             >>> self.find(1, 1)
-            若idx == 1的对象的rank==1, 返回该对象, 否则返回None
+            若 idx == 1 的对象的 rank==1, 返回该对象, 否则返回 None
         """
 
     def find(self, *args): ...
 
     def reset_stack(self) -> Self:
         """
-        清栈
+        清栈.
 
         在所有对象都被回收时调用. 让本对象之后申请对象从0开始申请
 
@@ -457,28 +457,28 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
 
     def set_next_idx(self, idx: int) -> Self:
         """
-        设置下一个对象的编号, 若idx大于当前最大长度, 会调整最大长度至和idx相同.
+        设置下一个对象的编号, 若 idx 大于当前最大长度, 会调整最大长度至和 idx 相同.
 
-        当前实现: 为将idx和next_idx在"栈位"对应位置中交换.
-        "调整长度"当前实现: 从所需最高到当前长度倒序添加; 与ize一开始类似且调整长度后无需再次交换.
+        当前实现: 为将 idx 和 next_idx 在"栈位"对应位置中交换.
+        "调整长度"当前实现: 从所需最高到当前长度倒序添加; 与 ize 一开始类似且调整长度后无需再次交换.
 
         Args:
             idx: 下一个对象的编号
         Returns:
             self
         Raises:
-            ValueError: idx不合法或idx所在对象未回收时抛出.
+            ValueError: idx 不合法或 idx 所在对象未回收时抛出.
         """
 
 
 def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
     """
-    根据node_cls构造对应的NodeClsObject的父类
+    根据 node_cls 构造对应的 NodeClsObject 的父类
     
     Args:
-        node_cls: ObjNode的子类
+        node_cls: ObjNode 的子类
     Returns:
-        管理node_cls对象的数组的父类
+        管理 node_cls 对象的数组的父类
     """
 
     class _ObjIterator(Iterator[_T_node]):

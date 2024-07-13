@@ -7,13 +7,13 @@ from ..rp_extend import RpBaseException
 
 class PvzStatusError(RpBaseException):
     """
-    pvz状态异常
+    pvz 状态异常
 
-    当pvz游戏状态不满足要求时抛出.
+    当 pvz 游戏状态不满足要求时抛出.
     """
 
 
-class AsmError(RpBaseException):  # 作为keystone error包装使用, 万一哪天换汇编器了
+class AsmError(RpBaseException):  # 作为 keystone error 包装使用, 万一哪天换汇编器了
     """
     汇编码编译异常
 

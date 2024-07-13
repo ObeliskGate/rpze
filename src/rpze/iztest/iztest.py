@@ -14,7 +14,7 @@ from .operations import enter_ize
 from .plant_modifier import randomize_generate_cd
 from ..basic.gridstr import parse_grid_str, GridStr
 from ..basic.inject import ConnectedContext
-from ..flow.flow import FlowFactory, TickRunnerResult, FlowManager
+from ..flow.flow import FlowFactory, TickRunnerResult, FlowManager, DEFAULT_PRIORITY
 from ..flow.utils import until
 from ..rp_extend import Controller, HookPosition, RpBaseException
 from ..structs.game_board import GameBoard, get_board
@@ -44,16 +44,16 @@ PlantTypeList: TypeAlias = list[list[PlantType | None]]
 
 def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantTypeList]:
     """
-    根据iztools植物字符串生成植物列表
+    根据 iztools 植物字符串生成植物列表
 
     使用+号表示延迟一轮种植, 即"调控栈位".
 
     Args:
-        plant_type_str: 与izt要求相同的植物列表字符串.
+        plant_type_str: 与 izt 要求相同的植物列表字符串.
     Returns:
-        两个5 * 5列表, 分别表示第一轮, 第二轮种植的植物. 空白值由None填充
+        两个5 * 5列表, 分别表示第一轮, 第二轮种植的植物. 空白值由 None 填充
     Raises:
-        ValueError: plant_type_string格式错误时抛出
+        ValueError: plant_type_string 格式错误时抛出
     """
     first_list: list[list[PlantType | None]] = [[None] * 5 for _ in range(5)]
     second_list: list[list[PlantType | None]] = [[None] * 5 for _ in range(5)]
@@ -86,10 +86,10 @@ def parse_plant_type_list(plant_type_str: str) -> tuple[PlantTypeList, PlantType
 
 def parse_target_list(target_str: str) -> tuple[list[tuple[int, int]], list[int]]:
     """
-    根据iztools目标字符串生成目标列表
+    根据 iztools 目标字符串生成目标列表
 
     Args:
-        target_str: 与izt要求相同的目标字符串
+        target_str: 与 izt 要求相同的目标字符串
     Returns:
         两个列表, 分别表示目标植物和目标脑子的位置
     """
@@ -99,14 +99,14 @@ def parse_target_list(target_str: str) -> tuple[list[tuple[int, int]], list[int]
 
 def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
     """
-    根据iztools僵尸放置字符串生成僵尸放置列表
+    根据 iztools 僵尸放置字符串生成僵尸放置列表
 
     Args:
-        place_zombie_str: 与izt要求相同的僵尸放置字符串.
+        place_zombie_str: 与 izt 要求相同的僵尸放置字符串.
     Returns:
-        一个列表, 返回所有僵尸操作, 用PlaceZombieOp表示
+        一个列表, 返回所有僵尸操作, 用 PlaceZombieOp 表示
     Raises:
-        ValueError: place_zombie_string格式错误时抛出
+        ValueError: place_zombie_string 格式错误时抛出
     """
     lines = place_zombie_str.strip().splitlines(False)
     if (t := len(lines)) != 3:
@@ -132,7 +132,7 @@ class _IzGround:
     @overload
     def __getitem__(self, item: tuple[int, int]) -> Plant | Griditem | None:
         """
-        通过row, col获得测试开始时对应位置的植物或脑子.
+        通过(row, col)获得测试开始时对应位置的植物或脑子.
 
         Args:
             item: (row, col)元组
@@ -147,10 +147,10 @@ class _IzGround:
     @overload
     def __getitem__(self, item: GridStr) -> Plant | Griditem | None:
         """
-        通过GridStr获得测试开始时对应位置的植物或脑子.
+        通过 GridStr 获得测试开始时对应位置的植物或脑子.
 
         Args:
-            item: GridStr位置
+            item: GridStr 位置
         Returns:
             对象不存在 or 已死亡返回None, 否则返回该植物/脑子.
         Examples:
@@ -172,12 +172,12 @@ class _IzGround:
 
     def zombie(self, i: SupportsIndex) -> Zombie | None:
         """
-        获得写在IzTest init_str上的第i个僵尸
+        获得写在 IzTest init_str 上的第 i 个僵尸
 
         Args:
-            i: 索引, 支持负数, 如-1表示"此时init_str上写的最近放的僵尸"
+            i: 索引, 支持负数, 如-1表示"此时 init_str 上写的, 最近放置的僵尸"
         Returns:
-            不存在 or 已死亡返回None, 否则返回僵尸
+            不存在 or 已死亡返回 None, 否则返回僵尸
         """
         try:
             id_ = self.zombie_ids[i]
@@ -192,32 +192,32 @@ class IzTest:
     模拟iztools全场测试.
 
     Attributes:
-        plant_type_lists: 两个5 * 5列表, 分别表示第一轮, 第二轮种植的植物. 空白值由None(而非PlantType.none)填充.
-        place_zombie_list: 一个列表, 表示所有僵尸操作, 用PlaceZombieOp表示.
+        plant_type_lists: 两个5 * 5列表, 分别表示第一轮, 第二轮种植的植物. 空白值由 None 填充.
+        place_zombie_list: 一个列表, 表示所有僵尸操作, 用 PlaceZombieOp 表示.
         repeat_time: 重复次数.
-        mj_init_phase: mj初始相位. None表示随机
+        mj_init_phase: mj 初始相位. None 表示随机
         target_plants_pos: 目标植物的位置列表. 元素为(row, col)
-        target_brains_pos: 目标脑子的位置列表. 元素为row
-        controller: 测试使用的Controller对象.
-        flow_factory: 生成测试逻辑的FlowFactory对象.
-        reset_generate_cd: 是否重置植物的generate_cd, 即, iztools"开启攻击间隔处理"为True
-        enable_default_check_end: 是否启用默认的判断输赢功能, 即, 需要手动设置判断时为False
+        target_brains_pos: 目标脑子的位置列表. 元素为 row
+        controller: 测试使用的 Controller 对象.
+        flow_factory: 生成测试逻辑的 FlowFactory 对象.
+        reset_generate_cd: 是否重置植物的 generate_cd , 即, iztools"开启攻击间隔处理" is True
+        enable_default_check_end: 是否启用默认的判断输赢功能, 即, 需要手动设置判断时为 False
         start_check_end_time: 开始判断一次测试是否输赢的时间, 默认为放下最后一个僵尸的时间.
-        end_callback: 一次测试结束时的回调函数, 参数为是否成功bool.
-        check_tests_end_callback: 判断是否结束测试的回调函数. 默认为None, 表示按照repeat_time次数重复测试.
-            参数为(当前测试次数, 成功次数), 返回None表示不结束, 返回float表示计算概率.
-        ground: 用于获取原始植物和脑子的对象. 仅在测试中调用有效.
+        end_callback: 一次测试结束时的回调函数, 参数为是否成功 bool.
+        check_tests_end_callback: 判断是否结束测试的回调函数. 默认为 None, 表示重复 repeat_time 次测试.
+            参数为(当前测试次数, 成功次数), 返回 None 表示不结束, 返回 float 表示结果概率.
+        ground: 用于获取原始植物和脑子的对象, 仅在测试中调用有效.
 
     """
 
     def __init__(self, controller: Controller, reset_generate_cd: bool = True):
         """
-        构造IzTest对象
+        构造 IzTest 对象
 
-        如此构造的对象不能直接使用! 大部分情况下需要调用init_by_str初始化.
+        如此构造的对象不能直接使用! 大部分情况下需要调用 init_by_str 初始化.
 
         Args:
-            controller: 测试使用的Controller对象.
+            controller: 测试使用的 Controller 对象.
             reset_generate_cd: 攻击间隔处理 in iztools
         """
         self.plant_type_lists: tuple[PlantTypeList, PlantTypeList] = ([], [])
@@ -246,19 +246,20 @@ class IzTest:
 
     @property
     def game_board(self) -> GameBoard:
-        """游戏GameBoard对象"""
+        """游戏 GameBoard 对象"""
         return get_board(self.controller)
 
     def init_by_str(self, iztools_str: str) -> Self:
         """
-        通过iztools字符串初始化iztest对象
+        通过 iztools 字符串初始化 iztest 对象
 
-        与iztools的输入格式不完全相同:
+        与 iztools 的输入格式不完全相同:
             - 允许首尾空行以及每行首尾空格.
-            - 支持“测试次数”输入-1表示自定义结束行为, 结束行为默认为测试无限次, 需要self.check_tests_end()手动设置.
+            - 支持“测试次数”输入-1表示自定义结束行为:
+                结束行为默认为测试无限次, 可以通过 self.check_tests_end() 设置何时结束.
             - 支持第二行空行表示无目标: 若此行为空, 则不启用内置的判断输赢功能.
-            - 支持不输入8 9 10行表示不放置僵尸: 若此行为空, 则不启用内置的判断输赢功能.
-            - (暂且)不支持通过书写顺序调整僵尸编号.
+            - 支持不输入8 9 10行表示不放置僵尸: 若此三行为空, 则不启用内置的判断输赢功能.
+            - (暂且)不支持通过书写顺序调整僵尸编号, 可以通过 ObjList 相关接口调整.
 
         Args:
             iztools_str: iztools输入字符串
@@ -318,7 +319,7 @@ class IzTest:
         """
         装饰器, 设置结束时的回调函数
 
-        回调的bool参数为本次测试是否成功.
+        回调的 bool 参数为本次测试是否成功.
 
         Returns:
             添加用装饰器
@@ -335,7 +336,7 @@ class IzTest:
         返回本函数, 表示本次测试结束
 
         Args:
-            succeeded: 成功则传入True, 失败传入False
+            succeeded: 成功则传入 True, 失败传入 False
         Returns:
             TickRunnerResult.BREAK_RUN
         """
@@ -355,7 +356,7 @@ class IzTest:
         默认的判断是否结束测试的函数
 
         Returns:
-            如果结束则返回TickRunnerResult.BREAK_RUN, 否则返回None
+            如果结束则返回 TickRunnerResult.BREAK_RUN, 否则返回 None
         """
         board = self.game_board
         if (all(board.griditem_list.find(*brain) is None for brain in self._target_brain_ids) and
@@ -380,18 +381,18 @@ class IzTest:
         return _decorator
 
     def set_flow_factory(self,
-                         place_priority: int = 10,
-                         check_end_priority: int = -10) -> Self:
+                         place_priority: int = DEFAULT_PRIORITY + 10,
+                         check_end_priority: int = DEFAULT_PRIORITY - 10) -> Self:
         """
-        设置flow_factory
+        设置 flow_factory
 
         Args:
-            place_priority: 初始化及放置僵尸tick runner的优先级, 默认为10
-            check_end_priority: 判断输赢tick runner的优先级, 默认为-10
+            place_priority: 初始化及放置僵尸 tick runner 的优先级, 默认为 default + 10
+            check_end_priority: 判断输赢 tick runner 的优先级, 默认为 default - 10
         Returns:
             self
         Raises:
-            RpBaseException: 已经设置过flow_factory时抛出
+            RpBaseException: 已经设置过 flow_factory 时抛出
         """
         if self._flow_factory_set:
             raise RpBaseException("cannot set flow factory twice!")
@@ -455,9 +456,9 @@ class IzTest:
 
         Args:
             jump_frame: True则开启跳帧测试.
-            speed_rate: 速度倍率. 仅当jump_frame = False时有效.
-            print_interval: 每隔print_interval次测试打印一次结果. 输入0时代表不打印
-            control_speed_key: [[deprecated]] 非跳帧时切换原速/倍速的按键. 默认值为Ctrl+R
+            speed_rate: 速度倍率. 仅当 jump_frame = False 时有效.
+            print_interval: 每隔 print_interval 次测试打印一次结果. 输入0时代表不打印
+            control_speed_key: [[deprecated]] 非跳帧时切换原速/倍速的按键. 默认值为 Ctrl+R
         Returns:
             (测试概率, 使用时间)元组
         """

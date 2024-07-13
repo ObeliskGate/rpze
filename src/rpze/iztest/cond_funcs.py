@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*-
 """
-简化iztest的条件函数
+简化 iztest 编写的条件函数
 """
 from ..flow.flow import FlowManager
 from ..flow.utils import VariablePool, AwaitableCondFunc
@@ -12,7 +12,7 @@ def until_precise_digger(magnet: Plant) -> AwaitableCondFunc[None]:
     生成一个等到磁铁到达精确矿时间的函数
 
     Args:
-        magnet: 要判断cd的磁铁
+        magnet: 要判断 cd 的磁铁
     """
     return AwaitableCondFunc(lambda _: magnet.status_cd <= 587)  # 587 - 590 by 寒风
 
@@ -29,9 +29,9 @@ def until_plant_die(plant: Plant) -> AwaitableCondFunc[None]:
 
 def until_plant_last_shoot(plant: Plant, wait_until_150: bool = False) -> AwaitableCondFunc[int]:
     """
-    生成一个 等到植物"本段最后一次连续攻击"的函数.
+    生成一个 等到植物 "本段最后一次连续攻击结束后返回" 的函数.
 
-    await调用后返回"开打cs距离上一次cs的攻击距离"
+    await 调用后返回"开打帧距离上一次攻击的距离"
 
     Args:
         plant: 要判断的植物

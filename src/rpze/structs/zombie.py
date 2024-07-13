@@ -155,9 +155,9 @@ class Zombie(ObjNode):
 
     OBJ_SIZE = 0x15c
 
-    int_x = property_i32(0x8, "整数x坐标")
+    int_x = property_i32(0x8, "整数 x 坐标")
 
-    int_y = property_i32(0xc, "整数y坐标")
+    int_y = property_i32(0xc, "整数 y 坐标")
 
     row = property_i32(0x1c, "所在行数")
 
@@ -165,19 +165,19 @@ class Zombie(ObjNode):
 
     status = property_int_enum(0x28, ZombieStatus, "僵尸状态")
 
-    x = property_f32(0x2c, "浮点x坐标")
+    x = property_f32(0x2c, "浮点 x 坐标")
 
-    y = property_f32(0x30, "浮点y坐标")
+    y = property_f32(0x30, "浮点 y 坐标")
 
-    dx = property_f32(0x34, "x方向速度")
+    dx = property_f32(0x34, "x 方向速度")
 
-    is_eating = property_bool(0x51, "在啃食时为True")
+    is_eating = property_bool(0x51, "在啃食时为 True")
 
     flash_cd = property_i32(0x54, """
     发亮倒计时
                                     
     - 刚生成僵尸时为0, 受击变为25
-    - 在flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
+    - 在 flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
     """)
 
     time_since_spawn = property_i32(0x60, "出生时间")
@@ -224,9 +224,9 @@ class Zombie(ObjNode):
 
     freeze_cd = property_i32(0xb4, "冻结倒计时")
 
-    is_dead = property_bool(0xec, '是否"彻底"死亡, 即濒死时此条为False')
+    is_dead = property_bool(0xec, '是否"彻底"死亡, 即濒死时此条为 False')
 
-    is_not_dying = property_bool(0xba, "不在濒死状态时为True")
+    is_not_dying = property_bool(0xba, "不在濒死状态时为 True")
 
     @property
     def master_id(self) -> ObjId:  # 似乎所有ObjNode subclass都用Property而不是Attribute更好看
@@ -257,7 +257,7 @@ class Zombie(ObjNode):
 
 class ZombieList(obj_list(Zombie)):
     """
-    僵尸DataArray
+    僵尸 DataArray
     """
     def free_all(self) -> Self:
         code = f"""

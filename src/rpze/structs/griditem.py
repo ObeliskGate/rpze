@@ -40,16 +40,16 @@ class Griditem(ObjNode):
     brain_hp = property_i32(0x18, """
         脑子血量, 墓碑冒出的量, 弹坑消失倒计时, 钉钯消失倒计时
         
-        对于ize中脑子, 初始为70, 每次被啃时-= 1(区别于植物血量 -= 4)
+        对于 ize 中脑子, 初始为70, 每次被啃时-= 1(区别于植物血量 -= 4)
         """)
 
     layer = property_i32(0x1c, "图层")
 
     is_dead = property_bool(0x20, "是否死亡")
 
-    x = property_f32(0x24, "x坐标")
+    x = property_f32(0x24, "x 坐标")
 
-    y = property_f32(0x28, "y坐标")
+    y = property_f32(0x28, "y 坐标")
 
     def __str__(self) -> str:
         if not self.is_dead:
@@ -70,14 +70,14 @@ class Griditem(ObjNode):
 
 class GriditemList(obj_list(Griditem)):
     """
-    场地物品DataArray
+    场地物品 DataArray
     """
     def alloc_item(self) -> Griditem:
         """
-        从内存数组中申请新的griditem对象
+        从内存数组中申请新的 griditem 对象
 
         Returns:
-            申请出的Griditem对象
+            申请出的 Griditem 对象
         """
         code = f"""
             push esi

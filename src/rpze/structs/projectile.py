@@ -49,19 +49,19 @@ class Projectile(ObjNode):
 
     OBJ_SIZE = 0x94
 
-    int_x = property_i32(0x8, "图像整数x坐标")
+    int_x = property_i32(0x8, "图像整数 x 坐标")
 
-    int_y = property_i32(0xc, "图像整数y坐标")
+    int_y = property_i32(0xc, "图像整数 y 坐标")
 
     col = property_i32(0x1c, "所在行数")
 
-    x = property_f32(0x30, "浮点x坐标")
+    x = property_f32(0x30, "浮点 x 坐标")
 
-    y = property_f32(0x34, "浮点y坐标")
+    y = property_f32(0x34, "浮点 y 坐标")
 
-    dx = property_f32(0x3c, "x速度")
+    dx = property_f32(0x3c, "x 速度")
 
-    dy = property_f32(0x40, "y速度")
+    dy = property_f32(0x40, "y 速度")
 
     is_dead = property_bool(0x50, "是否死亡")
 
@@ -87,7 +87,7 @@ class Projectile(ObjNode):
 
 class ProjectileList(obj_list(Projectile)):
     """
-    子弹DataArray
+    子弹 DataArray
     """
     def free_all(self) -> Self:
         code = f"""

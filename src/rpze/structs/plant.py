@@ -123,13 +123,13 @@ class Plant(ObjNode):
 
     y = property_i32(0xc, "y")
 
-    visible = property_bool(0x18, "可见时为True")
+    visible = property_bool(0x18, "可见时为 True")
 
     row = property_i32(0x1c, "所在行数, 起点为0")
 
     type_ = property_int_enum(0x24, PlantType, "植物类型")
 
-    col = property_i32(0x28, "int: 所在列数, 起点为0")
+    col = property_i32(0x28, "所在列数, 起点为0")
 
     status = property_int_enum(0x3c, PlantStatus, "植物状态")
 
@@ -138,31 +138,31 @@ class Plant(ObjNode):
     max_hp = property_i32(0x44, "最大血量")
 
     status_cd = property_i32(0x54, """
-        属性倒计时, 如磁铁cd
+        属性倒计时, 如磁铁 cd
                                      
         地刺攻击倒计时也在这儿:
-            地刺的判断和generate_cd无关. 在范围内有僵尸时使status_cd = 100, == 75时打出攻击
+            地刺的判断和 generate_cd 无关. 在范围内有僵尸时使status_cd = 100, == 75时打出攻击
         """)
 
     generate_cd = property_i32(0x58, """
         子弹生成 / 物品生产倒计时
                                        
-        初值为max_boot_delay - 14到max_boot_delay
+        初值为 max_boot_delay - 14 到 max_boot_delay
         """)
 
     max_boot_delay = property_i32(0x5c, """
-        generate_cd的最大值
+        generate_cd 的最大值
                                           
-        对大多数植物为150，对投手为300，曾为200
+        对大多数植物为 150，对投手为 300，忧郁菇为 200
         """)
 
     launch_cd = property_i32(0x90, """
         从准备发射到发射子弹的倒计时
                                      
         **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
-        对于ize常见单发植物, 均在generate_cd == 0时修改launch_cd, launch_cd == 1时候打出子弹.
+        对于 ize 常见单发植物, 均在 generate_cd == 0时修改 launch_cd, launch_cd == 1时候打出子弹.
         其他时候恒为0值.
-        ize植物与launch_cd初始数值的关系如下:
+        ize 植物与 launch_cd 初始数值的关系如下:
             - 豌豆/冰豆/裂荚右: 35
             - 双发/裂荚左 :26
             - 小喷: 29
@@ -173,20 +173,20 @@ class Plant(ObjNode):
         简单认为攻击所需时间为(上述数值 - 1)即可.
         
         胆小的规律较为复杂:
-            - 胆小在launch_cd == 0的时候检测身边僵尸以决定自己是不是缩头
+            - 胆小在 launch_cd == 0的时候检测身边僵尸以决定自己是不是缩头
             - 胆小攻击基本规律同上, 同样在== 1时打出子弹
-            - 在不是正常站立时, 胆小个人每帧更新generate_cd = 150
+            - 在不是正常站立时, 胆小个人每帧更新 generate_cd = 150
         因而, 胆小在常态情况时每帧判断一次周围僵尸决定缩头, 但在攻击前兆时不判断.
         之前零度误认为胆小索敌成功到发射为25也可能源于此, 实际上还是取24更为合适.
         
         对于ize常见双发植物(双发/裂荚左):
-            在generate_cd == 25的时候改动一次launch_cd = 26, 即25后打出子弹
-            在generate_cd == 0时再改改动一次launch_cd = 26
+            在 generate_cd == 25的时候改动一次 launch_cd = 26, 即25后打出子弹
+            在 generate_cd == 0时再改改动一次 launch_cd = 26
         """)
 
-    can_attack = property_bool(0x48, "能攻击时为True")
+    can_attack = property_bool(0x48, "能攻击时为 True")
 
-    is_dead = property_bool(0x141, "死亡时为True")
+    is_dead = property_bool(0x141, "死亡时为 True")
 
     @property
     def target_zombie_id(self) -> ObjId:
@@ -211,7 +211,7 @@ class Plant(ObjNode):
 
 class PlantList(obj_list(Plant)):
     """
-    植物DataArray
+    植物 DataArray
     """
     def get_by_grid(self, row: int, col: int) -> Plant | None:
         """

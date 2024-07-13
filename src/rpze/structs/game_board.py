@@ -17,9 +17,9 @@ from ..rp_extend import Controller, RpBaseException
 
 class GameBoard(ObjBase):
     """
-    函数表中Board对象
+    游戏中 Board 对象
 
-    增加了一些不属于Board类的方法和属性(大部分为LawnApp和Challenge的), 故命名为GameBoard以示区分.
+    增加了一些不属于 Board 类的方法和属性(大部分为 LawnApp 和 Challenge 的), 故命名为 GameBoard 以示区分.
 
     Attributes:
         zombie_list: 僵尸列表
@@ -46,7 +46,7 @@ class GameBoard(ObjBase):
 
     @property
     def mj_clock(self) -> int:
-        """mj时钟"""
+        """mj 时钟"""
         return self.controller.read_i32(0x6a9ec0, 0x838)  # 我真看不懂为什么mj时钟在LawnApp底下啊
 
     @mj_clock.setter
@@ -55,7 +55,7 @@ class GameBoard(ObjBase):
 
     @property
     def frame_duration(self) -> int:
-        """帧时长, 以ms为单位"""
+        """帧时长, 以 ms 为单位"""
         return self.controller.read_i32(0x6a9ec0, 0x454)
 
     @frame_duration.setter
@@ -64,7 +64,7 @@ class GameBoard(ObjBase):
 
     @property
     def challenge_survival_stage(self) -> int:
-        """ize flag数"""
+        """ize flag 数"""
         return self.controller.read_i32(self._p_challenge + 0x6c)
 
     @challenge_survival_stage.setter
@@ -73,14 +73,14 @@ class GameBoard(ObjBase):
 
     def iz_setup_plant(self, plant: Plant) -> Self:
         """
-        对植物进行IZ模式调整, 如纸板化, 土豆出土
+        对植物进行 IZ 模式调整, 如纸板化, 土豆出土
 
         Args:
             plant: 要调整的植物
         Returns:
             self
         Raises:
-            ValueError: Challenge对象不存在时抛出
+            ValueError: Challenge 对象不存在时抛出
         """
         if not (p_c := self._p_challenge):
             raise ValueError("Challenge object doesn't exist!")
@@ -150,9 +150,9 @@ class GameBoard(ObjBase):
             col: 列数, 0为起点
             type_: 植物类型
         Returns:
-            成功则返回植物对象, 否则返回None
+            成功则返回植物对象, 否则返回 None
         Raises:
-            ValueError: Challenge对象不存在时抛出
+            ValueError: Challenge 对象不存在时抛出
         """
         if not (p_c := self._p_challenge):
             raise ValueError("Challenge object doesn't exist!")
@@ -182,7 +182,7 @@ class GameBoard(ObjBase):
         Returns:
             放置的僵尸对象
         Raises:
-            ValueError: Challenge对象不存在时抛出
+            ValueError: Challenge 对象不存在时抛出
         """
         if not (p_c := self._p_challenge):
             raise ValueError("Challenge object doesn't exist!")
@@ -253,7 +253,7 @@ class GameBoard(ObjBase):
 
     def grid_to_pixel_x(self, col: int, row: int = 0) -> int:
         """
-        将行列转换为x坐标
+        将行列转换为 x 坐标
 
         **请注意参数顺序!!!**
 
@@ -261,7 +261,7 @@ class GameBoard(ObjBase):
             col: 列数, 0开始
             row: 行数, 0开始, 仅在禅境花园有用
         Returns:
-            对应的x坐标
+            对应的 x 坐标
         """
         code = f"""
             push esi;
@@ -283,7 +283,7 @@ class GameBoard(ObjBase):
             row: 行数, 0开始
             col: 列数, 0开始
         Returns:
-            对应的y坐标
+            对应的 y 坐标
         """
         code = f"""
             push ebx;
@@ -311,12 +311,12 @@ class GameBoard(ObjBase):
 
     def new_iz_brain(self, row: int) -> Griditem:  # 我非常无语为什么这个函数原版没有
         """
-        构造一个新的IZ脑子, 用于我是僵尸关卡
+        构造一个新的 IZ 脑子, 用于我是僵尸关卡
 
         Args:
             row: 构造所在行, 0开始
         Returns:
-            构造的IZ脑子
+            构造的 IZ 脑子
         """
         ret = self.griditem_list.alloc_item()
         ret.type_ = GriditemType.brain
@@ -371,12 +371,12 @@ def get_board(controller: Controller | None = None) -> GameBoard:
     获取当前游戏主界面对象
 
     Args:
-        controller: pvz控制器对象. 当为None时, 取得上一个缓存的GameBoard对象.
+        controller: pvz 控制器对象. 当为 None 时, 取得上一次取得的 GameBoard 对象.
     Returns:
         当前游戏主界面对象
     Raises:
-        RpBaseException: 没有缓存的GameBoard对象时抛出
-        PvzStatusError: 游戏Board不存在时抛出
+        RpBaseException: 没有缓存的 GameBoard 对象时抛出
+        PvzStatusError: 游戏 Board 不存在时抛出
     """
     if controller is None:
         if len(__game_board_cache) == 0:

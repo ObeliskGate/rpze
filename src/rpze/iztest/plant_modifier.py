@@ -12,12 +12,12 @@ from ..structs.plant import Plant, PlantType
 
 def randomize_generate_cd(plant: Plant) -> Plant:
     """
-    令植物的generate_cd按照"放置充分长时间"后的结果随机化
+    令植物的 generate_cd 按照"放置充分长时间"后的结果随机化
 
     **仅对can_attack == True植物有效**; 但特判地刺, 地刺王无效.
 
-    具体来说, 其generate_cd概率分布图像为一个梯形:
-    上底为max_boot_delay - 14, 下底为max_boot_delay.
+    具体来说, 其 generate_cd 概率分布图像为一个梯形:
+    上底为 max_boot_delay - 14, 下底为 max_boot_delay.
 
     Returns:
         返回传入的植物
@@ -36,11 +36,11 @@ def randomize_generate_cd(plant: Plant) -> Plant:
 @overload
 def set_puff_x_offset(puff: Plant, offset: int) -> None:
     """
-    为小喷设置x偏移
+    为小喷设置 x 偏移
 
     Args:
         puff: 目标小喷
-        offset: 小喷x偏移
+        offset: 小喷 x 偏移
     Raises:
         ValueError: offset不在范围内
     Examples:
@@ -53,11 +53,11 @@ def set_puff_x_offset(puff: Plant, offset: int) -> None:
 @overload
 def set_puff_x_offset(puff: Plant, offset: Iterable[int]) -> None:
     """
-    为小喷设置x偏移
+    为小喷设置 x 偏移
 
     Args:
         puff: 目标小喷
-        offset: 小喷x偏移范围
+        offset: 小喷 x 偏移范围
     Raises:
         ValueError: **最终随机结果的**偏移不在范围内.
     Examples:
@@ -69,7 +69,7 @@ def set_puff_x_offset(puff: Plant, offset: Iterable[int]) -> None:
 
 def set_puff_x_offset(puff: Plant, offset):
     center_x = get_board(puff.controller).grid_to_pixel_x(puff.col, puff.row)
-    offset = offset if isinstance(offset, int) else random.choice(list(offset))
+    offset = offset if isinstance(offset, int) else random.choice(tuple(offset))
     if not (-5 <= offset <= 4):
         raise ValueError(f"offset {offset} out of valid range of puff")
     puff.x = center_x + offset

@@ -17,13 +17,13 @@ from ..rp_extend import Controller, ControllerError
 
 def open_game(game_path: str, num: int = 1) -> list[int]:
     """
-    通过路径, 将pvz作为python子进程打开游戏
+    通过路径, 将 pvz 作为子进程打开游戏
     
     Args:
         game_path: 游戏路径, 绝对相对路径均可
         num: 打开的游戏数量
-    Returns:e
-        打开的所有游戏进程process id组成的列表, 长度为num
+    Returns:
+        打开的所有游戏进程 process id 组成的列表
     """
     abs_path = os.path.abspath(game_path)
     route, exe_name = os.path.split(abs_path)
@@ -43,14 +43,14 @@ def inject(pids: Iterable[int],
            stdout=subprocess.DEVNULL,
            set_console: bool = True) -> list[Controller]:
     """
-    对pids中的每一个进程注入dll
+    对 pids 中的每一个进程注入 .dll
     
     Args:
-        pids: 所有process id
+        pids: 所有 process id
         stdout: inject程序标准输出流, 默认丢弃
-        set_console: 是否设置控制台, 默认为True
+        set_console: 是否打开游戏控制台
     Returns:
-        所有进程的Controller对象组成的列表
+        所有进程的 Controller 对象组成的列表
     """
     current_dir = os.getcwd()
     try:
@@ -66,7 +66,7 @@ def inject(pids: Iterable[int],
 
 def close_by_pids(pids: Iterable[int]) -> None:
     """
-    通过process id关闭进程
+    通过 process id 关闭进程
 
     Args:
         pids: 需要关闭的 process id
@@ -85,31 +85,31 @@ class InjectedGame(AbstractContextManager):
     @overload
     def __init__(self, process_id: int, /, close_when_exit: bool = True):
         """
-        通过process id构造InjectedGame对象
+        通过已经注入的 process id 构造 InjectedGame 对象
 
         Args:
-            process_id: pvz进程的process id
-            close_when_exit: 是否在退出时关闭pvz进程
+            process_id: pvz 进程的 process id
+            close_when_exit: 是否在退出时关闭 pvz 进程
         """
 
     @overload
     def __init__(self, game_path: str, /, close_when_exit: bool = True):
         """
-        通过游戏路径构造InjectedGame对象
+        通过游戏路径构造 InjectedGame 对象
 
         Args:
-            game_path: pvz主程序路径
-            close_when_exit: 是否在退出时关闭pvz进程
+            game_path: pvz 主程序路径
+            close_when_exit: 是否在退出时关闭 pvz 进程
         """
 
     @overload
     def __init__(self, controller: Controller, /, close_when_exit: bool = True):
         """
-        通过Controller对象构造InjectedGame对象
+        通过 Controller 对象构造 InjectedGame 对象
 
         Args:
-            controller: 注入目标游戏的Controller对象
-            close_when_exit: 是否在退出时关闭pvz进程
+            controller: 注入目标游戏的 Controller 对象
+            close_when_exit: 是否在退出时关闭 pvz 进程
         """
 
     def __init__(self, arg, /, close_when_exit: bool = True):
@@ -141,7 +141,7 @@ class ConnectedContext(ContextDecorator):
 
      Attributes:
          controller: 被注入游戏的控制器
-         ensure_jump_frame: 是否保证跳帧, True则保证跳帧, False则保证不跳帧. 默认None不处理.
+         ensure_jump_frame: 是否保证跳帧, True 则保证跳帧, False 则保证不跳帧. 默认 None 不处理.
     """
     def __init__(self, controller: Controller, ensure_jump_frame: bool | None = None):
         self.controller: Controller = controller
@@ -182,12 +182,12 @@ def enter_level(controller: Controller, game_mode: int, look_for_saved_game: boo
     进入游戏关卡
 
     Args:
-        controller: 目标游戏的controller
+        controller: 目标游戏的 Controller
         game_mode: 关卡对应数字
         look_for_saved_game: 是否尝试读档, **请切记默认情况会毁坏你原有的关卡存档!**
     Raises:
         PvzStatusError: 若不在载入界面, 主界面, 游戏中或小游戏选项卡界面使用此函数则抛出
-        ControllerError: 若Controller对象未连接游戏则抛出
+        ControllerError: 若 Controller 对象未连接游戏则抛出
     """
     code = f"""
         push esi

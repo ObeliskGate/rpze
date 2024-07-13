@@ -1,6 +1,6 @@
 # -*- coding: utf_8 -*-
 """
-欲速不达前置内容. 撑杆落地平均耗时测试.
+欲速不达前置内容: 撑杆落地平均耗时测试
 """
 from ..flow.flow import FlowManager
 from ..iztest.iztest import IzTest

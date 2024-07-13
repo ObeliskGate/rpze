@@ -44,9 +44,9 @@ def get_all_remaining_suns(board: GameBoard | None = None) -> dict[GridStr, int]
     获取所有向日葵剩余阳光
 
     Args:
-        board: 要获取的board. 为None时使用get_board()
+        board: 要获取的 board. 为 None 时使用 get_board()
     Returns:
-        一个字典, 形式为{向日葵所在的x-y: 剩余阳光值}
+        一个字典, 形式为{向日葵所在的 x-y: 剩余阳光值}
     """
     if board is None:
         board = get_board()

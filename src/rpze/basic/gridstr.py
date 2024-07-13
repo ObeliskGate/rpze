@@ -30,6 +30,6 @@ def get_grid_str(row: int, col: int) -> GridStr:
         row: 行数
         col: 列数
     Returns:
-        返回的GridStr位置
+        返回的 GridStr 位置
     """
     return f"{row + 1}-{col + 1}"
