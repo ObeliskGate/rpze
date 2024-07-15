@@ -243,7 +243,7 @@ bool Memory::writeBytes(const std::string_view inputBytes, std::span<uint32_t> o
 	}
 	if (inputBytes.size() > Shm::BUFFER_SIZE) [[unlikely]] throw std::invalid_argument("writeBytes: too many bytes");
 	if (offsets.size() > Shm::OFFSETS_LEN) [[unlikely]] throw std::invalid_argument("writeBytes: too many offsets");
-	return _writeMemory(inputBytes.data(), inputBytes.size(), offsets);
+	return _writeMemory(inputBytes.data(), static_cast<uint32_t>(inputBytes.size()), offsets);
 }
 
 bool Memory::runCode(const std::string_view codes) const

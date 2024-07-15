@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-constexpr wchar_t UU_NAME_AFFIX[] = L"__rp_dll_shared_affix_";
+constexpr wchar_t UU_NAME_AFFIX[] = L"__rp_dll_shared_affix_";  // NOLINT
 
 constexpr size_t SHARED_MEMORY_SIZE = 1024 * 8;
 
@@ -59,6 +59,12 @@ enum class ShmError: int32_t
 
 inline constexpr size_t getHookIndex(HookPosition pos) { return static_cast<size_t>(pos); }
 
+
+#ifdef _MSC_VER
+#pragma warning(push)  // 保存警告状态
+#pragma warning(disable : 4324)  // 禁用4996警告
+#endif
+
 #pragma pack(push, 1)
 struct Shm
 {
@@ -103,6 +109,10 @@ struct Shm
     Shm() = delete;
 };
 #pragma pack(pop)
+
+#ifdef __MSC_VER
+#pragma warning(pop)  // 恢复警告状态
+#endif
 
 static_assert(offsetof(Shm, readWriteBuffer) == Shm::BUFFER_OFFSET, "Shm buffer offset error");
 static_assert(offsetof(Shm, asmBuffer) == Shm::ASM_OFFSET, "Shm asm buffer offset error");

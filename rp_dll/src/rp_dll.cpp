@@ -40,7 +40,7 @@ void init(InitArgs args)
 		std::ios::sync_with_stdio();
 		std::println(std::cerr, "error log file set");
 	}
-	auto p = SharedMemory::getInstance();
+	SharedMemory::getInstance();
 	MH_Initialize();
 }
 
@@ -219,7 +219,7 @@ InsertHook::addReplace(reinterpret_cast<void*>(0x42A6C0), reinterpret_cast<void*
 	});
 
 InsertHook::addInsert(reinterpret_cast<void*>(0x5A4760), 
-[pSharedMemory](HookContext& reg)
+[pSharedMemory](HookContext&)
 	{
 		pSharedMemory->shm().error = ShmError::CAUGHT_SEH;
 		dllExit();

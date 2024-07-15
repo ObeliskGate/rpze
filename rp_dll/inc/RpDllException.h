@@ -12,11 +12,11 @@ public:
 
 class RpDllException : public RpDllBaseException
 {
-    std::string messageWhenNotCaught;
     std::string message;
+    std::string messageWhenNotCaught;
 public:
-    explicit RpDllException(std::string_view message, std::string_view messageWhenNotCaught): 
-        message(message), messageWhenNotCaught(messageWhenNotCaught) { }
+    explicit RpDllException(std::string_view message_, std::string_view messageWhenNotCaught_): 
+        message(message_), messageWhenNotCaught(messageWhenNotCaught_) { }
 
     explicit RpDllException(std::string_view message);
 

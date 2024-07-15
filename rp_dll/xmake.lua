@@ -12,6 +12,7 @@ target("rp_dll")
     add_defines("RP_DLL")
     if is_mode("release") or is_mode("releasedbg") then
         set_policy("build.optimization.lto", true)
+        set_warnings("allextra")
     end
     -- add_ldflags("/PDBALTPATH:%_PDB%")
     -- add_shflags("/PDBALTPATH:%_PDB%")
