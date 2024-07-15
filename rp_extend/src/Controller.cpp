@@ -18,18 +18,20 @@ PYBIND11_MODULE(rp_extend, m)
 	base_exc_storage.call_once_and_store_result(
 		[&m] { return py::exception<void>(m, "RpBaseException"); });
 
-	py::register_exception<MemoryException>(m, "ControllerError", base_exc_storage.get_stored());
+	py::register_exception<MemoryException>(m, 
+		"ControllerError",
+		 base_exc_storage.get_stored());
 
 	py::class_<Controller>(m, "Controller")
 		.def(py::init<DWORD>())
 		.def("__eq__", &Controller::operator==)
 		.def("__ne__", &Controller::operator!=)
-		.def("__repr__", [](const Controller& ctler)
-		{
-			return "Controller(" + std::to_string(ctler.pid()) + ")";
-		})
+		.def("__repr__", [](const Controller& self)
+			{ return std::format("Controller({})", self.pid()); })
 		.def_property_readonly("pid", &Controller::pid)
-		.def_readonly("result_mem", &Controller::result_mem, py::return_value_policy::reference_internal)
+		.def_readonly("result_mem", 
+			&Controller::result_mem,
+			 py::return_value_policy::reference_internal)
 		.def("next_frame", &Controller::next_frame)
 		.def("before", &Controller::before)
 		.def("skip_frames", &Controller::skip_frames, py::arg("num") = 1)

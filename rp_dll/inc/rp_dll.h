@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <optional>
 
-constexpr char ERR_FILE_NAME[] = "rpze_err.log";
+constexpr char ERR_FILE_NAME[] = "rpze_err.log";  // NOLINT
 
 // 设置
 void init(InitArgs args);
@@ -13,28 +13,31 @@ void init(InitArgs args);
 // 根据PhaseCode控制本帧应该做什么
 void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMemory);
 
-template <std::integral T>
-inline uintptr_t __get_offset_impl(T base) { return base; }
-
-template <std::integral T, std::integral U>
-inline uintptr_t __get_offset_impl(T base, U offset)
+namespace rpdetail
 {
-	if (!base) return 0;
-	auto t = *reinterpret_cast<uintptr_t*>(base);
-	if (!t) return 0;
-	return t + offset;
-}
+	template <std::integral T>
+	inline uintptr_t getOffset(T base) { return base; }
 
-template <std::integral T, std::integral U, std::integral... Args>
-inline uintptr_t __get_offset_impl(T base, U offset, Args... args)
-{
-	return __get_offset_impl(__get_offset_impl(base, offset), args...);
+	template <std::integral T, std::integral U>
+	inline uintptr_t getOffset(T base, U offset)
+	{
+		if (!base) return 0;
+		auto t = *reinterpret_cast<uintptr_t*>(base);
+		if (!t) return 0;
+		return t + offset;
+	}
+
+	template <std::integral T, std::integral U, std::integral... Args>
+	inline uintptr_t getOffset(T base, U offset, Args... args)
+	{
+		return getOffset(getOffset(base, offset), args...);
+	}
 }
 
 template <typename T, std::integral U, std::integral... Args>
 std::optional<T> readMemory(U base, Args... offsets)
 {
-	auto ptr = __get_offset_impl(base, offsets...);
+	auto ptr = rpdetail::getOffset(base, offsets...);
 	if (!ptr) return {};
 	return *reinterpret_cast<T*>(ptr);
 }
@@ -42,7 +45,7 @@ std::optional<T> readMemory(U base, Args... offsets)
 template <typename T, std::integral U, std::integral... Args>
 bool writeMemory(T&& val, U base, Args... offsets)
 {
-	auto ptr = __get_offset_impl(base, offsets...);
+	auto ptr = rpdetail::getOffset(base, offsets...);
 	if (!ptr) return false;
 	*reinterpret_cast<T*>(ptr) = std::forward<T>(val);
 	return true;

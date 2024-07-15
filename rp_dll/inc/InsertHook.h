@@ -41,14 +41,18 @@ struct HookContext
 };
 #pragma pack(pop)
 
-template<typename T>
-struct __is_optional_integral { static constexpr bool value = false; };
+namespace rpdetail
+{
+	template<typename T>
+	struct is_optional_integral { static constexpr bool value = false; };
 
-template<std::integral Val>
-struct __is_optional_integral<std::optional<Val>> { static constexpr bool value = true; };
+
+	template<std::integral Val>
+	struct is_optional_integral<std::optional<Val>> { static constexpr bool value = true; };
+};
 
 template<typename T>
-concept optional_integral = __is_optional_integral<T>::value;
+concept optional_integral = rpdetail::is_optional_integral<T>::value;
 
 class InsertHook
 {
@@ -100,9 +104,9 @@ private:
 
 	std::function<CallBack> callFunc;
 
-	HookCode* hookCode;
-
 	void* addr;
+
+	HookCode* hookCode;
 
 	void* pTrampoline = nullptr;
 

@@ -8,9 +8,6 @@
 #include <exception>
 #include <print>
 
-
-#define __until(expr) do {} while (!(expr))
-
 void init(InitArgs args)
 {
 	DWORD tmp;
@@ -53,7 +50,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 		case PhaseCode::CONTINUE:
 			return;
 		case PhaseCode::WAIT:
-			__until(phaseCode != PhaseCode::WAIT);
+			while (phaseCode == PhaseCode::WAIT) {}
 			continue;
 		case PhaseCode::RUN_CODE:
 			{
@@ -242,4 +239,3 @@ void dllExit()
 	MH_Uninitialize();
 }
 
-#undef __until
