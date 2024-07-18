@@ -16,8 +16,9 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Operating System :: Microsoft :: Windows",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Natural Language :: Chinese (Simplified)"
+    "Natural Language :: Chinese (Simplified)",
 ]
+keywords = ["pvz"]
 
 [project.urls]
 Repository = "https://github.com/ObeliskGate/rpze.git" 
