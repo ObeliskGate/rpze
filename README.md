@@ -28,7 +28,7 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 
 > 游戏正常启动但并不自动运行脚本 / invalid command / failed to find shared memory?
 
-重新阅读[支持平台](#支持平台). 请考虑你使用的版本是否符合上述要求. 请注意, **仅确保兼容 [pt 站上的英语原版 (lcx 版)](https://pvz.tools/download/)!!!**
+重新阅读[支持平台](#支持平台). 请考虑你使用的版本是否符合上述要求. 请注意, **仅确保兼容 [lcx 版](https://pvz.tools/download/)!!!**
 
 > failed to create shared memory / 未找到文件?
 
@@ -43,6 +43,7 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 原因未知, 请跟我反馈. 一定有效但非常麻烦的方法是自行[构建](#构建), 一个不确定是否好用的解决方法是`python -m pip install msvc-runtime`.
 
 > 怎么联系?
+
 加 QQ 群 884871715 或通过 GitHub issue / pr.
 
 
@@ -113,7 +114,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 
 安装二者后, 构建 Python `.whl`只需`python -m pip install build`后`python -m build`即可.
 
-可以用`python hatch_build.py -other__xmake_args`来自动设置 xmake config 的编译 arch
+可以用`python hatch_build.py -other_xmake_args`来自动设置 xmake config 的编译 arch
 
 ## 许可
 Copyright © 2024 ObeliskGate

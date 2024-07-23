@@ -2,28 +2,64 @@
 #include "Memory.h"
 #include "stdafx.h"
 #include <concepts>
+#include <iterator>
+#include <ranges>
 
 // 给Python侧暴露的类型
+
+namespace rpdetail
+{
+	template <std::input_or_output_iterator T>
+	class SentinelWrapper
+	{
+		std::optional<T> sentinel;
+	public:
+		template <std::convertible_to<T> _In>
+		SentinelWrapper(_In&& sentinel) : sentinel(std::forward<_In>(sentinel)) {}
+		SentinelWrapper() : sentinel(std::nullopt) {}
+
+		bool operator==(const T& other) const
+		{
+			if (sentinel.has_value()) return *sentinel == other;
+			return false;
+		}
+	};
+
+	template <typename T>
+	requires requires (T t)
+	{
+		{ t.begin() } -> std::input_or_output_iterator;
+		t.end() == t.begin();
+		{ !std::sentinel_for<decltype(t.end()), decltype(t.begin())> };
+		{ std::sentinel_for<SentinelWrapper<decltype(t.end())>, decltype(t.begin())> };
+	}
+	static auto end_wrapper(const T& it)
+	{
+		return rpdetail::SentinelWrapper<decltype(it.end())>(it.end());
+	}
+}
+
+namespace pybind11
+{
+	inline auto end(const py::tuple& t)
+	{
+		return rpdetail::end_wrapper<py::tuple>(t);
+	}
+
+	inline auto end(const py::list& l)
+	{
+		return rpdetail::end_wrapper<py::list>(l);
+	}
+}
+
 
 class Controller
 {
 	Memory mem;
-	uint32_t offset_buffer[128] = {};
 
-	template <typename T>
-	requires requires(T sequence, size_t i)
+	inline static offset_range auto transform_to_offset(const auto& pyrange)
 	{
-		{ sequence[i] } -> std::convertible_to<py::object>;
-		{ sequence.size() } -> std::integral;
-	}
-	size_t set_offset_arr_of_py_sequence(const T& offsets)
-	{
-		auto len_ = offsets.size();
-		for (size_t i = 0; i < len_; i++)
-		{
-			offset_buffer[i] = py::cast<uint32_t>(offsets[i]);
-		}
-		return len_;
+		return pyrange | std::views::transform([](const auto& it) { return py::cast<uint32_t>(it); });
 	}
 
 public:
@@ -99,12 +135,12 @@ public:
 template <typename T>
 std::optional<T> Controller::read_memory(const py::args& offsets, bool force_remote)
 {
-	return mem.readMemory<T>({offset_buffer, set_offset_arr_of_py_sequence(offsets)}, force_remote);
+	return mem.readMemory<T>(transform_to_offset(offsets), force_remote);
 }
 
 template <typename T>
 bool Controller::write_memory(T&& val, const py::args& offsets, bool force_remote)
 {
-	return mem.writeMemory(std::forward<T>(val), {offset_buffer, set_offset_arr_of_py_sequence(offsets)}, force_remote);
+	return mem.writeMemory(std::forward<T>(val), transform_to_offset(offsets), force_remote);
 }
 

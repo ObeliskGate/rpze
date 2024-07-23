@@ -44,15 +44,15 @@ struct HookContext
 namespace rpdetail
 {
 	template<typename T>
-	struct is_optional_integral { static constexpr bool value = false; };
+	struct is_optional_unsigned_integral { static constexpr bool value = false; };
 
 
-	template<std::integral Val>
-	struct is_optional_integral<std::optional<Val>> { static constexpr bool value = true; };
+	template<std::unsigned_integral Val>
+	struct is_optional_unsigned_integral <std::optional<Val>> { static constexpr bool value = true; };
 };
 
 template<typename T>
-concept optional_integral = rpdetail::is_optional_integral<T>::value;
+concept optional_unsigned_integral = rpdetail::is_optional_unsigned_integral <T>::value;
 
 class InsertHook
 {
@@ -64,7 +64,7 @@ public:
 	static void addInsert(void* addr, T&& callback);
 
 	template <std::invocable<HookContext&> T>
-	requires optional_integral<std::invoke_result_t<T, HookContext&>>
+	requires optional_unsigned_integral<std::invoke_result_t<T, HookContext&>>
 	static void addReplace(void* addr, void* pEip, T&& callback);
 
 	static void deleteAt(void* addr);
@@ -152,7 +152,7 @@ void InsertHook::addInsert(void* addr, T&& callback)
 }
 
 template <std::invocable<HookContext&> T>
-requires optional_integral<std::invoke_result_t<T, HookContext&>>
+requires optional_unsigned_integral<std::invoke_result_t<T, HookContext&>>
 void InsertHook::addReplace(void* addr, void* pEip, T&& callback)
 {
 	InsertHook::addInsert(addr, [cb = std::forward<T>(callback), pEip](HookContext& context)

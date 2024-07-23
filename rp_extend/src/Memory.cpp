@@ -77,35 +77,6 @@ Memory::~Memory()
 	CloseHandle(hMutex);
 }
 
-inline void Memory::setReadWriteOffsets(std::span<uint32_t> offsets)
-{
-	memcpy(const_cast<uint32_t*>(shm().offsets), offsets.data(), offsets.size_bytes());
-	shm().offsets[offsets.size()] = Shm::OFFSET_END;
-}
-
-volatile void* Memory::_readMemory(uint32_t size, std::span<uint32_t> offsets)
-{
-	shm().memoryNum = size;
-	setReadWriteOffsets(offsets);
-	getCurrentPhaseCode() = PhaseCode::READ_MEMORY;
-	untilGameExecuted(); 
-	if (shm().executeResult == ExecuteResult::SUCCESS) return shm().getReadWriteBuffer();
-	if (shm().executeResult == ExecuteResult::FAIL) return nullptr;
-	throw MemoryException("_readMemory: unexpected behavior", this->pid);
-}
-
-bool Memory::_writeMemory(const void* pVal, uint32_t size, std::span<uint32_t> offsets)
-{
-	shm().memoryNum = size;
-	memcpy(const_cast<void*>(shm().getReadWriteBuffer()), pVal, size);
-	setReadWriteOffsets(offsets);
-	getCurrentPhaseCode() = PhaseCode::WRITE_MEMORY;
-	untilGameExecuted();
-	if (shm().executeResult == ExecuteResult::SUCCESS) return true;
-	if (shm().executeResult == ExecuteResult::FAIL) return false;
-	throw MemoryException("_writeMemory: unexpected behavior", this->pid);
-}
-
 void Memory::before() const
 {
 	waitMutex<>();
@@ -193,57 +164,6 @@ bool Memory::endJumpFrame()
 	if (shm().jumpingSyncMethod == SyncMethod::MUTEX && shm().syncMethod == SyncMethod::MUTEX)
 		waitMutex<false>();
 	return true;
-}
-
-void* Memory::getRemotePtr(std::span<uint32_t> offsets)
-{
-	uintptr_t basePtr = offsets[0];
-	for (size_t i = 1; i < offsets.size(); i++)
-	{
-		if (!basePtr) return nullptr;
-		ReadProcessMemory(hPvz, 
-			reinterpret_cast<LPCVOID>(basePtr), 
-			&basePtr, 
-			sizeof(uint32_t), 
-			nullptr);
-		if (!basePtr) return nullptr;
-		basePtr += offsets[i];
-	}
-	return reinterpret_cast<void*>(basePtr);
-}
-
-
-std::optional<std::unique_ptr<char[]>> Memory::readBytes(uint32_t size, std::span<uint32_t> offsets, bool forceRemote)
-{
-	if (forceRemote || !isShmPrepared())
-	{
-		auto remotePtr = getRemotePtr(offsets);
-		if (!remotePtr) return {};
-		auto ret = std::make_unique<char[]>(size);
-		ReadProcessMemory(hPvz, remotePtr, ret.get(), size, nullptr);
-		return ret;
-	}
-	if (size > Shm::BUFFER_SIZE) [[unlikely]] throw std::invalid_argument("readBytes: too many bytes");
-	if (offsets.size() > Shm::OFFSETS_LEN) [[unlikely]] throw std::invalid_argument("readBytes: too many offsets");
-	auto p = _readMemory(size, offsets);
-	if (!p) return {};
-	auto ret = std::make_unique<char[]>(size);
-	memcpy(ret.get(), const_cast<const void*>(p), size);
-	return ret;
-}
-
-bool Memory::writeBytes(const std::string_view inputBytes, std::span<uint32_t> offsets, bool forceRemote)
-{
-	if (forceRemote || !isShmPrepared())
-	{
-		auto remotePtr = getRemotePtr(offsets);
-		if (!remotePtr) return false;
-		WriteProcessMemory(hPvz, remotePtr, inputBytes.data(), inputBytes.size(), nullptr);
-		return true;
-	}
-	if (inputBytes.size() > Shm::BUFFER_SIZE) [[unlikely]] throw std::invalid_argument("writeBytes: too many bytes");
-	if (offsets.size() > Shm::OFFSETS_LEN) [[unlikely]] throw std::invalid_argument("writeBytes: too many offsets");
-	return _writeMemory(inputBytes.data(), static_cast<uint32_t>(inputBytes.size()), offsets);
 }
 
 bool Memory::runCode(const std::string_view codes) const
