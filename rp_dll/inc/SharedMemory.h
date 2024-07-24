@@ -1,6 +1,7 @@
 #pragma once
 #include "shm.h"
 #include "stdafx.h"
+
 class SharedMemory
 {
 	inline static SharedMemory* instancePtr = nullptr;

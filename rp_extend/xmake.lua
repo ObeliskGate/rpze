@@ -8,6 +8,7 @@ target("rp_extend")
     add_includedirs("../sharedinc")
     add_includedirs("inc")
     add_files("src/*.cpp")
+    set_pcxxheader("inc/stdafx.h")
     if is_mode("release") or is_mode("releasedbg") then
         set_policy("build.optimization.lto", true)
         set_warnings("allextra")

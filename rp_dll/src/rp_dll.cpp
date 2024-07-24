@@ -4,10 +4,6 @@
 #include "InsertHook.h"
 #include "RpDllException.h"
 
-#include <MinHook.h>
-#include <exception>
-#include <print>
-
 void init(InitArgs args)
 {
 	DWORD tmp;

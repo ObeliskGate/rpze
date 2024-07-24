@@ -1,6 +1,6 @@
 Diagnostics:
-  Includes:
-    IgnoreHeader: stdafx\.h
+  UnusedIncludes: None
+  MissingIncludes: None
 
 CompileFlags:
   Add: [ -std:c++latest ]

@@ -1,6 +1,4 @@
 #include "stdafx.h"
-#include <stdexcept>
-#include <string>
 #include "SharedMemory.h"
 
 SharedMemory::SharedMemory()

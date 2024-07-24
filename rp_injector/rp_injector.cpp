@@ -1,14 +1,13 @@
-﻿#include <iostream>
-#include <print>
-#include <span>
-#include <winerror.h>
-
-#define WIN32_LEAN_AND_MEAN 
+﻿#define WIN32_LEAN_AND_MEAN 
 #include <Windows.h>
 
 #ifdef _WIN64
 #error please build in x86 mode
 #endif
+
+#include <iostream>
+#include <print>
+#include <span>
 
 #include "dllexport.h"
 

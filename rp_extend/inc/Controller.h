@@ -1,10 +1,6 @@
 #pragma once
 #include "Memory.h"
 #include "stdafx.h"
-#include <concepts>
-#include <iterator>
-#include <ranges>
-
 // 给Python侧暴露的类型
 
 namespace rpdetail

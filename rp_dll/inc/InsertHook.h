@@ -1,12 +1,5 @@
 #pragma once
 #include "stdafx.h"
-#include <functional>
-#include <memory>
-#include <optional>
-#include <concepts>
-#include <print>
-#include <unordered_map>
-#include <MinHook.h>
 
 
 class HeapWrapper

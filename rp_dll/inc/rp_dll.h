@@ -2,8 +2,6 @@
 #include "stdafx.h"
 #include "SharedMemory.h"
 #include "dllexport.h"
-#include <stdint.h>
-#include <optional>
 
 constexpr char ERR_FILE_NAME[] = "rpze_err.log";  // NOLINT
 

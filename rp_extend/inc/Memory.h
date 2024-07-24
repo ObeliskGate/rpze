@@ -2,13 +2,6 @@
 #include "stdafx.h"
 #include "MemoryException.h"
 #include "shm.h" 
-#include <concepts>
-#include <cstddef>
-#include <iterator>
-#include <stdint.h>
-#include <errhandlingapi.h>
-#include <type_traits>
-#include <ranges>
 
 template <typename T>
 concept offset_range = std::ranges::input_range<T> && std::unsigned_integral<std::ranges::range_value_t<T>>;
@@ -242,7 +235,7 @@ void* Memory::getRemotePtr(const offset_range auto& offsets)
 	if (it == offsets.end()) return nullptr;
 	uintptr_t basePtr = *it;
 	++it;
-	for (it; it != offsets.end(); ++it)
+	for (; it != offsets.end(); ++it)
 	{
 		if (!basePtr) return nullptr;
 		ReadProcessMemory(hPvz, 

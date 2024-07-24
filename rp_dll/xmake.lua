@@ -1,4 +1,4 @@
-add_requires("minhook", { arch = "x86", configs = { lto = true }})
+add_requires("minhook", { arch = "x86", configs = { lto = true, cxflags = { "-FI intrin.h"} }})
 
 target("rp_dll")
     set_languages("cxx23")
@@ -10,6 +10,7 @@ target("rp_dll")
     add_includedirs("inc")
     add_files("src/*.cpp")
     add_defines("RP_DLL")
+    set_pcxxheader("inc/stdafx.h")
     if is_mode("release") or is_mode("releasedbg") then
         set_policy("build.optimization.lto", true)
         set_warnings("allextra")

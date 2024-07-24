@@ -1,8 +1,5 @@
 #pragma once
-#include <concepts>
-#include <exception>
-#include <string>
-#include <format>
+#include "stdafx.h"
 
 class RpDllBaseException : public std::exception
 {

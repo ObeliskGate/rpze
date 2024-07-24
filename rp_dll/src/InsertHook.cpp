@@ -1,6 +1,4 @@
 #include "InsertHook.h"
-#include <print>
-#include <stdexcept>
 
 void InsertHook::callBackFunc(InsertHook* this_, HookContext* hookContext)
 {
