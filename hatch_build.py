@@ -1,22 +1,28 @@
 import subprocess
 import sys
 from typing import Any
-from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 
-def config_xmake(arglist):
+def config_xmake(args):
     subprocess.run(["xmake", "f",
                     "-a", 'x86' if sys.maxsize < 2 ** 32 else 'x64']
-                   + arglist)
+                   + args)
+
+
+if __name__ == "__main__":
+    config_xmake(sys.argv[1:])
+
+try:
+    from hatchling.builders.hooks.plugin.interface import BuildHookInterface  # noqa
+except ImportError:
+    sys.exit()
 
 
 class CustomBuildHook(BuildHookInterface):
-    PLUGIN_NAME = 'custom'
-
-    def clean(self, versions: list[str]):
+    def clean(self, versions: list[str]):  # noqa
         subprocess.run("xmake c")
 
-    def initialize(self, version: str, build_data: dict[str, Any]) -> None:
+    def initialize(self, version: str, build_data: dict[str, Any]) -> None:  # noqa
         platform = "win32" if sys.maxsize < 2 ** 32 else "win_amd64"
         pyver = "cp" + str(sys.version_info.major) + str(sys.version_info.minor)
         build_data["tag"] = f"{pyver}-{pyver}-{platform}"
@@ -30,7 +36,3 @@ class CustomBuildHook(BuildHookInterface):
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             raise RuntimeError("xmake is not installed") from e
         return []
-
-
-if __name__ == "__main__":
-    config_xmake(sys.argv[1:])
