@@ -1,5 +1,6 @@
 #pragma once
 #include "Memory.h"
+#include "pybind11/pytypes.h"
 #include "stdafx.h"
 // 给Python侧暴露的类型
 
@@ -37,14 +38,14 @@ namespace rpdetail
 
 namespace pybind11
 {
-	inline auto end(const py::tuple& t)
+	inline auto end(const tuple& t)
 	{
-		return rpdetail::end_wrapper<py::tuple>(t);
+		return rpdetail::end_wrapper<tuple>(t);
 	}
 
-	inline auto end(const py::list& l)
+	inline auto end(const list& l)
 	{
-		return rpdetail::end_wrapper<py::list>(l);
+		return rpdetail::end_wrapper<list>(l);
 	}
 }
 
@@ -53,7 +54,12 @@ class Controller
 {
 	Memory mem;
 
-	inline static offset_range auto transform_to_offset(const auto& pyrange)
+	template <typename T>
+	inline static offset_range auto transform_to_offset(const T& pyrange)
+	requires std::ranges::input_range<T> && requires (T t)
+	{
+		py::cast<uint32_t>(*t.begin());
+	}
 	{
 		return pyrange | std::views::transform([](const auto& it) { return py::cast<uint32_t>(it); });
 	}
@@ -67,7 +73,8 @@ public:
 
 	std::pair<bool, uint32_t> get_p_board() const { return mem.getPBoard(); }
 
-	bool hook_connected(HookPosition pos = HookPosition::MAIN_LOOP) const { return mem.hookConnected(pos); }
+	bool hook_connected(HookPosition pos = HookPosition::MAIN_LOOP) const 
+		{ return mem.hookConnected(pos); }
 
 	bool global_connected() const { return mem.globalConnected(); }
 

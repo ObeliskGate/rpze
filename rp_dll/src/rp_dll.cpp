@@ -53,7 +53,7 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 #ifndef NDEBUG
 				std::println("start run code");
 #endif
-				auto p = (void(*)())pSharedMemory->shm().getAsmBuffer<>();
+				auto p = std::bit_cast<void(*)()>(pSharedMemory->shm().getAsmBuffer<>());
 				p();
 				pSharedMemory->shm().executeResult = ExecuteResult::SUCCESS;
 				phaseCode = PhaseCode::WAIT;
@@ -112,7 +112,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 	{
 		mainHook<1>(pSharedMemory);
 		__asm
-			{
+		{
 			mov edi, ds:[0x6a9ec0]
 			inc dword ptr [edi + 0x838] // mjClock++
 			mov esi, [edi + 0x768]
@@ -128,7 +128,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 			mov eax, esi
 			mov edx, 0x4524F0 // LawnApp::CheckForGameEnd
 			call edx
-			}
+		}
 		if (!(time(nullptr) % 5))
 		{
 			MSG msg;
@@ -152,7 +152,7 @@ void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 {
 	try 
 	{
-		auto p = (decltype(&hookUpdateApp))pTrampoline;
+		auto p = std::bit_cast<decltype(&hookUpdateApp)>(pTrampoline);
 		p(lawnAppAddr);
 	} 
 	catch (const std::exception& e) 

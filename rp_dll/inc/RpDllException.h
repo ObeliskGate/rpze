@@ -25,7 +25,7 @@ public:
 template <typename T>
 requires std::derived_from<std::decay_t<T>, std::exception> 
     && (!std::derived_from<std::decay_t<T>, RpDllBaseException>)
-std::string printStlException(T&& e)
+std::string printStlException(const T& e)
 {
     return std::format("Uncaught STL exception {}, message: \n{}", typeid(e).name(), e.what());
 }

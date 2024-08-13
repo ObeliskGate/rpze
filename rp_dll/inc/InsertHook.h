@@ -36,16 +36,19 @@ struct HookContext
 
 namespace rpdetail
 {
-	template<typename T>
-	struct is_optional_unsigned_integral { static constexpr bool value = false; };
+	template <typename T>
+	struct is_optional_unsigned_integral : std::false_type {};
 
 
-	template<std::unsigned_integral Val>
-	struct is_optional_unsigned_integral <std::optional<Val>> { static constexpr bool value = true; };
+	template <std::unsigned_integral Val>
+	struct is_optional_unsigned_integral<std::optional<Val>> : std::true_type {};
+
+	template <typename T, template <typename> typename B>
+	struct is_optional_concept : std::false_type {};
 };
 
 template<typename T>
-concept optional_unsigned_integral = rpdetail::is_optional_unsigned_integral <T>::value;
+concept optional_unsigned_integral = rpdetail::is_optional_unsigned_integral<T>::value;
 
 class InsertHook
 {
