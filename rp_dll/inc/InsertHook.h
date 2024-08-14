@@ -1,7 +1,6 @@
 #pragma once
 #include "stdafx.h"
 
-
 class HeapWrapper
 {
 	HANDLE hHeap;
@@ -49,7 +48,6 @@ concept optional_unsigned_integral = rpdetail::is_optional_unsigned_integral<T>:
 
 class InsertHook
 {
-
 public:
 	using CallBack = void(HookContext&);
 
@@ -103,13 +101,12 @@ private:
 
 	void* pTrampoline = nullptr;
 
-	inline static std::unordered_map<void*, std::unique_ptr<InsertHook>> hooks = {};
+	inline static std::unordered_map<void*, InsertHook> hooks = {};
 
 public:
 	template <std::convertible_to<std::function<CallBack>> T>
-	InsertHook(void* addr_, T&& callback)
-		: callFunc(std::forward<T>(callback)), addr(addr_),  
-	hookCode(new (executableHeap.alloc(sizeof(HookCode))) HookCode())
+	InsertHook(void* addr_, T&& callback) : callFunc(std::forward<T>(callback)), addr(addr_),  
+		hookCode(new (executableHeap.alloc(sizeof(HookCode))) HookCode())
 	{
 	#ifndef NDEBUG
 		std::println("generating hook at {}", addr_);
@@ -137,11 +134,10 @@ public:
 template <typename T>
 void InsertHook::addInsert(void* addr, T&& callback)
 {
-	auto it = hooks.find(addr);
-	if (it != hooks.end())
-		throw std::invalid_argument(std::format("hook already exists: {}", addr));
-	
-	hooks[addr] = std::make_unique<InsertHook>(addr, std::forward<T>(callback));
+	auto [_, success] = hooks.try_emplace(addr, addr, std::forward<T>(callback));
+	static_assert(std::same_as<decltype(success), bool>);
+	if (!success)
+		throw std::runtime_error("hook already exists");
 }
 
 template <std::invocable<HookContext&> T>
