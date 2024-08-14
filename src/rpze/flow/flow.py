@@ -42,7 +42,7 @@ def split_await_func_ret(rets: bool | tuple[bool, *tuple[Any, ...]]) -> tuple[bo
         AwaitFunc -> tuple[bool, *Args] 时, 返回 bool, tuple[*Args]
     """
     match rets:  # rets should be False / True / (True, *rets)
-        case (_, __):
+        case (_, _):
             return rets
         case (b, *args):
             return b, tuple(args)
