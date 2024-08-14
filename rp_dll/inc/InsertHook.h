@@ -93,7 +93,7 @@ private:
 
 	static void __fastcall callBackFunc(InsertHook* this_, HookContext* context);
 
-	std::function<CallBack> callFunc;
+	std::move_only_function<CallBack> callFunc;
 
 	void* addr;
 
@@ -104,7 +104,7 @@ private:
 	inline static std::unordered_map<void*, InsertHook> hooks = {};
 
 public:
-	template <std::convertible_to<std::function<CallBack>> T>
+	template <std::convertible_to<std::move_only_function<CallBack>> T>
 	InsertHook(void* addr_, T&& callback) : callFunc(std::forward<T>(callback)), addr(addr_),  
 		hookCode(new (executableHeap.alloc(sizeof(HookCode))) HookCode())
 	{
