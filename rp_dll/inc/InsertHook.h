@@ -69,20 +69,19 @@ private:
 	struct HookCode
 	{
         uint8_t pushRet = 0x68;  // push retAddr
-        DWORD retAddr = 0x0;
+        uintptr_t retAddr = 0x0;
         uint8_t pushad = 0x60;  // pushad
         uint8_t pushfd = 0x9c;  // pushfd
         uint8_t addEspPlus10_4[5] =  // add [esp+0x10], 4
             {0x83, 0x44, 0x24, 0x10, 0x04};
         uint8_t pushOri = 0x68;  // push oriAddr
-        DWORD oriAddr = 0x0;
+        uintptr_t oriAddr = 0x0;
 		uint8_t movEcxThis = 0xb9;  // mov ecx, this
-		DWORD thisPtr = 0;
+		uintptr_t thisPtr = 0;
 		uint8_t movEdxEsp[2] = {0x8b, 0xd4};  // mov edx, esp
-        // uint8_t pushEsp = 0x54;  // push esp
         uint8_t call = 0xe8;  // call callAddr
-        DWORD callAddr = 0x0;
-        uint8_t popEax = 0x58;  // pop eax
+        uintptr_t callAddr = 0x0;
+        uint8_t addEsp4[3] = {0x83, 0xc4, 0x4};  // add esp, 4
         uint8_t popfd = 0x9d;  // popfd
         uint8_t popad = 0x61;  // popad
         uint8_t ret = 0xc3;  // ret
@@ -112,7 +111,7 @@ public:
 		std::println("generating hook at {}", addr_);
 	#endif
 		hookCode->callAddr = reinterpret_cast<DWORD>(&InsertHook::callBackFunc) 
-			- reinterpret_cast<DWORD>(&hookCode->popEax);
+			- reinterpret_cast<DWORD>(&hookCode->addEsp4[0]);
 		hookCode->oriAddr = reinterpret_cast<DWORD>(addr);
 		hookCode->thisPtr = reinterpret_cast<DWORD>(this);
 

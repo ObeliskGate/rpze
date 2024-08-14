@@ -146,21 +146,13 @@ HMODULE injectDll(DWORD pid, LPCSTR dllPath)
 
 }
 
-//     __declspec(naked) DWORD WINAPI callGetProcAddressAsThread(LPVOID params)
-//     {
-//         __asm
-//         {
-//             mov ecx, [esp + 4]
-//             push [ecx + 4]
-//             push [ecx]
-//             call [ecx + 8]
-//             ret 4
-//         }
-//     }
 
-//     static_assert(std::is_same_v<decltype(&callGetProcAddressAsThread), LPTHREAD_START_ROUTINE>);
-
-constexpr static unsigned char callGetProcAddressAsThread[] = 
+//     mov ecx, [esp + 4]
+//     push [ecx + 4]
+//     push [ecx]
+//     call [ecx + 8]
+//     ret 4
+constexpr static uint8_t callGetProcAddressAsThread[] = 
     "\x8bL$\x04\xffq\x04\xff""1\xffQ\x08\xc2\x04\x00"; // same as above
 
 bool setOptions(DWORD pid, InitArgs options, HMODULE hMod)
