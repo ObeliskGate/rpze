@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "SharedMemory.h"
 #include "rp_dll.h"
 #include "InsertHook.h"

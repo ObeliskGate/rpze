@@ -1,5 +1,4 @@
 #include "shm.h"
-#include "stdafx.h"
 #include "Memory.h"
 #include "MemoryException.h"
 

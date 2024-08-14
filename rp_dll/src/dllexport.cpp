@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "rp_dll.h"
 #include "dllexport.h"
 #include "InsertHook.h"

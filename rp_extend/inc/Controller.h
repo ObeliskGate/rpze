@@ -55,11 +55,11 @@ class Controller
 	Memory mem;
 
 	template <typename T>
-	inline static offset_range auto transform_to_offset(const T& pyrange)
 	requires std::ranges::input_range<T> && requires (T t)
 	{
 		py::cast<uint32_t>(*t.begin());
 	}
+	inline static offset_range auto transform_to_offset(const T& pyrange)
 	{
 		return pyrange | std::views::transform([](const auto& it) { return py::cast<uint32_t>(it); });
 	}
