@@ -18,7 +18,7 @@ namespace rpdetail
 		bool operator==(const T& other) const
 		{
 			if (sentinel.has_value()) return *sentinel == other;
-			return false;
+			return true;
 		}
 	};
 
