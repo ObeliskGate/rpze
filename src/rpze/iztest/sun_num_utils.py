@@ -12,18 +12,18 @@ SUNFLOWER_HPS_ON_DROPPING_SUN: tuple[int, int, int, int, int, int, int, int] = \
 """向日葵掉落阳光时的血量"""
 
 
-def get_sunflower_remaining_sun(sunflower: Plant) -> int:
+def get_sunflower_remaining_sun(sunflower: Plant | None) -> int:
     """
     获取向日葵剩余阳光
 
     Args:
         sunflower: 目标向日葵
     Returns:
-        向日葵剩余阳光值
+        向日葵剩余阳光值, 输入 None 时返回0
     Raises:
         RpBaseException: 出现未知的行为时
     """
-    if sunflower.is_dead:
+    if sunflower is None or sunflower.is_dead:
         return 0
     hp = sunflower.hp
     intervals = (300,) + SUNFLOWER_HPS_ON_DROPPING_SUN
