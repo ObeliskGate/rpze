@@ -4,52 +4,6 @@
 #include "stdafx.h"
 // 给Python侧暴露的类型
 
-namespace rpdetail
-{
-	template <std::input_or_output_iterator T>
-	class SentinelWrapper
-	{
-		std::optional<T> sentinel;
-	public:
-		template <std::convertible_to<T> _In>
-		SentinelWrapper(_In&& sentinel) : sentinel(std::forward<_In>(sentinel)) {}
-		SentinelWrapper() : sentinel(std::nullopt) {}
-
-		bool operator==(const T& other) const
-		{
-			if (sentinel.has_value()) return *sentinel == other;
-			return true;
-		}
-	};
-
-	template <typename T>
-	requires requires (T t)
-	{
-		{ t.begin() } -> std::input_or_output_iterator;
-		t.end() == t.begin();
-		{ !std::sentinel_for<decltype(t.end()), decltype(t.begin())> };
-		{ std::sentinel_for<SentinelWrapper<decltype(t.end())>, decltype(t.begin())> };
-	}
-	static auto end_wrapper(const T& it)
-	{
-		return rpdetail::SentinelWrapper<decltype(it.end())>(it.end());
-	}
-}
-
-namespace pybind11
-{
-	inline auto end(const tuple& t)
-	{
-		return rpdetail::end_wrapper<tuple>(t);
-	}
-
-	inline auto end(const list& l)
-	{
-		return rpdetail::end_wrapper<list>(l);
-	}
-}
-
-
 class Controller
 {
 	Memory mem;

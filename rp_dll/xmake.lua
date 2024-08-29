@@ -1,4 +1,4 @@
-add_requires("minhook", { arch = "x86", configs = { lto = true, cxflags = { "-FI intrin.h"} }})
+add_requires("minhook 1.3.3", { arch = "x86", configs = { lto = true, cxflags = { "-FI intrin.h"} }})
 
 target("rp_dll")
     set_languages("cxx23")
