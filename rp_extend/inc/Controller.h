@@ -1,7 +1,7 @@
 #pragma once
 #include "Memory.h"
-#include "pybind11/pytypes.h"
 #include "stdafx.h"
+
 // 给Python侧暴露的类型
 
 class Controller
