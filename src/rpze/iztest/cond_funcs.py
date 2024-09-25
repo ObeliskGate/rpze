@@ -4,7 +4,7 @@
 """
 from ..flow.flow import FlowManager
 from ..flow.utils import VariablePool, AwaitableCondFunc
-from ..structs.plant import Plant
+from ..structs.plant import Plant, PlantStatus
 
 
 def until_precise_digger(magnet: Plant) -> AwaitableCondFunc[None]:
@@ -67,4 +67,30 @@ def until_plant_last_shoot(plant: Plant, wait_until_150: bool = False) -> Awaita
             return False  # 上一轮是攻击的 且 这一轮不攻击 返回True
         return False
 
+    return AwaitableCondFunc(_await_func)
+
+def until_n_butter(plant: Plant, n:int = 1, mode:int = 1) -> AwaitableCondFunc[None]:
+    """
+    生成一个 等到玉米攻击n发黄油 的函数
+
+    Args:
+        plant: 要判断的植物
+        n: 攻击次数
+        mode: 0表示允许攻击中断，1表示攻击不中断，2表示不仅要求不中断，而且黄油必须连续投出
+    """
+    def _await_func(fm: FlowManager,v = VariablePool(projs = 0, try_to_shoot_time=None)):
+        if plant.generate_cd == 1:                                      # 下一帧开打
+            v.try_to_shoot_time = fm.time + 1
+        if v.try_to_shoot_time == fm.time :
+            if plant.status is PlantStatus.kernelpult_launch_butter :   #出黄油
+                v.projs += 1
+            elif plant.launch_cd == 0 : #攻击停止
+                if mode != 0:
+                    v.projs = 0
+            else:           #出玉米粒
+                if mode == 2 :
+                    v.projs = 0
+        if v.projs == n:
+            return True 
+        return False
     return AwaitableCondFunc(_await_func)
