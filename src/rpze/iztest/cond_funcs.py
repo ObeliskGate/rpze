@@ -5,6 +5,23 @@
 from ..flow.flow import FlowManager
 from ..flow.utils import VariablePool, AwaitableCondFunc
 from ..structs.plant import Plant, PlantStatus
+from typing import Literal, TypeAlias
+
+
+CountButterModeLiteral: TypeAlias = int | Literal["total","nonstop","continuous"]
+"""数黄油函数的计数方法"""
+
+
+def to_count_butter_mode(literal: CountButterModeLiteral) -> int:
+    match literal:
+        case "total" | 0:
+            return 0
+        case "nonstop" | 1:
+            return 1
+        case "continuous" | 2:
+            return 2
+        case _:
+            raise ValueError(" invalid mode !")
 
 
 def until_precise_digger(magnet: Plant) -> AwaitableCondFunc[None]:
@@ -70,27 +87,31 @@ def until_plant_last_shoot(plant: Plant, wait_until_150: bool = False) -> Awaita
     return AwaitableCondFunc(_await_func)
 
 
-def until_n_butter(plant: Plant, n: int = 1, mode: int = 1) -> AwaitableCondFunc[None]:
+def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -> AwaitableCondFunc[None]:
     """
     生成一个 等到玉米攻击n发黄油 的函数
 
     Args:
         plant: 要判断的植物
-        n: 攻击次数
-        mode: 0表示允许攻击中断，1表示攻击不中断，2表示不仅要求不中断，而且黄油必须连续投出
-    """
+        n: 攻击黄油次数
+        mode: 0 或 "total" 表示允许攻击中断;
 
+            1 或 "nonstop" 表示攻击不中断;
+
+            2 或 "continuous" 表示攻击不中断 而且黄油必须连续投出
+    """
+    mode_index = to_count_butter_mode(mode)
     def _await_func(fm: FlowManager, v=VariablePool(projs=0, try_to_shoot_time=None)):
-        if plant.generate_cd == 1: # 下一帧开打
+        if plant.generate_cd == 1:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1
         if v.try_to_shoot_time == fm.time:
-            if plant.status is PlantStatus.kernelpult_launch_butter:   #出黄油
+            if plant.status is PlantStatus.kernelpult_launch_butter:  # 出黄油
                 v.projs += 1
-            elif plant.launch_cd == 0: #攻击停止
-                if mode != 0:
+            elif plant.launch_cd == 0:  # 攻击停止
+                if mode_index != 0:
                     v.projs = 0
-            else:           #出玉米粒
-                if mode == 2:
+            else:  # 出玉米粒
+                if mode_index == 2:
                     v.projs = 0
         if v.projs == n:
             return True 
