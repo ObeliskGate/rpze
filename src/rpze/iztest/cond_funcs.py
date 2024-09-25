@@ -2,9 +2,20 @@
 """
 简化 iztest 编写的条件函数
 """
+from typing import Literal
+
 from ..flow.flow import FlowManager
 from ..flow.utils import VariablePool, AwaitableCondFunc
-from ..structs.plant import Plant
+from ..structs.plant import Plant, PlantStatus
+
+
+CountButterModeLiteral = Literal[0, 1, 2, "total", "nonstop", "continuous"]
+"""数黄油函数的计数方法
+
+    - 0 或 "total" 表示允许攻击中断
+    - 1 或 "nonstop" 表示攻击不中断
+    - 2 或 "continuous" 表示攻击不中断, 而且黄油必须连续投出
+"""
 
 
 def until_precise_digger(magnet: Plant) -> AwaitableCondFunc[None]:
@@ -91,6 +102,46 @@ def until_plant_n_shoot(plant: Plant, n: int = 1, non_stop: bool = True) -> Awai
                 v.shots = 0
         if v.shots == n:
             return True
+        return False
+    
+    return AwaitableCondFunc(_await_func)
+
+
+def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -> AwaitableCondFunc[None]:
+    """
+    生成一个 等到玉米攻击n发黄油 的函数
+
+    Args:
+        plant: 要判断的植物
+        n: 攻击黄油次数
+        mode: 字面量, 表示计数方法。0 或 "total" 表示允许攻击中断; \
+            1 或 "nonstop" 表示攻击不中断; \
+            2 或 "continuous" 表示攻击不中断, 而且黄油必须连续投出
+    """
+    match mode:
+        case "total" | 0:
+            mode_index = 0
+        case "nonstop" | 1:
+            mode_index = 1
+        case "continuous" | 2:
+            mode_index = 2
+        case _:
+            raise ValueError("invalid mode !")
+
+    def _await_func(fm: FlowManager, v=VariablePool(projs=0, try_to_shoot_time=None)):
+        if plant.generate_cd == 1:  # 下一帧开打
+            v.try_to_shoot_time = fm.time + 1
+        if v.try_to_shoot_time == fm.time:
+            if plant.status is PlantStatus.kernelpult_launch_butter:  # 出黄油
+                v.projs += 1
+            elif plant.launch_cd == 0:  # 攻击停止
+                if mode_index != 0:
+                    v.projs = 0
+            else:  # 出玉米粒
+                if mode_index == 2:
+                    v.projs = 0
+        if v.projs == n:
+            return True 
         return False
     
     return AwaitableCondFunc(_await_func)
