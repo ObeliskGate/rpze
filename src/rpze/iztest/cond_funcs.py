@@ -81,13 +81,13 @@ def until_plant_n_shoot(plant: Plant, n: int = 1, non_stop: bool = True) -> Awai
     """
     
     def _await_func(fm: FlowManager,
-                v=VariablePool(try_to_shoot_time=None, shots = 0)):
+                v=VariablePool(try_to_shoot_time=None, shots=0)):
         if plant.generate_cd == 1:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1
         if v.try_to_shoot_time == fm.time and plant.launch_cd != 0:  # 在攻击时
             v.shots += 1
-        if v.try_to_shoot_time == fm.time and plant.launch_cd == 0: #不再攻击时
-            if non_stop:    #设置了不停止标志，则计数清零
+        if v.try_to_shoot_time == fm.time and plant.launch_cd == 0:  # 不再攻击时
+            if non_stop:  # 设置了不停止标志，则计数清零
                 v.shots = 0
         if v.shots == n:
             return True
