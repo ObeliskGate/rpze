@@ -69,7 +69,8 @@ def until_plant_last_shoot(plant: Plant, wait_until_150: bool = False) -> Awaita
 
     return AwaitableCondFunc(_await_func)
 
-def until_plant_n_shoot(plant: Plant, n:int = 1, non_stop :bool = True) -> AwaitableCondFunc[None]:
+
+def until_plant_n_shoot(plant: Plant, n: int = 1, non_stop: bool = True) -> AwaitableCondFunc[None]:
     """
     生成一个 等到植物n次攻击 的函数
 
@@ -78,6 +79,7 @@ def until_plant_n_shoot(plant: Plant, n:int = 1, non_stop :bool = True) -> Await
         n: 攻击次数
         non_stop: 是否为不间断攻击
     """
+    
     def _await_func(fm: FlowManager,
                 v=VariablePool(try_to_shoot_time=None, shots = 0)):
         if plant.generate_cd == 1:  # 下一帧开打
@@ -90,4 +92,5 @@ def until_plant_n_shoot(plant: Plant, n:int = 1, non_stop :bool = True) -> Await
         if v.shots == n:
             return True
         return False
+    
     return AwaitableCondFunc(_await_func)
