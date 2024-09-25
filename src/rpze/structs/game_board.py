@@ -359,6 +359,55 @@ class GameBoard(ObjBase):
             ret;"""
         asm.run(code, self.controller)
         return self
+    
+    def add_ladder(self, row: int, col: int) -> Griditem:
+        """
+        添加梯子
+
+        Args:
+            row: 行数, 0开始
+            col: 列数, 0开始
+        Returns:
+            添加的梯子对象
+        """
+        code = f"""
+            push edi
+            mov edi, {row}
+            mov eax, {self.base_ptr}
+            push {col}
+            call {0x408F40}  // Board::AddALadder
+            mov [{self.controller.result_address}], eax
+            pop edi
+            ret"""
+        asm.run(code, self.controller)
+        return Griditem(self.controller.result_u32, self.controller)
+    
+    def get_griditem_at(self, row: int, col: int, type_: GriditemType) -> Griditem | None:
+        """
+        获取指定位置, 指定类型的场地物品, 不存在则返回 None
+
+        Args:
+            row: 行数, 0开始
+            col: 列数, 0开始
+            type_: 物品类型
+        Returns:
+            场地物品对象, 不存在则返回 None
+        """
+        code =f"""
+            push edi
+            push edx
+            mov edi, {row}
+            mov ebx, {col}
+            push {int(type_)}
+            mov edx, {self.base_ptr}
+            call {0x408E40}  // Board::GetGriditemAt
+            mov [{self.controller.result_address}], eax
+            pop edx
+            pop edi
+            ret"""
+        asm.run(code, self.controller)
+        return None if (t := self.controller.result_u32) == 0 else Griditem(t, self.controller)
+
 
 
 __game_board_cache = OrderedDict()  # Board对象缓存. LRU, last为最近使用
