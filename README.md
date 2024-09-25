@@ -116,6 +116,11 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 
 可以用`python hatch_build.py -other_xmake_args`来自动设置 xmake config 的编译 arch
 
+## 贡献
+*请向 `dev`分支提交pull request*, 请遵循 [PEP 8](https://peps.python.org/pep-0008/) 和项目原有的命名, 文档规范.
+
+作者水平很菜但热爱吹毛求疵, 请不要感到气馁, 他真的很欢迎每一个帮助本项目越来越好的人.
+
 ## 许可
 Copyright © 2024 ObeliskGate
 
