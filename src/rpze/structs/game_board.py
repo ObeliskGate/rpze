@@ -327,6 +327,36 @@ class GameBoard(ObjBase):
         ret.x = float(self.grid_to_pixel_x(0, 0) - 40)
         ret.y = float(self.grid_to_pixel_y(row, 0) + 40)
         return ret
+    
+    def place_ladder(self, row: int, col: int) -> Griditem:
+        """
+        搭一个梯子
+
+        Args:
+            row: 梯子所在行, 从0开始
+            col: 梯子所在列, 从0开始
+        Returns:
+            构造的梯子
+        """
+        ret = self.griditem_list.alloc_item()
+        ret.type_ = GriditemType.ladder
+        ret.row = row
+        ret.col = col
+        ret.layer = 303000 + 10000 * row
+        return ret
+
+    def has_ladder(self, row: int, col: int) -> bool:
+        """
+        指定位置是否有搭好的梯子
+
+        Args:
+            row: 指定的行, 从0开始
+            col: 指定的列, 从0开始
+        """
+        for item in ~self.griditem_list:
+            if item.type_ == GriditemType.ladder and item.row == row and item.col == col:
+                return True
+        return False
 
     def process_delete_queue(self) -> Self:
         """
