@@ -393,7 +393,7 @@ class GameBoard(ObjBase):
         Returns:
             场地物品对象, 不存在则返回 None
         """
-        code =f"""
+        code = f"""
             push edi
             push edx
             mov edi, {row}
@@ -407,7 +407,6 @@ class GameBoard(ObjBase):
             ret"""
         asm.run(code, self.controller)
         return None if (t := self.controller.result_u32) == 0 else Griditem(t, self.controller)
-
 
 
 __game_board_cache = OrderedDict()  # Board对象缓存. LRU, last为最近使用
