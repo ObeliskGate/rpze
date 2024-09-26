@@ -9,15 +9,6 @@ from ..flow.utils import VariablePool, AwaitableCondFunc
 from ..structs.plant import Plant, PlantStatus
 
 
-CountButterModeLiteral = Literal[0, 1, 2, "total", "nonstop", "continuous"]
-"""数黄油函数的计数方法
-
-    - 0 或 "total" 表示允许攻击中断
-    - 1 或 "nonstop" 表示攻击不中断
-    - 2 或 "continuous" 表示攻击不中断, 而且黄油必须连续投出
-"""
-
-
 def until_precise_digger(magnet: Plant) -> AwaitableCondFunc[None]:
     """
     生成一个等到磁铁到达精确矿时间的函数
@@ -107,6 +98,15 @@ def until_plant_n_shoot(plant: Plant, n: int = 1, non_stop: bool = True) -> Awai
     return AwaitableCondFunc(_await_func)
 
 
+CountButterModeLiteral = Literal[0, 1, 2, "total", "nonstop", "continuous"]
+"""数黄油函数 until_n_butter 的计数方法
+
+    - 0 或 "total" 表示允许攻击中断
+    - 1 或 "nonstop" 表示攻击不中断
+    - 2 或 "continuous" 表示攻击不中断, 而且黄油必须连续投出
+"""
+
+
 def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -> AwaitableCondFunc[None]:
     """
     生成一个 等到玉米攻击n发黄油 的函数
@@ -114,9 +114,7 @@ def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -
     Args:
         plant: 要判断的植物
         n: 攻击黄油次数
-        mode: 字面量, 表示计数方法。0 或 "total" 表示允许攻击中断; \
-            1 或 "nonstop" 表示攻击不中断; \
-            2 或 "continuous" 表示攻击不中断, 而且黄油必须连续投出
+        mode: 字面量, 表示计数方法
     """
     match mode:
         case "total" | 0:
@@ -126,7 +124,7 @@ def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -
         case "continuous" | 2:
             mode_index = 2
         case _:
-            raise ValueError("invalid mode !")
+            raise ValueError(" invalid mode !")
 
     def _await_func(fm: FlowManager, v=VariablePool(projs=0, try_to_shoot_time=None)):
         if plant.generate_cd == 1:  # 下一帧开打
