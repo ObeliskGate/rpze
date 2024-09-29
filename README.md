@@ -119,6 +119,14 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 ## 贡献
 *请向 `dev`分支提交pull request*, 请遵循 [PEP 8](https://peps.python.org/pep-0008/) 和项目原有的命名, 文档规范.
 
+作者个人强行规定的规范包括但不限于:
+- `import`本项目内文件请使用相对导入
+- 标准库`import`与本项目`import`间空一行
+- 请勿使用中文标点
+- 单下划线即标识 protected , 不确保兼容性
+- 所有 public 函数均需有 type hint 与 docstring
+- 0 warning, 受不了的可以加`# type: ignore`或`# noqa`等
+
 作者水平很菜但热爱吹毛求疵, 请不要感到气馁, 他真的很欢迎每一个帮助本项目越来越好的人.
 
 ## 许可

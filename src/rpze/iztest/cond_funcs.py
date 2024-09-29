@@ -85,7 +85,7 @@ def until_plant_n_shoot(plant: Plant, n: int = 1, non_stop: bool = True) -> Awai
     """
     
     def _await_func(fm: FlowManager,
-                v=VariablePool(try_to_shoot_time=None, shots=0)):
+                    v=VariablePool(try_to_shoot_time=None, shots=0)):
         if plant.generate_cd == 1:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1
         if v.try_to_shoot_time == fm.time and plant.launch_cd != 0:  # 在攻击时
@@ -126,7 +126,7 @@ def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -
         case "continuous" | 2:
             mode_index = 2
         case _:
-            raise ValueError(" invalid mode !")
+            raise ValueError(f"invalid count mode: {mode}")
 
     def _await_func(fm: FlowManager, v=VariablePool(projs=0, try_to_shoot_time=None)):
         if plant.generate_cd == 1:  # 下一帧开打
