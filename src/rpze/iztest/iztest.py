@@ -229,7 +229,7 @@ class IzTest:
         self.controller: Controller = controller
         self.flow_factory: FlowFactory = FlowFactory()
         self.reset_generate_cd: bool = reset_generate_cd
-        self.enable_default_check_end: bool = True
+        self.enable_default_check_end: bool = False
         self.start_check_end_time: int = 0
         self.end_callback: Callable[[bool], None] = lambda _: None
         self.check_tests_end_callback: Callable[[int, int], float | None] | None = None
@@ -286,7 +286,6 @@ class IzTest:
 
         if len(lines) == 7:
             self.place_zombie_list = []
-            self.enable_default_check_end = False
         elif len(lines) == 10:
             self.place_zombie_list = parse_zombie_place_list('\n'.join(lines[7:10]))
             self.start_check_end_time = max(op.time for op in self.place_zombie_list)
@@ -305,8 +304,8 @@ class IzTest:
             self.check_tests_end_callback = lambda _, __: None
 
         self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
-        if self.target_plants_pos == [] and self.target_brains_pos == []:
-            self.enable_default_check_end = False
+        if self.target_plants_pos or self.target_brains_pos:
+            self.enable_default_check_end = True
 
         self.plant_type_lists = parse_plant_type_list('\n'.join(lines[2:7]))
         for target_pos in self.target_plants_pos:
