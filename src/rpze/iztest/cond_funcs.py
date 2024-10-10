@@ -57,18 +57,19 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
             return False
         if plant.generate_cd == 1:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1
-        if v.try_to_shoot_time == fm.time and plant.launch_cd != 0:  # 在攻击时
-            v.last_shooting_time = fm.time
-            return False
-        if v.try_to_shoot_time == fm.time and plant.launch_cd == 0:  # 不在攻击时
-            if v.last_shooting_time is not None:
-                if not wait_until_mbd or fm.time == v.last_shooting_time + mbd:
-                    return True, fm.time - v.last_shooting_time
-                # 如果等最大攻击间隔再返回 flag改not None开始走until逻辑
-                v.until_mbd_ret = fm.time - v.last_shooting_time
+        if v.try_to_shoot_time == fm.time:
+            if plant.launch_cd > 15:  # 判断大于15则处于攻击状态, 目的是兼容忧郁菇
+                v.last_shooting_time = fm.time
                 return False
-            v.last_shooting_time = None
-            return False  # 上一轮是攻击的 且 这一轮不攻击 返回True
+            else:  # 不处于攻击状态
+                if v.last_shooting_time is not None:
+                    if not wait_until_mbd or fm.time == v.last_shooting_time + mbd:
+                        return True, fm.time - v.last_shooting_time
+                    # 如果等最大攻击间隔再返回 flag改not None开始走until逻辑
+                    v.until_mbd_ret = fm.time - v.last_shooting_time
+                    return False
+                v.last_shooting_time = None
+                return False  # 上一轮是攻击的 且 这一轮不攻击 返回True
         return False
 
     return AwaitableCondFunc(_await_func)
