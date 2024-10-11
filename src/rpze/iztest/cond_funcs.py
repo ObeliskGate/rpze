@@ -62,7 +62,7 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
             v.try_to_shoot_time = fm.time + 1
         if v.try_to_shoot_time == fm.time:
             if plant.launch_cd > 15:  # 判断大于15则处于攻击状态, 目的是兼容忧郁菇
-            #一般植物处于非攻击状态launch_cd为0, 忧郁菇处于非攻击状态的launch_cd最大值为14
+                # 一般植物处于非攻击状态launch_cd为0, 忧郁菇处于非攻击状态的launch_cd最大值为14
                 v.last_shooting_time = fm.time
                 return False
             else:  # 不处于攻击状态
