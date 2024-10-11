@@ -6,7 +6,7 @@ from typing import Literal
 
 from ..flow.flow import FlowManager
 from ..flow.utils import VariablePool, AwaitableCondFunc
-from ..structs.plant import Plant, PlantStatus
+from ..structs.plant import Plant, PlantStatus, PlantType
 
 
 def until_precise_digger(magnet: Plant) -> AwaitableCondFunc[None]:
@@ -35,6 +35,8 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
 
     await 调用后返回"开打帧距离上一次攻击的距离"
 
+    对裂荚处理逻辑与对其他植物有区别: 只关心第一发. 裂荚右与单发结果相同, 裂荚左与双发结果不同.
+
     Args:
         plant: 要判断的植物
         wait_until_mbd: 是否等到 上次开打经过最大攻击间隔后 再返回
@@ -45,6 +47,7 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
         ...     assert plant.max_boot_delay - 14 <= t <= plant.max_boot_delay  # t 即为攻击间隔时长
     """
 
+    shoot_next_gcd = 1 if plant.type_ is not PlantType.split_pea else 26  # 修正裂荚攻击时机
     mbd = plant.max_boot_delay
 
     def _await_func(fm: FlowManager, v=VariablePool(
@@ -55,7 +58,7 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
             if fm.time >= v.last_shooting_time + mbd:
                 return True, v.until_mbd_ret
             return False
-        if plant.generate_cd == 1:  # 下一帧开打
+        if plant.generate_cd == shoot_next_gcd:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1
         if v.try_to_shoot_time == fm.time:
             if plant.launch_cd > 15:  # 判断大于15则处于攻击状态, 目的是兼容忧郁菇
@@ -84,16 +87,19 @@ def until_plant_n_shoot(plant: Plant, n: int = 1, non_stop: bool = True) -> Awai
         n: 攻击次数
         non_stop: 是否为不间断攻击
     """
+
+    shoot_next_gcd = 1 if plant.type_ is not PlantType.split_pea else 26  # 修正裂荚攻击时机
     
     def _await_func(fm: FlowManager,
                     v=VariablePool(try_to_shoot_time=None, shots=0)):
-        if plant.generate_cd == 1:  # 下一帧开打
+        if plant.generate_cd == shoot_next_gcd:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1
-        if v.try_to_shoot_time == fm.time and plant.launch_cd != 0:  # 在攻击时
-            v.shots += 1
-        if v.try_to_shoot_time == fm.time and plant.launch_cd == 0:  # 不再攻击时
-            if non_stop:  # 设置了不停止标志，则计数清零
-                v.shots = 0
+        if v.try_to_shoot_time == fm.time:
+            if plant.launch_cd > 15:  # 在攻击时
+                v.shots += 1
+            else:  # 不再攻击时
+                if non_stop:  # 设置了不停止标志，则计数清零
+                    v.shots = 0
         if v.shots == n:
             return True
         return False
