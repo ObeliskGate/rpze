@@ -6,6 +6,7 @@ from collections.abc import Callable, Coroutine
 from enum import Enum, auto
 from itertools import count
 from typing import TypeAlias, Self, Final, Any
+from warnings import warn
 
 
 class TickRunnerResult(Enum):
@@ -120,6 +121,8 @@ class FlowManager:
 
     def add(self) -> Callable[[TickRunner], TickRunner]:
         """
+        Deprecated
+
         运行时添加 TickRunner 的装饰器
 
         运行时添加的 TickRunner 会被放在最后执行. 即, 不支持加优先级, 但确保本帧执行.
@@ -137,6 +140,7 @@ class FlowManager:
             >>> flow_manager.add()(tr)
             为函数形式使用
         """
+        warn("use functions in FlowFactory instead", DeprecationWarning)
 
         def _decorator(tr: TickRunner):
             self.tick_runners.append(tr)
@@ -147,8 +151,11 @@ class FlowManager:
     def add_destructor(self) \
             -> Callable[[Callable[["FlowManager"], None]], Callable[["FlowManager"], None]]:
         """
+        Deprecated
+
         添加 destructor 的方法, 与 FlowManager.add 使用方法相同
         """
+        warn("use functions in FlowFactory instead", DeprecationWarning)
 
         def _decorator(d: Callable[["FlowManager"], None]) -> Callable[["FlowManager"], None]:
             self.destructors.append(d)
@@ -159,6 +166,8 @@ class FlowManager:
     def connect(self, cond: CondFunc, only_once: bool = False) \
             -> Callable[[TickRunner], TickRunner]:
         """
+        Deprecated
+
         运行时把 tick_runner 绑定到 cond 上的方法, 与 add 使用方法相同
         
         即 在 cond(self) 返回 True 时执行 func(self).
@@ -167,6 +176,7 @@ class FlowManager:
             cond: 执行 func 的条件函数. 返回 None 时按照 only_once 判断; 返回 TickRunnerResult 时直接返回.
             only_once: 为 True 时, 只要有一次满足 cond 则返回
         """
+        warn("use functions in FlowFactory instead", DeprecationWarning)
 
         def _decorator(tr: TickRunner) -> TickRunner:
             def _decorated_tick_runner(fm: "FlowManager"):
