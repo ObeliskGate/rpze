@@ -13,6 +13,4 @@ target("rp_extend")
         set_policy("build.optimization.lto", true)
         set_warnings("allextra")
     end
-    -- add_shflags("/PDBALTPATH:%_PDB%")
-    -- add_ldflags("/PDBALTPATH:%_PDB%")
     

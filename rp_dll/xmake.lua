@@ -1,4 +1,5 @@
-add_requires("minhook 1.3.3", { arch = "x86", configs = { lto = true, cxflags = { "-FI intrin.h"} }})
+add_requires("minhook 1.3.3", { 
+    arch = "x86", configs = { lto = true, cxflags = { "-FI intrin.h"} }})
 
 target("rp_dll")
     set_languages("cxx23")
@@ -15,5 +16,3 @@ target("rp_dll")
         set_policy("build.optimization.lto", true)
         set_warnings("allextra")
     end
-    -- add_ldflags("/PDBALTPATH:%_PDB%")
-    -- add_shflags("/PDBALTPATH:%_PDB%")

@@ -32,9 +32,6 @@ target("rp_dll")
     add_deps("prebuild")
     after_build(function (target)
         os.cp(target:targetfile(), "./src/rpze/bin/")
-        if os.isfile(target:targetdir().."/rp_dll.pdb") then
-            os.cp(target:targetdir().."/rp_dll.pdb", "./src/rpze/bin/")
-        end
     end)
 
 target("rp_injector")
@@ -48,7 +45,4 @@ target("rp_extend")
     add_deps("prebuild")
     after_build(function (target)
         os.cp(target:targetfile(), "./src/rpze/")
-        if os.isfile(target:targetdir().."/rp_extend.pdb") then
-            os.mv(target:targetdir().."/rp_extend.pdb", "./src/rpze/")
-        end
     end)
