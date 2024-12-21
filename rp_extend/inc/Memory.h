@@ -30,6 +30,10 @@ class Memory
 	// pvz进程id
 	DWORD pid = 0;
 
+	static constexpr std::array<uint32_t, 1> LOCALE_OFFSET = { 0x6a66f4 };
+
+	bool localeSetting = true;
+
 	volatile PhaseCode& getCurrentPhaseCode() const { return *pCurrentPhaseCode; }
 	
 	volatile RunState& getCurrentRunState() const { return *pCurrentRunState; }
@@ -58,6 +62,7 @@ class Memory
 	Shm& shm() const { return *pShm; }
 
 	void waiting(std::string_view callerName) const;
+
 
 	// 主要接口
 public:

@@ -113,6 +113,8 @@ bool Memory::startJumpFrame()
 		throw MemoryException("startJumpFrame: board ptr not found", this->pid);
 	if (jumpingFrame) return false;
 	jumpingFrame = true;
+	localeSetting = readMemory<bool>(LOCALE_OFFSET).value();
+	writeMemory(false, LOCALE_OFFSET);
 	pCurrentPhaseCode = &shm().jumpingPhaseCode;
 	pCurrentRunState = &shm().jumpingRunState;
 	pCurrentSyncMethod = &shm().jumpingSyncMethod;
@@ -149,6 +151,7 @@ bool Memory::endJumpFrame()
 	
 	if (!jumpingFrame) return false;
 	jumpingFrame = false;
+	writeMemory(localeSetting, LOCALE_OFFSET);
 	releaseMutex<>();
 
 	pCurrentPhaseCode = &shm().phaseCode;
