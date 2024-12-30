@@ -1,6 +1,7 @@
 #include "shm.h"
 #include "Memory.h"
 #include "MemoryException.h"
+#include "ManagedShm.h"
 
 void Memory::getRemoteMemoryAddress()
 {
@@ -15,10 +16,9 @@ void Memory::getRemoteMemoryAddress()
 
 Memory::Memory(DWORD pid) : pid(pid)
 {
-	auto nameAffix = std::wstring{ UU_NAME_AFFIX } + std::to_wstring(pid);
-	hMemory = OpenFileMappingW(FILE_MAP_ALL_ACCESS, 
+	hMemory = OpenFileMappingA(FILE_MAP_ALL_ACCESS, 
 		FALSE,
-		(nameAffix + L"_shm").c_str());
+		toShmName("shm", pid).c_str());
 	if (!hMemory)
 		throw MemoryException(
 			std::format("failed to find shared memory, err: {}", GetLastError()), pid);
@@ -45,9 +45,9 @@ Memory::Memory(DWORD pid) : pid(pid)
 			std::format("failed to find game process, err: {}", GetLastError()), pid);
 	
 
-	hMutex = OpenMutexW(MUTEX_ALL_ACCESS, 
+	hMutex = OpenMutexA(MUTEX_ALL_ACCESS, 
 		FALSE,
-		(nameAffix + L"_mutex").c_str());
+		toShmName("mutex", pid).c_str());
 	if (!hMutex)
 		throw MemoryException(
 			std::format("failed to find mutex, err: {}", GetLastError()), pid);

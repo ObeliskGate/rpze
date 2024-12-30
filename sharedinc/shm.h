@@ -2,8 +2,6 @@
 #include <stdint.h>
 #include <stddef.h>
 
-constexpr wchar_t UU_NAME_AFFIX[] = L"__rp_dll_shared_affix_";  // NOLINT
-
 constexpr size_t SHARED_MEMORY_SIZE = 1024 * 8;
 
 enum class PhaseCode : int32_t

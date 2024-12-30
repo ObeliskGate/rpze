@@ -1,16 +1,15 @@
 #include "SharedMemory.h"
+#include "ManagedShm.h"
 
 SharedMemory::SharedMemory()
 {
-	auto hProc = GetCurrentProcess();
-	auto nameAffix = std::wstring{ UU_NAME_AFFIX } + std::to_wstring(GetProcessId(hProc));
-	hMapFile = CreateFileMappingW(
+	hMapFile = CreateFileMappingA(
 		INVALID_HANDLE_VALUE,
 		nullptr,                
 		PAGE_EXECUTE_READWRITE,    
 		0,                      
 		SHARED_MEMORY_SIZE,
-		(nameAffix + L"_shm").c_str());
+		toShmName("shm").c_str());
 	if (!hMapFile)
 		throw std::runtime_error(
 			std::format("failed to create shared memory, err: {}", GetLastError()));
@@ -39,7 +38,7 @@ SharedMemory::SharedMemory()
 		shm().hookStateArr[i] = HookState::NOT_CONNECTED;
 
 
-	hMutex = CreateMutexW(nullptr, FALSE, (nameAffix + L"_mutex").c_str());
+	hMutex = CreateMutexA(nullptr, FALSE, toShmName("mutex").c_str());
 	if (!hMutex)
 	{
 		UnmapViewOfFile(sharedMemoryPtr);

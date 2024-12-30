@@ -1,9 +1,11 @@
-add_requires("minhook 1.3.3", { 
-    arch = "x86", configs = { lto = true, cxflags = { "-FI intrin.h"} }})
+add_requires("minhook 1.3.3", { arch = "x86", 
+    configs = { lto = true, cxflags = { "-FI intrin.h" } }})
+add_requires("boost", { arch = "x86", 
+    configs = { lto = true, container = true}})
 
 target("rp_dll")
     set_languages("cxx23")
-    add_packages("minhook")
+    add_packages("minhook", "boost")
     add_syslinks("User32")
     set_encodings("utf-8")
     set_kind("shared")
