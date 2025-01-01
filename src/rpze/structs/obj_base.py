@@ -34,7 +34,6 @@ class ObjBase(abc.ABC):
         """
         if base_ptr == 0:
             raise ValueError(f"base_ptr of an {type(self).__name__} object cannot be 0")
-        super().__init__()
         self.base_ptr = base_ptr
         self.controller = ctler
 
@@ -84,7 +83,7 @@ class OffsetProperty(property, Generic[_T_co, _T_con]):
                  fdel: Callable[[ObjBase], None] | None,
                  doc: str | None,
                  offset: int):
-        super().__init__(fget, fset, fdel, doc)
+        property.__init__(self, fget, fset, fdel, doc)
         self.__doc__ = doc
         self.__objclass__ = ObjBase
         self.offset: Final[int] = offset
@@ -96,13 +95,13 @@ class OffsetProperty(property, Generic[_T_co, _T_con]):
     def __get__(self, obj: Any, owner: type | None = ..., /) -> _T_co: ...
 
     def __get__(self, *args):
-        return super().__get__(*args)
+        return property.__get__(self, *args)
 
     def __set__(self, obj: ObjBase, value: _T_con) -> None:
-        return super().__set__(obj, value)
+        return property.__set__(self, obj, value)
 
     def __delete__(self, obj: ObjBase) -> None:
-        return super().__delete__(obj)
+        return property.__delete__(self, obj)
 
 
 _OffsetProp: TypeAlias = OffsetProperty[_T, _T]
@@ -301,7 +300,7 @@ class ObjNode(ObjBase, abc.ABC):
     __slots__ = ("id",)
 
     def __init__(self, base_ptr: int, ctler: Controller) -> None:
-        super().__init__(base_ptr, ctler)
+        ObjBase.__init__(self, base_ptr, ctler)
         self.id = ObjId(base_ptr + self.OBJ_SIZE - 4, ctler)
 
     ITERATOR_FUNC_ADDRESS: ClassVar[int] = NotImplemented
@@ -500,7 +499,7 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
 
     class _ObjListImplement(ObjList[_T_node], abc.ABC):
         def __init__(self, base_ptr: int, ctler: Controller):
-            super().__init__(base_ptr, ctler)
+            ObjBase.__init__(self, base_ptr, ctler)
             self._array_base_ptr = ctler.read_u32(base_ptr)
             self._code = f"""
                 push esi
