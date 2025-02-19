@@ -100,7 +100,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 [vector-wlc/AsmVsZombies](https://github.com/vector-wlc/AsmVsZombies) - 重要功能汇编函数参考,  
 [sqrt07/iztools](https://github.com/sqrt07/iztools)  -  测试字符串, 功能和简写标准参照,
 
-以及指针表, 函数表等资源工具和各位玩家的鼎力支持.
+以及指针表, 函数表等资源工具 (大量命名和 docstring 参考) 和各位玩家的鼎力支持.
 
 ## 使用的开源项目
 - [pybind/pybind11](https://github.com/pybind/pybind11), [LICENSE](https://github.com/pybind/pybind11/blob/master/LICENSE)

@@ -4,14 +4,12 @@ iztest 常见操作
 """
 
 from .consts import plant_abbr_to_type, zombie_abbr_to_type
-from ..basic import asm
 from ..basic.gridstr import parse_grid_str
 from ..basic.inject import ConnectedContext, enter_level
 from ..flow.utils import delay
 from ..rp_extend import Controller
 from ..structs.game_board import get_board, GameBoard
 from ..structs.plant import Plant
-from ..structs.reanim import ReanimList
 from ..structs.zombie import Zombie
 
 
@@ -90,6 +88,14 @@ async def repeat(place_str: str,
 
 
 def get_current_speed(zombie: Zombie) -> float:
+    """
+    拿到僵尸当前的速度参数
+
+    Args:
+        zombie: 要获得参数的僵尸
+    Returns:
+        速度参数
+    """
     ctler = zombie.controller
     rlist = get_board(ctler).reanim_list
     reanim = rlist.find(zombie.reanim_id)

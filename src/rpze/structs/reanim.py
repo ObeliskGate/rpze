@@ -9,6 +9,9 @@ from ..basic import asm
 
 
 class Reanim(ObjNode):
+    """
+    动画对象
+    """
     OBJ_SIZE = 0xa0
 
     is_dead = property_bool(0x14, "is dead")
@@ -18,6 +21,14 @@ class Reanim(ObjNode):
     ITERATOR_P_BOARD_REG = "eax"
 
     def get_track_velocity(self) -> float:
+        """
+        取得动画 _ground 轨道的横向瞬时速度
+
+        Returns:
+            从当前帧至下一帧的横向位移 * 动画速率 * 0.01
+
+            若动画不存在 _ground 轨道, 则在获取轨道序号时会返回第 0 个轨道, 取得的速度亦为该轨道的瞬时速度.
+        """
         ctler = self.controller
         code = f"""
             mov eax, {self.base_ptr}
@@ -30,6 +41,9 @@ class Reanim(ObjNode):
 
 
 class ReanimList(obj_list(Reanim)):
+    """
+    动画对象 DataArray
+    """
     def free_all(self) -> Self:
         code = f"""
             push ebx

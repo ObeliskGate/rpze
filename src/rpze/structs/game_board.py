@@ -74,6 +74,7 @@ class GameBoard(ObjBase):
 
     @property
     def reanim_list(self) -> ReanimList:
+        """动画对象列表"""
         addr = self.controller.read_u32(0x6a9ec0, 0x820, 0x8)
         return ReanimList(addr, self.controller)
 
