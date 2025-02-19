@@ -239,6 +239,11 @@ class Zombie(ObjNode):
         return tuple(ObjId(self.base_ptr + 0xf4 + i * 4,    # type: ignore
                            self.controller) for i in range(4))
 
+    @property
+    def reanim_id(self) -> ObjId:
+        """动画 id"""
+        return ObjId(self.base_ptr + 0x118, self.controller)
+
     def __str__(self) -> str:
         if not self.is_dead:
             return f"#{self.id.index} {self.type_.name} at row {self.row + 1}"

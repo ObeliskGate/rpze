@@ -9,6 +9,7 @@ from .griditem import GriditemList, Griditem, GriditemType
 from .obj_base import ObjBase, property_u32, property_bool, property_i32
 from .plant import PlantList, Plant, PlantType
 from .projectile import ProjectileList
+from .reanim import ReanimList
 from .zombie import ZombieList, ZombieType, Zombie
 from ..basic import asm
 from ..basic.exception import PvzStatusError
@@ -70,6 +71,11 @@ class GameBoard(ObjBase):
     @challenge_survival_stage.setter
     def challenge_survival_stage(self, value: int) -> None:
         self.controller.write_i32(value, self._p_challenge + 0x6c)
+
+    @property
+    def reanim_list(self) -> ReanimList:
+        addr = self.controller.read_u32(0x6a9ec0, 0x820, 0x8)
+        return ReanimList(addr, self.controller)
 
     def iz_setup_plant(self, plant: Plant) -> Self:
         """
