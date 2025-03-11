@@ -260,6 +260,8 @@ class ObjId(ObjBase):
 
     rank = property_u16(2, "对象序列号")
 
+    m_id = property_u32(0, "作为 Id 的整体数值")
+
     def __eq__(self, val: Self | tuple[int, int]) -> bool:
         """
         ObjId 比较相等 与其他 ObjId 比较或与(index, rank)比较
@@ -270,11 +272,10 @@ class ObjId(ObjBase):
             "表示相同对象"返回 True
         """
         if isinstance(val, ObjId):
-            return ((self.controller.read_u32(self.base_ptr) ==
-                     val.controller.read_u32(val.base_ptr))
+            return (self.m_id == val.m_id
                     and self.controller == val.controller)
         index, rank = val
-        return self.controller.read_u32(self.base_ptr) == ((rank << 16) | index)
+        return self.m_id == ((rank << 16) | index)
 
     def __ne__(self, val: Self | tuple[int, int]) -> bool:
         return not self.__eq__(val)
@@ -309,7 +310,7 @@ class ObjNode(ObjBase, abc.ABC):
     ITERATOR_P_BOARD_REG: ClassVar[str] = "edx"
     """迭代对象函数用于存储 Board 指针的寄存器, reanimation 和粒子系统为 eax, 其他为 edx"""
 
-    is_dead: OffsetProperty = NotImplemented
+    m_dead = is_dead = NotImplemented
     """对象是否存活, 必须在所有非抽象子类中赋值"""
 
 
@@ -324,13 +325,13 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
     """
     OBJ_SIZE = 28
 
-    max_length = property_i32(4, "最大时对象数")
+    m_max_used_count = max_length = property_u32(4, "最大时对象数")
 
-    next_index = property_i32(12, "下一个对象的索引")
+    m_free_list_head = next_index = property_i32(12, "下一个对象的索引")
 
-    obj_num = property_i32(16, "当前对象数量")
+    m_size = obj_num = property_i32(16, "当前对象数量")
 
-    next_rank = property_i32(20, "下一个对象的序列号")
+    m_next_key = next_rank = property_i32(20, "下一个对象的序列号")
 
     def __len__(self) -> int:
         """
@@ -606,3 +607,20 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
             return self
 
     return _ObjListImplement
+
+
+class GameObject(ObjNode, abc.ABC):
+    """源码中的游戏对象, 被植物, 僵尸等类共享"""
+    m_x = property_i32(0x8, "横坐标")
+
+    m_y = property_i32(0xc, "纵坐标")
+
+    m_width = property_i32(0x10, "判定长度")
+
+    m_height = property_i32(0x14, "判定高度")
+
+    m_visible = property_bool(0x18, "可见时为 True")
+
+    m_row = property_i32(0x1c, "所在行")
+
+    m_render_order = property_i32(0x20, "渲染顺序, 即俗称的图层")

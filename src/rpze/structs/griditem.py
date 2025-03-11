@@ -13,14 +13,19 @@ class GriditemType(IntEnum):
     """
     场地物品类型
     """
-    none = 0
-    grave = 0x1
-    crater = 0x2
-    ladder = 0x3
-    brain_aq = 0x6
-    vase = 0x7
-    rake = 0xb
-    brain = 0xc
+    NONE = none = 0
+    GRAVESTONE = grave = 1
+    CRATER = crater = 2
+    LADDER = ladder = 3
+    PORTAL_CIRCLE = 4
+    PORTAL_SQUARE = 5
+    BRAIN = brain_aq = 6
+    SCARY_POT = vase = 7
+    SQUIRREL = 8
+    ZEN_TOOL = 9
+    STINKY = 10
+    RAKE = rake = 11
+    IZOMBIE_BRAIN = brain = 12
 
 
 class Griditem(ObjNode):
@@ -31,25 +36,25 @@ class Griditem(ObjNode):
 
     ITERATOR_FUNC_ADDRESS = 0x41CAD0
 
-    type_ = property_int_enum(0x8, GriditemType, "场地物品类型")
+    m_grid_item_type = type_ = property_int_enum(0x8, GriditemType, "场地物品类型")
 
-    row = property_i32(0x14, "所在行")
+    m_grid_y = row = property_i32(0x14, "所在行")
 
-    col = property_i32(0x10, "所在列")
+    m_grid_x = col = property_i32(0x10, "所在列")
 
-    brain_hp = property_i32(0x18, """
+    m_grid_item_counter = brain_hp = property_i32(0x18, """
         脑子血量, 墓碑冒出的量, 弹坑消失倒计时, 钉钯消失倒计时
         
         对于 ize 中脑子, 初始为70, 每次被啃时-= 1(区别于植物血量 -= 4)
         """)
 
-    layer = property_i32(0x1c, "图层")
+    m_render_order = layer = property_i32(0x1c, "图层")
 
-    is_dead = property_bool(0x20, "是否死亡")
+    m_dead = is_dead = property_bool(0x20, "是否死亡")
 
-    x = property_f32(0x24, "x 坐标")
+    m_pos_x = x = property_f32(0x24, "x 坐标")
 
-    y = property_f32(0x28, "y 坐标")
+    m_pos_y = y = property_f32(0x28, "y 坐标")
 
     def __str__(self) -> str:
         if not self.is_dead:

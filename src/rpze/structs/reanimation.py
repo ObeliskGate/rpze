@@ -8,13 +8,13 @@ from .obj_base import ObjNode, property_bool, obj_list
 from ..basic import asm
 
 
-class Reanim(ObjNode):
+class Reanimation(ObjNode):
     """
     动画对象
     """
     OBJ_SIZE = 0xa0
 
-    is_dead = property_bool(0x14, "is dead")
+    m_dead = is_dead = property_bool(0x14, "is dead")
 
     ITERATOR_FUNC_ADDRESS = 0x41CB90
 
@@ -40,7 +40,7 @@ class Reanim(ObjNode):
         return ctler.result_f64
 
 
-class ReanimList(obj_list(Reanim)):
+class ReanimationList(obj_list(Reanimation)):
     """
     动画对象 DataArray
     """
@@ -55,8 +55,8 @@ class ReanimList(obj_list(Reanim)):
             xor edx, edx
             mov [esi], edx  // esi for ra, edi for board
             LIterate:
-                mov {Reanim.ITERATOR_P_BOARD_REG}, edi
-                call {Reanim.ITERATOR_FUNC_ADDRESS}  // Board::IterateReanim
+                mov {Reanimation.ITERATOR_P_BOARD_REG}, edi
+                call {Reanimation.ITERATOR_FUNC_ADDRESS}  // Board::IterateReanim
                 test al, al
                 jz LFreeAll
                 mov ecx, [esi]

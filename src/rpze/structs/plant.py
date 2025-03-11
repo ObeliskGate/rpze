@@ -5,7 +5,7 @@
 import typing
 from enum import IntEnum
 
-from .obj_base import ObjNode, property_i32, property_bool, property_int_enum, ObjId, obj_list
+from .obj_base import property_i32, property_bool, property_int_enum, ObjId, obj_list, GameObject
 from ..basic import asm
 
 
@@ -13,105 +13,140 @@ class PlantType(IntEnum):
     """
     植物类型
     """
-    pea_shooter = 0x0
-    sunflower = 0x1
-    cherry_bomb = 0x2
-    wallnut = 0x3
-    potato_mine = 0x4
-    snow_pea = 0x5
-    chomper = 0x6
-    repeater = 0x7
-    puffshroom = 0x8
-    sunshroom = 0x9
-    fumeshroom = 0xA
-    grave_buster = 0xB
-    hypnoshroom = 0xC
-    scaredyshroom = 0xD
-    iceshroom = 0xE
-    doomshroom = 0xF
-    lily_pad = 0x10
-    squash = 0x11
-    threepeater = 0x12
-    tangle_kelp = 0x13
-    jalapeno = 0x14
-    spikeweed = 0x15
-    torchwood = 0x16
-    tallnut = 0x17
-    seashroom = 0x18
-    plantern = 0x19
-    cactus = 0x1a
-    blover = 0x1b
-    split_pea = 0x1c
-    starfruit = 0x1d
-    pumpkin = 0x1e
-    magnetshroom = 0x1f
-    cabbagepult = 0x20
-    flower_pot = 0x21
-    kernelpult = 0x22
-    coffee_bean = 0x23
-    garlic = 0x24
-    umbrella_leaf = 0x25
-    marigold = 0x26
-    melonpult = 0x27
-    gatling_pea = 0x28
-    twin_sunflower = 0x29
-    gloomshroom = 0x2A
-    cattail = 0x2B
-    winter_melon = 0x2C
-    gold_magnet = 0x2D
-    spikerock = 0x2E
-    cob_cannon = 0x2F
-    imitator = 0x30
+    PEASHOOTER = pea_shooter = 0
+    SUNFLOWER = sunflower = 1
+    CHERRYBOMB = cherry_bomb = 2
+    WALLNUT = wallnut = 3
+    POTATOMINE = potato_mine = 4
+    SNOWPEA = snow_pea = 5
+    CHOMPER = chomper = 6
+    REPEATER = repeater = 7
+    PUFFSHROOM = puffshroom = 8
+    SUNSHROOM = sunshroom = 9
+    FUMESHROOM = fumeshroom = 10
+    GRAVEBUSTER = grave_buster = 11
+    HYPNOSHROOM = hypnoshroom = 12
+    SCAREDYSHROOM = scaredyshroom = 13
+    ICESHROOM = iceshroom = 14
+    DOOMSHROOM = doomshroom = 15
+    LILYPAD = lily_pad = 16
+    SQUASH = squash = 17
+    THREEPEATER = threepeater = 18
+    TANGLEKELP = tangle_kelp = 19
+    JALAPENO = jalapeno = 20
+    SPIKEWEED = spikeweed = 21
+    TORCHWOOD = torchwood = 22
+    TALLNUT = tallnut = 23
+    SEASHROOM = seashroom = 24
+    PLANTERN = plantern = 25
+    CACTUS = cactus = 26
+    BLOVER = blover = 27
+    SPLITPEA = split_pea = 28
+    STARFRUIT = starfruit = 29
+    PUMPKINSHELL = pumpkin = 30
+    MAGNETSHROOM = magnetshroom = 31
+    CABBAGEPULT = cabbagepult = 32
+    FLOWERPOT = flower_pot = 33
+    KERNELPULT = kernelpult = 34
+    INSTANT_COFFEE = coffee_bean = 35
+    GARLIC = garlic = 36
+    UMBRELLA = umbrella_leaf = 37
+    MARIGOLD = marigold = 38
+    MELONPULT = melonpult = 39
+    GATLINGPEA = gatling_pea = 40
+    TWINSUNFLOWER = twin_sunflower = 41
+    GLOOMSHROOM = gloomshroom = 42
+    CATTAIL = cattail = 43
+    WINTERMELON = winter_melon = 44
+    GOLD_MAGNET = gold_magnet = 45
+    SPIKEROCK = spikerock = 46
+    COBCANNON = cob_cannon = 47
+    IMITATER = imitator = 48
+    EXPLODE_O_NUT = NUM_SEEDS_IN_CHOOSER = 49
+    GIANT_WALLNUT = 50
+    SPROUT = 51
+    LEFTPEATER = 52
+    NUM_SEED_TYPES = 53
+    BEGHOULED_BUTTON_SHUFFLE = 54
+    BEGHOULED_BUTTON_CRATER = 55
+    SLOT_MACHINE_SUN = 56
+    SLOT_MACHINE_DIAMOND = 57
+    ZOMBIQUARIUM_SNORKLE = 58
+    ZOMBIQUARIUM_TROPHY = 59
+    ZOMBIE_NORMAL = 60
+    ZOMBIE_TRAFFIC_CONE = 61
+    ZOMBIE_POLEVAULTER = 62
+    ZOMBIE_PAIL = 63
+    ZOMBIE_LADDER = 64
+    ZOMBIE_DIGGER = 65
+    ZOMBIE_BUNGEE = 66
+    ZOMBIE_FOOTBALL = 67
+    ZOMBIE_BALLOON = 68
+    ZOMBIE_SCREEN_DOOR = 69
+    ZOMBONI = 70
+    ZOMBIE_POGO = 71
+    ZOMBIE_DANCER = 72
+    ZOMBIE_GARGANTUAR = 73
+    ZOMBIE_IMP = 74
+    NONE = -1
 
 
 class PlantStatus(IntEnum):
     """
     植物状态
     """
-    idle = 0x0
-    wait = 0x1
-    work = 0x2
-    squash_look = 0x3
-    squash_jump_up = 0x4
-    squash_stop_in_the_air = 0x5
-    squash_jump_down = 0x6
-    squash_crushed = 0x7
-    grave_buster_land = 0x8
-    grave_buster_idle = 0x9
-    chomper_bite_begin = 0xA
-    chomper_bite_success = 0xB
-    chomper_bite_fail = 0xC
-    chomper_chew = 0xD
-    chomper_swallow = 0xE
-    potato_sprout_out = 0xF
-    potato_armed = 0x10
-    spike_attack = 0x12
-    scaredyshroom_scared = 0x14
-    scaredyshroom_scared_idle = 0x15
-    scaredyshroom_grow = 0x16
-    sunshroom_small = 0x17
-    sunshroom_grow = 0x18
-    sunshroom_big = 0x19
-    magnetshroom_working = 0x1A
-    magnetshroom_inactive_idle = 0x1B
-    cactus_short_idle = 0x1E
-    cactus_grow_tall = 0x1F
-    cactus_tall_idle = 0x20
-    cactus_get_short = 0x21
-    tangle_kelp_grab = 0x22
-    cob_cannon_unarmed_idle = 0x23
-    cob_cannon_charge = 0x24
-    cob_cannon_launch = 0x25
-    cob_cannon_armed_idle = 0x26
-    kernelpult_launch_butter = 0x27
-    umbrella_leaf_block = 0x28
-    umbrella_leaf_shrink = 0x29
-    imitator_explode = 0x2A
-    flower_pot_placed = 0x2F
-    lily_pad_placed = 0x30
+    NOTREADY = idle = 0
+    READY = wait = 1
+    DOINGSPECIAL = work = 2
+    SQUASH_LOOK = squash_look = 3
+    SQUASH_PRE_LAUNCH = squash_jump_up = 4
+    SQUASH_RISING = squash_stop_in_the_air = 5
+    SQUASH_FALLING = squash_jump_down = 6
+    SQUASH_DONE_FALLING = squash_crushed = 7
+    GRAVEBUSTER_LANDING = grave_buster_land = 8
+    GRAVEBUSTER_EATING = grave_buster_idle = 9
+    CHOMPER_BITING = chomper_bite_begin = 10
+    CHOMPER_BITING_GOT_ONE = chomper_bite_success = 11
+    CHOMPER_BITING_MISSED = chomper_bite_fail = 12
+    CHOMPER_DIGESTING = chomper_chew = 13
+    CHOMPER_SWALLOWING = chomper_swallow = 14
+    POTATO_RISING = potato_sprout_out = 15
+    POTATO_ARMED = potato_armed = 16
+    POTATO_MASHED = 17
+    SPIKEWEED_ATTACKING = spike_attack = 18
+    SPIKEWEED_ATTACKING_2 = 19
+    SCAREDYSHROOM_LOWERING = scaredyshroom_scared = 20
+    SCAREDYSHROOM_SCARED = scaredyshroom_scared_idle = 21
+    SCAREDYSHROOM_RAISING = scaredyshroom_grow = 22
+    SUNSHROOM_SMALL = sunshroom_small = 23
+    SUNSHROOM_GROWING = sunshroom_grow = 24
+    SUNSHROOM_BIG = sunshroom_big = 25
+    MAGNETSHROOM_SUCKING = magnetshroom_working = 26
+    MAGNETSHROOM_CHARGING = magnetshroom_inactive_idle = 27
+    BOWLING_UP = 28
+    BOWLING_DOWN = 29
+    CACTUS_LOW = cactus_short_idle = 30
+    CACTUS_RISING = cactus_grow_tall = 31
+    CACTUS_HIGH = cactus_tall_idle = 32
+    CACTUS_LOWERING = cactus_get_short = 33
+    TANGLEKELP_GRABBING = tangle_kelp_grab = 34
+    COBCANNON_ARMING = cob_cannon_unarmed_idle = 35
+    COBCANNON_LOADING = cob_cannon_charge = 36
+    COBCANNON_READY = cob_cannon_launch = 37
+    COBCANNON_FIRING = cob_cannon_armed_idle = 38
+    KERNELPULT_BUTTER = kernelpult_launch_butter = 39
+    UMBRELLA_TRIGGERED = umbrella_leaf_block = 40
+    UMBRELLA_REFLECTING = umbrella_leaf_shrink = 41
+    IMITATER_MORPHING = imitator_explode = 42
+    ZEN_GARDEN_WATERED = 43
+    ZEN_GARDEN_NEEDY = 44
+    ZEN_GARDEN_HAPPY = 45
+    MARIGOLD_ENDING = 46
+    FLOWERPOT_INVULNERABLE = flower_pot_placed = 47
+    LILYPAD_INVULNERABLE = lily_pad_placed = 48
 
 
-class Plant(ObjNode):
+class Plant(GameObject):
     """
     植物对象
     """
@@ -127,36 +162,36 @@ class Plant(ObjNode):
 
     row = property_i32(0x1c, "所在行数, 起点为0")
 
-    type_ = property_int_enum(0x24, PlantType, "植物类型")
+    m_seed_type = type_ = property_int_enum(0x24, PlantType, "植物类型")
 
-    col = property_i32(0x28, "所在列数, 起点为0")
+    m_plant_col = col = property_i32(0x28, "所在列数, 起点为0")
 
-    status = property_int_enum(0x3c, PlantStatus, "植物状态")
+    m_state = status = property_int_enum(0x3c, PlantStatus, "植物状态")
 
-    hp = property_i32(0x40, "当前血量")
+    m_plant_health = hp = property_i32(0x40, "当前血量")
 
-    max_hp = property_i32(0x44, "最大血量")
+    m_plant_max_health = max_hp = property_i32(0x44, "最大血量")
 
-    status_cd = property_i32(0x54, """
+    m_state_countdown = status_cd = property_i32(0x54, """
         属性倒计时, 如磁铁 cd
                                      
         地刺攻击倒计时也在这儿:
             地刺的判断和 generate_cd 无关. 在范围内有僵尸时使status_cd = 100, == 75时打出攻击
         """)
 
-    generate_cd = property_i32(0x58, """
+    m_launch_counter = generate_cd = property_i32(0x58, """
         子弹生成 / 物品生产倒计时
                                        
         初值为 max_boot_delay - 14 到 max_boot_delay
         """)
 
-    max_boot_delay = property_i32(0x5c, """
+    m_launch_rate = max_boot_delay = property_i32(0x5c, """
         generate_cd 的最大值
                                           
         对大多数植物为 150，对投手为 300，忧郁菇为 200
         """)
 
-    launch_cd = property_i32(0x90, """
+    m_shooting_counter = launch_cd = property_i32(0x90, """
         从准备发射到发射子弹的倒计时
                                      
         **这里有坑, 平常常见的大喷49等数据是两个数据做减法减出来的而不是存在这里的直接数据**
@@ -186,10 +221,16 @@ class Plant(ObjNode):
 
     can_attack = property_bool(0x48, "能攻击时为 True")
 
-    is_dead = property_bool(0x141, "死亡时为 True")
+    m_subclass = property_i32(0x48, """
+        植物子类型: 0 为普通, 1 为发射类
+        
+        和`can_attack`道理相同但在源码中实际按`int`使用
+    """)  # 笨蛋 tod
+
+    m_dead = is_dead = property_bool(0x141, "死亡时为 True")
 
     @property
-    def target_zombie_id(self) -> ObjId:
+    def target_zombie_id(self) -> ObjId:  # mTargetZombieID
         """倭瓜, 水草目标僵尸编号"""
         return ObjId(self.base_ptr + 0x12c, self.controller)
 

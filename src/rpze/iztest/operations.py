@@ -98,5 +98,5 @@ def get_current_speed(zombie: Zombie) -> float:
     """
     ctler = zombie.controller
     rlist = get_board(ctler).reanim_list
-    reanim = rlist.find(zombie.reanim_id)
+    reanim = rlist.find(zombie.m_body_reanim_id)
     return reanim.get_track_velocity()
