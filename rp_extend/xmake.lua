@@ -1,8 +1,7 @@
 add_requires("pybind11 >= 2.13.5")
-add_requires("boost", {configs = { lto = true, container = true}})
 
 target("rp_extend")
-    add_packages("pybind11", "boost")
+    add_packages("pybind11")
     set_languages("cxx23")
     set_encodings("utf-8")
     add_rules("python.library", { soabi = true })
