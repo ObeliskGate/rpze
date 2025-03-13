@@ -455,26 +455,28 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
             self
         """
 
-    def set_next_idx(self, idx: int) -> Self:
+    def set_next_idx(self, *args: int) -> Self:
         """
-        设置下一个对象的编号, 若 idx 大于当前最大长度, 会调整最大长度至和 idx 相同.
-
-        当前实现: 为将 idx 和 next_idx 在"栈位"对应位置中交换.
-        "调整长度"当前实现: 从所需最高到当前长度倒序添加; 与 ize 一开始类似且调整长度后无需再次交换.
+        设置下 n 个对象的编号, 若下 n 个编号中最大值大于当前最大长度, 会调整最大长度与其相同.
 
         Args:
-            idx: 下一个对象的编号
+            args: 下个对象的编号
         Returns:
             self
         Raises:
-            ValueError: idx 不合法或 idx 所在对象未回收时抛出.
+            ValueError: args 中有不合法值 或 args 有重复 或 args 所在对象未回收时抛出.
+        Examples:
+            >>> self.set_next_idx(1)
+            让下一个构造的对象在`.id.index == 1`的位置
+            >>> self.set_next_idx(1, 3)
+            让接下来第一个构造的对象`.id.index == 1`, 第二个`.id.index == 3`
         """
 
 
 def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
     """
     根据 node_cls 构造对应的 NodeClsObject 的父类
-    
+
     Args:
         node_cls: ObjNode 的子类
     Returns:
@@ -589,21 +591,47 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
             self.next_index = size - 1
             return self
 
-        def set_next_idx(self, idx: int) -> Self:
-            if idx < 0:
-                raise ValueError(f"next index should be non-negative, not {idx}")
-            if self.at(idx).id.rank != 0:
-                raise ValueError(f"object at index {idx} is still unavailable")
-            self._assert_size(idx + 1)
-            if idx == self.next_index:
-                return self
-            target_node = self.at(idx)
-            first_node = self.at(self.next_index)
-            before_node = first_node
-            while before_node.id.index != idx:
-                before_node = self.at(before_node.id.index)
-            before_node.id.index, self.next_index = self.next_index, idx
-            target_node.id.index, first_node.id.index = first_node.id.index, target_node.id.index
+        def set_next_idx(self, *args: int) -> Self:
+            if min(args) < 0:
+                raise ValueError(f"next index should be non-negative, not {min(args)}")
+            if len(set(args)) != len(args):
+                raise ValueError("values should not repeat")
+            for idx in args:
+                if self.at(idx).id.rank != 0:
+                    raise ValueError(f"object at index {idx} is still unavailable")
+            self._assert_size(max(args) + 1)
+
+            # get the "before" of all nodes
+            max_length = self.max_length
+            before_indices = [-1] * max_length
+
+            next_node_idx = self.next_index
+            next_node = self.at(next_node_idx)
+            while next_node.id.index != max_length:
+                before_indices[next_node.id.index] = next_node_idx
+                next_node_idx = next_node.id.index
+                next_node = self.at(next_node_idx)
+
+            print(before_indices)
+
+            def _move_to_top(target_idx):
+                first_idx = self.next_index
+                if first_idx == target_idx:
+                    return
+                before_idx = before_indices[target_idx]
+                next_idx = self.at(target_idx).id.index
+
+                self.next_index = target_idx
+                self.at(target_idx).id.index = first_idx
+                before_indices[target_idx] = -1
+                before_indices[first_idx] = target_idx
+
+                self.at(before_idx).id.index = next_idx
+                before_indices[next_idx] = before_idx
+
+            for idx in reversed(args):
+                _move_to_top(idx)
+
             return self
 
     return _ObjListImplement
