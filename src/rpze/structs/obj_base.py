@@ -237,12 +237,12 @@ _T_obj = TypeVar("_T_obj", bound=ObjBase)
 
 def property_obj(offset: int, cls: type[_T_obj], doc: str) -> _OffsetProp[_T_obj]:
     def _get(self: ObjBase) -> _T_obj:
-        return cls(self.controller.read_i32(self.base_ptr + offset), self.controller)
+        return cls(self.controller.read_u32(self.base_ptr + offset), self.controller)
 
     def _set(self: ObjBase, value: _T_obj) -> None:
         if self.controller != value.controller:
             raise ValueError("cannot assign an object from another controller")
-        self.controller.write_i32(value.base_ptr, self.base_ptr + offset)
+        self.controller.write_u32(value.base_ptr, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 

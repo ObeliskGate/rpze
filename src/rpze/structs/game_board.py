@@ -73,7 +73,7 @@ class GameBoard(ObjBase):
         self.controller.write_i32(value, self._p_challenge + 0x6c)
 
     @property
-    def reanim_list(self) -> ReanimationList:
+    def reanimation_list(self) -> ReanimationList:
         """动画对象列表"""
         addr = self.controller.read_u32(0x6a9ec0, 0x820, 0x8)
         return ReanimationList(addr, self.controller)

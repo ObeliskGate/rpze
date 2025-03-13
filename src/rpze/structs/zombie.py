@@ -273,7 +273,7 @@ class Zombie(ObjNode):
 
     attack_width = property_i32(0xa4, "攻击判定宽度")
 
-    attack_height = property_i32(0xa8, "攻击判定高度")
+    attack_height = property_i32(0xa8, "攻击判定高度")  # Sexy::Rect 暂且没实现
 
     m_chilled_counter = slow_cd = property_i32(0xac, "减速倒计时")
 
