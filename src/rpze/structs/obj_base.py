@@ -612,8 +612,6 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
                 next_node_idx = next_node.id.index
                 next_node = self.at(next_node_idx)
 
-            print(before_indices)
-
             def _move_to_top(target_idx):
                 first_idx = self.next_index
                 if first_idx == target_idx:
