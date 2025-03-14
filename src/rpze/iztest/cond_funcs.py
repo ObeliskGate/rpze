@@ -9,14 +9,15 @@ from ..flow.utils import VariablePool, AwaitableCondFunc
 from ..structs.plant import Plant, PlantStatus, PlantType
 
 
-def until_precise_digger(magnet: Plant) -> AwaitableCondFunc[None]:
+def until_precise_digger(magnet: Plant, interval: int = 912) -> AwaitableCondFunc[None]:
     """
     生成一个等到磁铁到达精确矿时间的函数
 
     Args:
         magnet: 要判断 cd 的磁铁
+        interval: 等价操作间隔. 于0cs磁铁空闲时释放铁器, 在912-915cs于6列释放的矿工被视为1列精确矿, 该释放时机称作等价操作间隔
     """
-    return AwaitableCondFunc(lambda _: magnet.status_cd <= 587)  # 587 - 590 by 寒风
+    return AwaitableCondFunc(lambda _: magnet.status_cd <= 1502 - interval)
 
 
 def until_plant_die(plant: Plant) -> AwaitableCondFunc[None]:
