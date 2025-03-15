@@ -1,5 +1,4 @@
 #include "SharedMemory.h"
-#include "ManagedShm.h"
 
 SharedMemory::SharedMemory()
 {

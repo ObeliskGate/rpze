@@ -237,12 +237,12 @@ _T_obj = TypeVar("_T_obj", bound=ObjBase)
 
 def property_obj(offset: int, cls: type[_T_obj], doc: str) -> _OffsetProp[_T_obj]:
     def _get(self: ObjBase) -> _T_obj:
-        return cls(self.controller.read_i32(self.base_ptr + offset), self.controller)
+        return cls(self.controller.read_u32(self.base_ptr + offset), self.controller)
 
     def _set(self: ObjBase, value: _T_obj) -> None:
         if self.controller != value.controller:
             raise ValueError("cannot assign an object from another controller")
-        self.controller.write_i32(value.base_ptr, self.base_ptr + offset)
+        self.controller.write_u32(value.base_ptr, self.base_ptr + offset)
 
     return OffsetProperty(_get, _set, None, f"{cls.__name__}: {doc}", offset)
 
@@ -260,6 +260,8 @@ class ObjId(ObjBase):
 
     rank = property_u16(2, "对象序列号")
 
+    m_id = property_u32(0, "作为 Id 的整体数值")
+
     def __eq__(self, val: Self | tuple[int, int]) -> bool:
         """
         ObjId 比较相等 与其他 ObjId 比较或与(index, rank)比较
@@ -270,11 +272,10 @@ class ObjId(ObjBase):
             "表示相同对象"返回 True
         """
         if isinstance(val, ObjId):
-            return ((self.controller.read_u32(self.base_ptr) ==
-                     val.controller.read_u32(val.base_ptr))
+            return (self.m_id == val.m_id
                     and self.controller == val.controller)
         index, rank = val
-        return self.controller.read_u32(self.base_ptr) == ((rank << 16) | index)
+        return self.m_id == ((rank << 16) | index)
 
     def __ne__(self, val: Self | tuple[int, int]) -> bool:
         return not self.__eq__(val)
@@ -309,7 +310,7 @@ class ObjNode(ObjBase, abc.ABC):
     ITERATOR_P_BOARD_REG: ClassVar[str] = "edx"
     """迭代对象函数用于存储 Board 指针的寄存器, reanimation 和粒子系统为 eax, 其他为 edx"""
 
-    is_dead: OffsetProperty = NotImplemented
+    m_dead = is_dead = NotImplemented
     """对象是否存活, 必须在所有非抽象子类中赋值"""
 
 
@@ -324,13 +325,13 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
     """
     OBJ_SIZE = 28
 
-    max_length = property_i32(4, "最大时对象数")
+    m_max_used_count = max_length = property_u32(4, "最大时对象数")
 
-    next_index = property_i32(12, "下一个对象的索引")
+    m_free_list_head = next_index = property_i32(12, "下一个对象的索引")
 
-    obj_num = property_i32(16, "当前对象数量")
+    m_size = obj_num = property_i32(16, "当前对象数量")
 
-    next_rank = property_i32(20, "下一个对象的序列号")
+    m_next_key = next_rank = property_i32(20, "下一个对象的序列号")
 
     def __len__(self) -> int:
         """
@@ -454,26 +455,28 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
             self
         """
 
-    def set_next_idx(self, idx: int) -> Self:
+    def set_next_idx(self, *args: int) -> Self:
         """
-        设置下一个对象的编号, 若 idx 大于当前最大长度, 会调整最大长度至和 idx 相同.
-
-        当前实现: 为将 idx 和 next_idx 在"栈位"对应位置中交换.
-        "调整长度"当前实现: 从所需最高到当前长度倒序添加; 与 ize 一开始类似且调整长度后无需再次交换.
+        设置下 n 个对象的编号, 若下 n 个编号中最大值大于当前最大长度, 会调整最大长度与其相同.
 
         Args:
-            idx: 下一个对象的编号
+            args: 下个对象的编号
         Returns:
             self
         Raises:
-            ValueError: idx 不合法或 idx 所在对象未回收时抛出.
+            ValueError: args 中有不合法值 或 args 有重复 或 args 所在对象未回收时抛出.
+        Examples:
+            >>> self.set_next_idx(1)
+            让下一个构造的对象在`.id.index == 1`的位置
+            >>> self.set_next_idx(1, 3)
+            让接下来第一个构造的对象`.id.index == 1`, 第二个`.id.index == 3`
         """
 
 
 def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
     """
     根据 node_cls 构造对应的 NodeClsObject 的父类
-    
+
     Args:
         node_cls: ObjNode 的子类
     Returns:
@@ -588,21 +591,62 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
             self.next_index = size - 1
             return self
 
-        def set_next_idx(self, idx: int) -> Self:
-            if idx < 0:
-                raise ValueError(f"next index should be non-negative, not {idx}")
-            if self.at(idx).id.rank != 0:
-                raise ValueError(f"object at index {idx} is still unavailable")
-            self._assert_size(idx + 1)
-            if idx == self.next_index:
-                return self
-            target_node = self.at(idx)
-            first_node = self.at(self.next_index)
-            before_node = first_node
-            while before_node.id.index != idx:
-                before_node = self.at(before_node.id.index)
-            before_node.id.index, self.next_index = self.next_index, idx
-            target_node.id.index, first_node.id.index = first_node.id.index, target_node.id.index
+        def set_next_idx(self, *args: int) -> Self:
+            if min(args) < 0:
+                raise ValueError(f"next index should be non-negative, not {min(args)}")
+            if len(set(args)) != len(args):
+                raise ValueError("values should not repeat")
+            for idx in args:
+                if self.at(idx).id.rank != 0:
+                    raise ValueError(f"object at index {idx} is still unavailable")
+            self._assert_size(max(args) + 1)
+
+            # get the "before" of all nodes
+            max_length = self.max_length
+            before_indices = [-1] * max_length
+
+            next_node_idx = self.next_index
+            next_node = self.at(next_node_idx)
+            while next_node.id.index != max_length:
+                before_indices[next_node.id.index] = next_node_idx
+                next_node_idx = next_node.id.index
+                next_node = self.at(next_node_idx)
+
+            def _move_to_top(target_idx):
+                first_idx = self.next_index
+                if first_idx == target_idx:
+                    return
+                before_idx = before_indices[target_idx]
+                next_idx = self.at(target_idx).id.index
+
+                self.next_index = target_idx
+                self.at(target_idx).id.index = first_idx
+                before_indices[target_idx] = -1
+                before_indices[first_idx] = target_idx
+
+                self.at(before_idx).id.index = next_idx
+                before_indices[next_idx] = before_idx
+
+            for idx in reversed(args):
+                _move_to_top(idx)
+
             return self
 
     return _ObjListImplement
+
+
+class GameObject(ObjNode, abc.ABC):
+    """源码中的游戏对象, 被植物, 僵尸等类共享"""
+    m_x = property_i32(0x8, "横坐标")
+
+    m_y = property_i32(0xc, "纵坐标")
+
+    m_width = property_i32(0x10, "判定长度")
+
+    m_height = property_i32(0x14, "判定高度")
+
+    m_visible = property_bool(0x18, "可见时为 True")
+
+    m_row = property_i32(0x1c, "所在行")
+
+    m_render_order = property_i32(0x20, "渲染顺序, 即俗称的图层")

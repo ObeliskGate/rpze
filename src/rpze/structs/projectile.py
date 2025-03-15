@@ -5,7 +5,7 @@
 from enum import IntEnum
 from typing import Self
 
-from .obj_base import ObjNode, property_i32, property_f32, property_bool, property_int_enum, ObjId, obj_list
+from .obj_base import property_i32, property_f32, property_bool, property_int_enum, ObjId, obj_list, GameObject
 from ..basic import asm
 
 
@@ -13,35 +13,40 @@ class ProjectileType(IntEnum):
     """
     子弹类型
     """
-    pea = 0x0
-    snow_pea = 0x1
-    cabbage = 0x2
-    melon = 0x3
-    puff = 0x4
-    wintermelon = 0x5
-    fire_pea = 0x6
-    star = 0x7
-    cactus = 0x8
-    basketball = 0x9
-    kernel = 0xA
-    cob_cannon = 0xB
-    butter = 0xC
+    PEA = pea = 0
+    SNOWPEA = snow_pea = 1
+    CABBAGE = cabbage = 2
+    MELON = melon = 3
+    PUFF = puff = 4
+    WINTERMELON = wintermelon = 5
+    FIREBALL = fire_pea = 6
+    STAR = star = 7
+    SPIKE = cactus = 8
+    BASKETBALL = basketball = 9
+    KERNEL = kernel = 10
+    COBBIG = cob_cannon = 11
+    BUTTER = butter = 12
+    ZOMBIE_PEA = 13
+    NUM_PROJECTILES = 14
 
 
 class ProjectileMotionType(IntEnum):
     """
     子弹运动类型
     """
-    straight = 0
-    parabola = 1
-    switch_way = 2
-    puff = 5
-    left_straight = 6
-    starfruit = 7
-    cattail = 9
+    STRAIGHT = straight = 0
+    LOBBED = parabola = 1
+    THREEPEATER = switch_way = 2
+    BEE = 3
+    BEE_BACKWARDS = 4
+    PUFF = puff = 5
+    BACKWARDS = left_straight = 6
+    STAR = starfruit = 7
+    FLOAT_OVER = 8
+    HOMING = cattail = 9
 
 
-class Projectile(ObjNode):
+class Projectile(GameObject):
     """
     子弹对象
     """
@@ -55,22 +60,24 @@ class Projectile(ObjNode):
 
     col = property_i32(0x1c, "所在行数")
 
-    x = property_f32(0x30, "浮点 x 坐标")
+    m_pos_x = x = property_f32(0x30, "浮点 x 坐标")
 
-    y = property_f32(0x34, "浮点 y 坐标")
+    m_pos_y = y = property_f32(0x34, "浮点 y 坐标")
 
-    dx = property_f32(0x3c, "x 速度")
+    m_vel_x = dx = property_f32(0x3c, "x 速度")
 
-    dy = property_f32(0x40, "y 速度")
+    m_vel_y = dy = property_f32(0x40, "y 速度")
 
-    is_dead = property_bool(0x50, "是否死亡")
+    m_dead = is_dead = property_bool(0x50, "是否死亡")
 
-    type_ = property_int_enum(0x5c, ProjectileType, "子弹类型")
+    m_projectile_type = type_ = property_int_enum(
+        0x5c, ProjectileType, "子弹类型")
 
-    motion_type = property_int_enum(0x58, ProjectileMotionType, "子弹运动类型")
+    m_motion_type = motion_type = property_int_enum(
+        0x58, ProjectileMotionType, "子弹运动类型")
 
     @property
-    def target_zombie_id(self) -> ObjId:
+    def target_zombie_id(self) -> ObjId:  # mTargetZombieID
         """香蒲子弹目标僵尸"""
         return ObjId(self.base_ptr + 0x88, self.controller)
 

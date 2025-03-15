@@ -2,6 +2,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define WIN32_LEAN_AND_MEAN             // 从 Windows 头文件中排除极少使用的内容
+#define NOMINMAX
+// Windows 头文件
+#include <Windows.h> 
+
 constexpr size_t SHARED_MEMORY_SIZE = 1024 * 8;
 
 enum class PhaseCode : int32_t
@@ -60,7 +65,7 @@ inline constexpr size_t getHookIndex(HookPosition pos) { return static_cast<size
 
 #ifdef _MSC_VER
 #pragma warning(push)  // 保存警告状态
-#pragma warning(disable : 4324)  // 禁用4996警告
+#pragma warning(disable : 4324)
 #endif
 
 #pragma pack(push, 1)
@@ -115,3 +120,8 @@ struct Shm
 static_assert(offsetof(Shm, readWriteBuffer) == Shm::BUFFER_OFFSET, "Shm buffer offset error");
 static_assert(offsetof(Shm, asmBuffer) == Shm::ASM_OFFSET, "Shm asm buffer offset error");
 static_assert(sizeof(Shm) == SHARED_MEMORY_SIZE, "Shm size error");
+
+inline std::string toShmName(std::string_view name, std::optional<DWORD> pid = {}) {
+    auto p = pid.value_or(GetCurrentProcessId());
+    return std::format("__rp_dll_shared_affix_{}_{}", p, name);
+}

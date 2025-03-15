@@ -9,6 +9,7 @@ from .griditem import GriditemList, Griditem, GriditemType
 from .obj_base import ObjBase, property_u32, property_bool, property_i32
 from .plant import PlantList, Plant, PlantType
 from .projectile import ProjectileList
+from .reanimation import ReanimationList
 from .zombie import ZombieList, ZombieType, Zombie
 from ..basic import asm
 from ..basic.exception import PvzStatusError
@@ -38,16 +39,16 @@ class GameBoard(ObjBase):
 
     _p_challenge = property_u32(0x160, "Challenge对象指针")
 
-    is_dance_mode = property_bool(0x5765, "在dance秘籍时中为True")
+    m_daisy_mode = is_dance_mode = property_bool(0x5765, "在dance秘籍时中为True")
 
-    sun_num = property_i32(0x5560, "阳光数量")
+    m_sun_money = sun_num = property_i32(0x5560, "阳光数量")
 
-    game_time = property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
+    m_effect_counter = game_time = property_i32(0x556c, "游戏时间(包括选卡停留的时间)")
 
     @property
     def mj_clock(self) -> int:
         """mj 时钟"""
-        return self.controller.read_i32(0x6a9ec0, 0x838)  # 我真看不懂为什么mj时钟在LawnApp底下啊
+        return self.controller.read_i32(0x6a9ec0, 0x838)
 
     @mj_clock.setter
     def mj_clock(self, value: int) -> None:
@@ -70,6 +71,12 @@ class GameBoard(ObjBase):
     @challenge_survival_stage.setter
     def challenge_survival_stage(self, value: int) -> None:
         self.controller.write_i32(value, self._p_challenge + 0x6c)
+
+    @property
+    def reanimation_list(self) -> ReanimationList:
+        """动画对象列表"""
+        addr = self.controller.read_u32(0x6a9ec0, 0x820, 0x8)
+        return ReanimationList(addr, self.controller)
 
     def iz_setup_plant(self, plant: Plant) -> Self:
         """

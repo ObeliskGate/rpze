@@ -306,7 +306,8 @@ class DancingManipulator(AbstractContextManager):
 def get_dancing_manipulator(iz_test: IzTest,
                             start_phase: DancingPhaseLiteral = DancingPhase.MOVING,
                             end_phase: DancingPhaseLiteral = DancingPhase.MOVING,
-                            priority: int = DEFAULT_PRIORITY + 1) -> DancingManipulator:
+                            priority: int = DEFAULT_PRIORITY + 1,
+                            stop_controlling: bool = True) -> DancingManipulator:
     """
     获取一个 DancingManipulator
 
@@ -314,11 +315,15 @@ def get_dancing_manipulator(iz_test: IzTest,
         iz_test: 和 DancingManipulator 对应的 IzTest 对象
         start_phase: 开始时的相位
         end_phase: 结束时的相位
-        priority: DancingManipulator 依托的 TickRunner 优先级.
-            默认为 default + 1, 以确保默认时 DancingManipulator 在本帧生效
+        priority: DancingManipulator 依托的 TickRunner 优先级
+            默认为 default + 1, 以确保默认时 DancingManipulator 在本帧生效.
+        stop_controlling: 在测试结束后是否自动停止控制
     Returns:
         构造的 DancingManipulator 对象
     """
     dm_tr = _DmTr(iz_test)
     iz_test.flow_factory.add_tick_runner(priority)(dm_tr)
-    return DancingManipulator(dm_tr, start_phase, end_phase)
+    ret = DancingManipulator(dm_tr, start_phase, end_phase)
+    if stop_controlling:
+        iz_test.flow_factory.add_destructor()(lambda _: ret.stop(ret.end_phase))
+    return ret

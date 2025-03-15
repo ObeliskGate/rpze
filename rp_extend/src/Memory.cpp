@@ -1,7 +1,6 @@
 #include "shm.h"
 #include "Memory.h"
 #include "MemoryException.h"
-#include "ManagedShm.h"
 
 void Memory::getRemoteMemoryAddress()
 {
