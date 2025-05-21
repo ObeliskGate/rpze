@@ -58,23 +58,18 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
         if v.until_mbd_ret is not None:  # until mbd flag开了就走: 等到最大攻击间隔后再返回
             if fm.time >= v.last_shooting_time + mbd:
                 return True, v.until_mbd_ret
-            return False
-        if plant.generate_cd == shoot_next_gcd:  # 下一帧开打
+        elif plant.generate_cd == shoot_next_gcd:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1
-        if v.try_to_shoot_time == fm.time:
+        elif v.try_to_shoot_time == fm.time:
             if plant.launch_cd > 15:  # 判断大于15则处于攻击状态, 目的是兼容忧郁菇
                 # 一般植物处于非攻击状态launch_cd为0, 忧郁菇处于非攻击状态的launch_cd最大值为14
                 v.last_shooting_time = fm.time
-                return False
             else:  # 不处于攻击状态
                 if v.last_shooting_time is not None:
                     if not wait_until_mbd or fm.time == v.last_shooting_time + mbd:
                         return True, fm.time - v.last_shooting_time
                     # 如果等最大攻击间隔再返回 flag改not None开始走until逻辑
                     v.until_mbd_ret = fm.time - v.last_shooting_time
-                    return False
-                v.last_shooting_time = None
-                return False  # 上一轮是攻击的 且 这一轮不攻击 返回True
         return False
 
     return AwaitableCondFunc(_await_func)
