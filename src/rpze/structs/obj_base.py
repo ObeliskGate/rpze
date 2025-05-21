@@ -502,7 +502,7 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
 
     class _ObjListImplement(ObjList[_T_node], abc.ABC):
         def __init__(self, base_ptr: int, ctler: Controller):
-            super().__init__(base_ptr, ctler)
+            ObjBase.__init__(self, base_ptr, ctler)
             self._array_base_ptr = ctler.read_u32(base_ptr)
             self._code = f"""
                 push esi
