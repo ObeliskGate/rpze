@@ -380,3 +380,8 @@ FodyWeavers.xsd
 
 # package metadata
 rpze.egg-info/
+
+# hash file
+*.sha256
+*.sha512
+*.md5

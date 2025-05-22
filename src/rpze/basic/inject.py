@@ -2,7 +2,9 @@
 """
 注入, 打开游戏相关的函数和类.
 """
+import hashlib
 import os
+from pathlib import Path
 import signal
 import subprocess
 import time
@@ -13,6 +15,25 @@ from typing import Self, overload
 from . import asm
 from .exception import PvzStatusError
 from ..rp_extend import Controller, ControllerError
+
+
+def _check_hash(hash_file: Path) -> bool:
+    file = hash_file.with_suffix("")
+    if not file.exists():
+        raise FileNotFoundError(f"File {file} does not exist")
+    method = hash_file.suffix[1:]
+    if method not in hashlib.algorithms_available:
+        raise ValueError(f"Hash method {method} is not available")
+    
+    hash_func = hashlib.new(method)
+    with file.open('rb') as f:
+        while chunk := f.read(8192):
+            hash_func.update(chunk)
+
+    with hash_file.open('r') as f:
+        hash_str = f.read().strip()
+
+    return hash_func.hexdigest() == hash_str
 
 
 def open_game(game_path: str, num: int = 1) -> list[int]:
@@ -83,36 +104,60 @@ class InjectedGame(AbstractContextManager):
         controller: 被注入游戏的控制器
     """
     @overload
-    def __init__(self, process_id: int, /, close_when_exit: bool = True):
+    def __init__(self, process_id: int, /, 
+                 close_when_exit: bool = True, 
+                 check_hash: bool = True):
         """
         通过已经注入的 process id 构造 InjectedGame 对象
 
         Args:
             process_id: pvz 进程的 process id
             close_when_exit: 是否在退出时关闭 pvz 进程
+            check_hash: 是否检查二进制 hash 值, 默认 True
+        Raises:
+            ValueError: 若 hash 检查失败则抛出
         """
 
     @overload
-    def __init__(self, game_path: str, /, close_when_exit: bool = True):
+    def __init__(self, game_path: str, /, 
+                 close_when_exit: bool = True,
+                 check_hash: bool = True):
         """
         通过游戏路径构造 InjectedGame 对象
 
         Args:
             game_path: pvz 主程序路径
             close_when_exit: 是否在退出时关闭 pvz 进程
+            check_hash: 是否检查二进制 hash 值, 默认 True
+        Raises:
+            ValueError: 若 hash 检查失败则抛出
         """
 
     @overload
-    def __init__(self, controller: Controller, /, close_when_exit: bool = True):
+    def __init__(self, controller: Controller, /, 
+                 close_when_exit: bool = True,
+                 check_hash: bool = True):
         """
         通过 Controller 对象构造 InjectedGame 对象
 
         Args:
             controller: 注入目标游戏的 Controller 对象
             close_when_exit: 是否在退出时关闭 pvz 进程
+            check_hash: 是否检查二进制 hash 值, 默认 True
+        Raises:
+            ValueError: 若 hash 检查失败则抛出
         """
 
-    def __init__(self, arg, /, close_when_exit: bool = True):
+    def __init__(self, arg, /, 
+                 close_when_exit: bool = True, 
+                 check_hash: bool = True):
+        
+        if check_hash:
+            bin_path = Path(__file__).parent.parent / "bin"
+            for hash_file in bin_path.glob("*.sha256"):
+                if not _check_hash(hash_file):
+                    raise ValueError(f"Hash check failed for {hash_file}")
+                
         self._close_when_exit = close_when_exit
         if isinstance(arg, int):
             self.controller: Controller = Controller(arg)
