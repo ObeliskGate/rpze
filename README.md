@@ -42,7 +42,11 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 
 原因未知, 请跟我反馈. 一定有效但非常麻烦的方法是自行[构建](#构建), 一个不确定是否好用的解决方法是`python -m pip install msvc-runtime`.
 
-> 怎么联系?
+> 异常``wating at `untilGameExecuted` : got seh``?
+
+可能你的 pvz 是全新的, 正常打开游戏开个用户就行.
+
+> 遇到问题解决不了 / 希望找到地方交流 / 怎么联系?
 
 加 QQ 群 884871715 或通过 GitHub issue / pr.
 
@@ -66,6 +70,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
                  4-6  4-6  4-6  4-6''')
     print(iz_test.start_test(True))
 ```
+基础学习可以看[寒风的专栏](https://www.bilibili.com/read/readlist/rl858428), 或加上述 QQ 群询问, ~~我看群友们都挺热情愿意回答各种弱智问题的 (~~ 
 
 ## 结构
 总体分成五个包:
@@ -95,10 +100,11 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 - 作者太菜了, 对软件工程和操作系统变成没有基本认知, 会存在大量浪费时间的试错和重构
 
 ## 鸣谢
-[Reisen](https://github.com/alumkal) - 提供初始思路, 模型以及解答各种问题,   
-[63enjoy](https://github.com/POP63enjoy), [Ghastasaucey(BiliBili)](https://space.bilibili.com/384775811) 等 - 反汇编结论参考以及教学,  
-[vector-wlc/AsmVsZombies](https://github.com/vector-wlc/AsmVsZombies) - 重要功能汇编函数参考,  
-[sqrt07/iztools](https://github.com/sqrt07/iztools)  -  测试字符串, 功能和简写标准参照,
+- [Reisen](https://github.com/alumkal) - 提供初始思路, 模型以及解答各种问题,   
+- [63enjoy](https://github.com/POP63enjoy), [Ghastasaucey(BiliBili)](https://space.bilibili.com/384775811) 等 - 反汇编结论参考- 以及教学,  
+- [夏日寒风](https://github.com/ivan216)([BiliBili](https://www.bilibili.com/read/readlist/rl858428)) - 好用的功能函数, Bilibili 教程编写, 
+- [vector-wlc/AsmVsZombies](https://github.com/vector-wlc/AsmVsZombies) - 重要功能汇编函数参考,  
+- [sqrt07/iztools](https://github.com/sqrt07/iztools)  -  测试字符串, 功能和简写标准参照,
 
 以及指针表, 函数表等资源工具 (大量命名和 docstring 参考) 和各位玩家的鼎力支持.
 
