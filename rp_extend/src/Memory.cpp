@@ -257,7 +257,7 @@ void Memory::waiting(std::string_view callerName) const
 		switch (shm().error)
 		{
 		case ShmError::CAUGHT_SEH:
-			message = "got seh";
+			message = std::format("got SEH, message: \n{}", const_cast<const char*>(shm().getReadWriteBuffer<char>()));
 			break;
 		case ShmError::CAUGHT_CPP_EXCEPTION:
 			message = std::format("got c++ exception, message: \n{}", const_cast<const char*>(shm().getReadWriteBuffer<char>()));

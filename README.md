@@ -42,9 +42,9 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 
 原因未知, 请跟我反馈. 一定有效但非常麻烦的方法是自行[构建](#构建), 一个不确定是否好用的解决方法是`python -m pip install msvc-runtime`.
 
-> 异常``wating at `untilGameExecuted` : got seh``?
+> 异常``wating at `untilGameExecuted` : got SEH, message``?
 
-可能你的 pvz 是全新的, 正常打开游戏开个用户就行.
+可能你的 pvz 是全新的, 正常打开游戏开个用户就行. 若无法解决请联系并把整个异常报错发给我我.
 
 > 遇到问题解决不了 / 希望找到地方交流 / 怎么联系?
 

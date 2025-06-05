@@ -195,27 +195,54 @@ void initInThread(const SharedMemory* pSharedMemory)
 		pSharedMemory->shm().isBoardPtrValid = false;
 		pSharedMemory->shm().boardPtr = *reinterpret_cast<uint32_t*>(reg.esp + 8); // stack is (... pBoard rta -1) now	
 	});
-InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), reinterpret_cast<void*>(0x42b967),
-	[pSharedMemory](const HookContext&) -> std::optional<uint32_t>
-	{
-		if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN))
-			return {};
-		return 0;
-	});
-InsertHook::addReplace(reinterpret_cast<void*>(0x42A6C0), reinterpret_cast<void*>(0x42a889),
-	[pSharedMemory](const HookContext&) -> std::optional<uint32_t>
-	{
-		if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_PLACE_PLANTS))
-			return {};
-		return 0;
-	});
 
-InsertHook::addInsert(reinterpret_cast<void*>(0x5A4760), 
-[pSharedMemory](HookContext&)
-	{
-		pSharedMemory->shm().error = ShmError::CAUGHT_SEH;
-		dllExit();
-	});
+	InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), reinterpret_cast<void*>(0x42b967),
+		[pSharedMemory](const HookContext&) -> std::optional<uint32_t>
+		{
+			if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN))
+				return {};
+			return 0;
+		});
+
+	InsertHook::addReplace(reinterpret_cast<void*>(0x42A6C0), reinterpret_cast<void*>(0x42a889),
+		[pSharedMemory](const HookContext&) -> std::optional<uint32_t>
+		{
+			if (closableHook(pSharedMemory, HookPosition::CHALLENGE_I_ZOMBIE_PLACE_PLANTS))
+				return {};
+			return 0;
+		});
+
+	InsertHook::addInsert(reinterpret_cast<void*>(0x5A4760), 
+	[pSharedMemory](HookContext& hookCtx)
+		{
+			pSharedMemory->shm().error = ShmError::CAUGHT_SEH;
+
+			auto lpEP = reinterpret_cast<EXCEPTION_POINTERS*>(hookCtx.esp + 4);
+
+			const PEXCEPTION_RECORD er = lpEP->ExceptionRecord;
+			const PCONTEXT ctx = lpEP->ContextRecord;
+			auto str = std::format(
+				"Uncaught SEH exception:\n"
+				"  Code: 0x{:08X}\n"
+				"  Addr: 0x{:08X}\n"
+				"Registers:\n"
+				"  EIP: 0x{:08X}, ESP: 0x{:08X}, EBP: 0x{:08X}\n"
+				"  EAX: 0x{:08X}, EBX: 0x{:08X}, ECX: 0x{:08X}, EDX: 0x{:08X}\n"
+				"Flags: 0x{:08X}",
+				er->ExceptionCode,
+				reinterpret_cast<uintptr_t>(er->ExceptionAddress),
+				ctx->Eip, ctx->Esp, ctx->Ebp,
+				ctx->Eax, ctx->Ebx, ctx->Ecx, ctx->Edx,
+				ctx->EFlags
+			);
+
+			std::println(std::cerr, "{}", str);
+
+			auto copySize = std::min(str.size(), Shm::BUFFER_SIZE - 1) + 1; // for \0
+			memcpy(const_cast<char*>(pSharedMemory->shm().getReadWriteBuffer<char>()), str.c_str(), copySize);
+			
+			dllExit();
+		});
 #ifndef NDEBUG
 InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 	[](HookContext& reg)
