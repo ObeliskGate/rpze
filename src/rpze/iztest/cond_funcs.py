@@ -7,6 +7,7 @@ from typing import Literal
 from ..flow.flow import FlowManager
 from ..flow.utils import VariablePool, AwaitableCondFunc
 from ..structs.plant import Plant, PlantStatus, PlantType
+from ..structs.zombie import Zombie
 
 
 def until_precise_digger(magnet: Plant, interval: int = 912) -> AwaitableCondFunc[None]:
@@ -28,6 +29,16 @@ def until_plant_die(plant: Plant) -> AwaitableCondFunc[None]:
         plant: 要判断的植物
     """
     return AwaitableCondFunc(lambda _: plant.is_dead)
+
+
+def until_zombie_dying(zombie: Zombie) -> AwaitableCondFunc[None]:
+    """
+    生成一个等到僵尸正在死亡的函数(对秒杀型植物而言是已死亡)
+
+    Args:
+        zombie: 要判断的僵尸
+    """
+    return AwaitableCondFunc(lambda _: not zombie.is_not_dying or zombie.is_dead)
 
 
 def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> AwaitableCondFunc[int]:
