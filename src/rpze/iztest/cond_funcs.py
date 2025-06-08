@@ -36,7 +36,7 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
 
     await 调用后返回"开打帧距离上一次攻击的距离"
 
-    对裂荚处理逻辑与对其他植物有区别: 只关心第一发. 裂荚右与单发结果相同, 裂荚左与双发结果不同.
+    特殊的连发植物(双发, 裂荚, 香蒲)以其第一发攻击为判定点.
 
     Args:
         plant: 要判断的植物
@@ -48,8 +48,14 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
         ...     assert plant.max_boot_delay - 14 <= t <= plant.max_boot_delay  # t 即为攻击间隔时长
     """
 
-    shoot_next_gcd = 1 if plant.type_ is not PlantType.split_pea else 26  # 修正裂荚攻击时机
     mbd = plant.max_boot_delay
+    match plant.type_:  # 修正连发植物攻击时机
+        case PlantType.repeater | PlantType.split_pea:
+            shoot_next_gcd = 26
+        case PlantType.cattail:
+            shoot_next_gcd = 51
+        case _:
+            shoot_next_gcd = 1
 
     def _await_func(fm: FlowManager, v=VariablePool(
             try_to_shoot_time=None,
@@ -79,13 +85,21 @@ def until_plant_n_shoot(plant: Plant, n: int = 1, non_stop: bool = True) -> Awai
     """
     生成一个 等到植物n次攻击 的函数
 
+    特殊的连发植物(双发, 裂荚, 香蒲)以其第一发攻击为判定点.
+
     Args:
         plant: 要判断的植物
         n: 攻击次数
         non_stop: 是否为不间断攻击
     """
 
-    shoot_next_gcd = 1 if plant.type_ is not PlantType.split_pea else 26  # 修正裂荚攻击时机
+    match plant.type_:  # 修正连发植物攻击时机
+        case PlantType.repeater | PlantType.split_pea:
+            shoot_next_gcd = 26
+        case PlantType.cattail:
+            shoot_next_gcd = 51
+        case _:
+            shoot_next_gcd = 1
     
     def _await_func(fm: FlowManager,
                     v=VariablePool(try_to_shoot_time=None, shots=0)):
@@ -117,6 +131,8 @@ def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -
     """
     生成一个 等到玉米攻击n发黄油 的函数
 
+    await 调用后返回"总攻击次数"
+
     Args:
         plant: 要判断的植物
         n: 攻击黄油次数
@@ -132,20 +148,22 @@ def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -
         case _:
             raise ValueError(f"invalid count mode: {mode}")
 
-    def _await_func(fm: FlowManager, v=VariablePool(projs=0, try_to_shoot_time=None)):
+    def _await_func(fm: FlowManager, v=VariablePool(butters=0, projs=0, try_to_shoot_time=None)):
         if plant.generate_cd == 1:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1
         if v.try_to_shoot_time == fm.time:
             if plant.status is PlantStatus.kernelpult_launch_butter:  # 出黄油
+                v.butters += 1
                 v.projs += 1
             elif plant.launch_cd == 0:  # 攻击停止
                 if mode_index != 0:
-                    v.projs = 0
+                    v.butters = 0
             else:  # 出玉米粒
+                v.projs += 1
                 if mode_index == 2:
-                    v.projs = 0
-        if v.projs == n:
-            return True 
+                    v.butters = 0
+        if v.butters == n:
+            return True, v.projs
         return False
     
     return AwaitableCondFunc(_await_func)
