@@ -9,8 +9,8 @@ from typing import overload
 from ..structs.game_board import get_board
 from ..structs.plant import Plant, PlantType
 
-
-def randomize_generate_cd(*args: Plant) -> Plant:
+@overload
+def randomize_generate_cd(plant: Plant) -> Plant:
     """
     令植物的 generate_cd 按照"放置充分长时间"后的结果随机化
 
@@ -20,9 +20,28 @@ def randomize_generate_cd(*args: Plant) -> Plant:
     上底为 max_boot_delay - 14, 下底为 max_boot_delay.
 
     Returns:
-        返回传入的植物组
+        返回传入的植物
     """
-    for plant in args:
+
+@overload
+def randomize_generate_cd(*args: Plant) -> tuple[Plant, ...]:
+    """
+    令植物的 generate_cd 按照"放置充分长时间"后的结果随机化
+
+    **仅对can_attack == True植物有效**; 但特判地刺, 地刺王无效.
+
+    具体来说, 其 generate_cd 概率分布图像为一个梯形:
+    上底为 max_boot_delay - 14, 下底为 max_boot_delay.
+
+    Returns:
+        返回传入的植物元组
+    """
+
+
+def randomize_generate_cd(plant: Plant, *args: Plant) -> Plant | tuple[Plant, ...]:
+    new_args = (plant,) + args
+    
+    for plant in new_args:
         if (not plant.can_attack) or plant.type_ in {PlantType.spikeweed, PlantType.spikerock}:
             continue
         # 拆成[1, max_ - 14)和[max_ - 14, max_ + 1)两个区间
@@ -32,11 +51,7 @@ def randomize_generate_cd(*args: Plant) -> Plant:
         distribution = [h] * (max_ - 15) + [h / 15 * i for i in range(15, 0, -1)]
         plant.generate_cd = random.choices(population=range(1, max_ + 1), weights=distribution)[0]
 
-    match args:
-        case [plant]:
-            return plant
-        case _:
-            return args
+    return plant if not args else new_args
 
 
 @overload
