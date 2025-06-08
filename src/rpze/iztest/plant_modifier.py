@@ -41,15 +41,15 @@ def randomize_generate_cd(*args: Plant) -> tuple[Plant, ...]:
 def randomize_generate_cd(plant: Plant, *args: Plant) -> Plant | tuple[Plant, ...]:
     new_args = (plant,) + args
     
-    for plant in new_args:
-        if (not plant.can_attack) or plant.type_ in {PlantType.spikeweed, PlantType.spikerock}:
+    for it in new_args:
+        if (not it.can_attack) or it.type_ in {PlantType.spikeweed, PlantType.spikerock}:
             continue
         # 拆成[1, max_ - 14)和[max_ - 14, max_ + 1)两个区间
         # 不可以取0, 可以取max_, max_ - 14和前面概率相等为h
         # h * (max_ - 15) + (h + 0) * 16 / 2 = 1解这个方程, h为梯形的高
-        h = 1 / ((max_ := plant.max_boot_delay) - 7)
+        h = 1 / ((max_ := it.max_boot_delay) - 7)
         distribution = [h] * (max_ - 15) + [h / 15 * i for i in range(15, 0, -1)]
-        plant.generate_cd = random.choices(population=range(1, max_ + 1), weights=distribution)[0]
+        it.generate_cd = random.choices(population=range(1, max_ + 1), weights=distribution)[0]
 
     return plant if not args else new_args
 
