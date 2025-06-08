@@ -10,7 +10,7 @@ from ..structs.game_board import get_board
 from ..structs.plant import Plant, PlantType
 
 
-def randomize_generate_cd(plant: Plant) -> Plant:
+def randomize_generate_cd(*args: Plant) -> Plant:
     """
     令植物的 generate_cd 按照"放置充分长时间"后的结果随机化
 
@@ -20,17 +20,23 @@ def randomize_generate_cd(plant: Plant) -> Plant:
     上底为 max_boot_delay - 14, 下底为 max_boot_delay.
 
     Returns:
-        返回传入的植物
+        返回传入的植物组
     """
-    if (not plant.can_attack) or plant.type_ in {PlantType.spikeweed, PlantType.spikerock}:
-        return plant
-    # 拆成[1, max_ - 14)和[max_ - 14, max_ + 1)两个区间
-    # 不可以取0, 可以取max_, max_ - 14和前面概率相等为h
-    # h * (max_ - 15) + (h + 0) * 16 / 2 = 1解这个方程, h为梯形的高
-    h = 1 / ((max_ := plant.max_boot_delay) - 7)
-    distribution = [h] * (max_ - 15) + [h / 15 * i for i in range(15, 0, -1)]
-    plant.generate_cd = random.choices(population=range(1, max_ + 1), weights=distribution)[0]
-    return plant
+    for plant in args:
+        if (not plant.can_attack) or plant.type_ in {PlantType.spikeweed, PlantType.spikerock}:
+            continue
+        # 拆成[1, max_ - 14)和[max_ - 14, max_ + 1)两个区间
+        # 不可以取0, 可以取max_, max_ - 14和前面概率相等为h
+        # h * (max_ - 15) + (h + 0) * 16 / 2 = 1解这个方程, h为梯形的高
+        h = 1 / ((max_ := plant.max_boot_delay) - 7)
+        distribution = [h] * (max_ - 15) + [h / 15 * i for i in range(15, 0, -1)]
+        plant.generate_cd = random.choices(population=range(1, max_ + 1), weights=distribution)[0]
+
+    match args:
+        case [plant]:
+            return plant
+        case _:
+            return args
 
 
 @overload
