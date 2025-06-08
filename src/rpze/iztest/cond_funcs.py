@@ -127,7 +127,7 @@ CountButterModeLiteral = Literal[0, 1, 2, "total", "nonstop", "continuous"]
 """
 
 
-def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -> AwaitableCondFunc[None]:
+def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -> AwaitableCondFunc[int]:
     """
     生成一个 等到玉米攻击n发黄油 的函数
 
