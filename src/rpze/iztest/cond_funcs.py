@@ -45,13 +45,13 @@ def until_plant_last_shoot(plant: Plant, wait_until_mbd: bool = False) -> Awaita
     """
     生成一个 等到植物 "本段最后一次连续攻击结束后返回" 的函数.
 
-    await 调用后返回"开打帧距离上一次攻击的距离"
-
     特殊的连发植物(双发, 裂荚, 香蒲)以其第一发攻击为判定点.
 
     Args:
         plant: 要判断的植物
         wait_until_mbd: 是否等到 上次开打经过最大攻击间隔后 再返回
+    Returns:
+        返回"开打帧距离上一次攻击的距离"
     Examples:
         >>> async def flow(_):
         ...     plant = iz_test.ground["1-2"]  # noqa
@@ -142,12 +142,12 @@ def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -
     """
     生成一个 等到玉米攻击n发黄油 的函数
 
-    await 调用后返回"总攻击次数"
-
     Args:
         plant: 要判断的植物
         n: 攻击黄油次数
         mode: 字面量, 表示计数方法
+    Returns:
+        返回"总攻击次数"
     """
     match mode:
         case "total" | 0:
