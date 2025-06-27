@@ -85,18 +85,3 @@ async def repeat(place_str: str,
         await delay(interval)
         ret.append(place(place_str, board))
     return ret
-
-
-def get_current_speed(zombie: Zombie) -> float:
-    """
-    拿到僵尸当前的速度参数
-
-    Args:
-        zombie: 要获得参数的僵尸
-    Returns:
-        速度参数
-    """
-    ctler = zombie.controller
-    rlist = get_board(ctler).reanimation_list
-    reanim = rlist.find(zombie.m_body_reanim_id)
-    return reanim.get_track_velocity()
