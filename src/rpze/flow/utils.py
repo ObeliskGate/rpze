@@ -203,7 +203,7 @@ def until(cond_func: CondFunc, /) -> AwaitableCondFunc[None]:
 
 def until(arg) -> AwaitableCondFunc[None]:
     if callable(arg):
-        return AwaitableCondFunc(arg)
+        return AwaitableCondFunc(arg)  # type: ignore
     if isinstance(arg, bool):
         warnings.warn(
             "until(bool) is usually not what you want, use until(lambda _: bool) instead.",

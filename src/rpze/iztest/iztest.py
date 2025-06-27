@@ -363,6 +363,7 @@ class IzTest:
             return self.end(True)
         if board.zombie_list.obj_num == 0:
             return self.end(False)
+        return None
 
     def check_tests_end(self) \
             -> Callable[[Callable[[int, int], float | None]], Callable[[int, int], float | None]]:
@@ -437,12 +438,14 @@ class IzTest:
                     t = self.game_board.iz_place_zombie(_op.row, _op.col, _op.type_)
                     self.ground.zombie_ids.append(t.id.tpl())
                     return TickRunnerResult.DONE
+                return None
 
         if self.enable_default_check_end:
             @self.flow_factory.add_tick_runner(check_end_priority)
             def _check_end(fm: FlowManager):
                 if fm.time >= self.start_check_end_time:
                     return self.check_end()
+                return None
         return self
 
     def start_test(self, jump_frame: bool = False,

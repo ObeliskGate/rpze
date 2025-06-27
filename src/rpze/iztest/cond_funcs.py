@@ -159,6 +159,7 @@ def until_n_butter(plant: Plant, n: int = 1, mode: CountButterModeLiteral = 1) -
         case _:
             raise ValueError(f"invalid count mode: {mode}")
 
+    # noinspection PyUnresolvedReferences
     def _await_func(fm: FlowManager, v=VariablePool(butters=0, projs=0, try_to_shoot_time=None)):
         if plant.generate_cd == 1:  # 下一帧开打
             v.try_to_shoot_time = fm.time + 1

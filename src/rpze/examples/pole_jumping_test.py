@@ -30,7 +30,7 @@ def pole_jumping_test(ctler: Controller, jump_frame=True, row=8):  # izs对这�
         for idx in range(5):
             z = t.ground.zombie(idx)
             if (not tmp_time[idx]) and z.status == ZombieStatus.pole_vaulting_walking:
-                tmp_time[idx] = fm.time          
+                tmp_time[idx] = fm.time  # type: ignore
         # for idx, z in enumerate(~t.game_board.zombie_list):
         #     if (not tmp_time[idx]) and z.status == ZombieStatus.pole_vaulting_walking:
         #         tmp_time[idx] = fm.time
@@ -42,6 +42,7 @@ def pole_jumping_test(ctler: Controller, jump_frame=True, row=8):  # izs对这�
             times.extend(tmp_time)
             tmp_time = [None] * 5
             return t.end(True)
+        return None
 
     t.start_test(jump_frame, print_interval=100)
     print(sum(times) / len(times), len(times))

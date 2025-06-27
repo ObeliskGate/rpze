@@ -102,6 +102,7 @@ class FlowManager:
                         return se.value
             for i in pop_list[::-1]:
                 fcl.pop(i)
+            return None
 
         _counter = count()
         tick_runner_list = [(-priority, next(_counter), it) for priority, it in tick_runners]
@@ -163,6 +164,7 @@ class FlowManager:
 
         return _decorator
 
+    # noqa
     def connect(self, cond: CondFunc, only_once: bool = False) \
             -> Callable[[TickRunner], TickRunner]:
         """
@@ -185,6 +187,7 @@ class FlowManager:
                     if ret is None:
                         return TickRunnerResult.DONE if only_once else None
                     return ret
+                return None
 
             self.add()(_decorated_tick_runner)
             return tr
@@ -309,6 +312,7 @@ class FlowFactory:
                     if ret is None:
                         return TickRunnerResult.DONE if only_once else None
                     return ret
+                return None
 
             self.add_tick_runner(priority)(_decorated_tick_runner)
             return tr

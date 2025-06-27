@@ -483,7 +483,7 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
         管理 node_cls 对象的数组的父类
     """
 
-    class _ObjIterator(Iterator[_T_node]):
+    class _ObjIterator(Iterator):
         def __init__(self, ctler: Controller, _iterate_func_asm):
             self._current_ptr = 0
             self._controller = ctler
@@ -500,7 +500,7 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
         def __iter__(self) -> Self:
             return self
 
-    class _ObjListImplement(ObjList[_T_node], abc.ABC):
+    class _ObjListImplement(ObjList, abc.ABC):
         def __init__(self, base_ptr: int, ctler: Controller):
             ObjBase.__init__(self, base_ptr, ctler)
             self._array_base_ptr = ctler.read_u32(base_ptr)

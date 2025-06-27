@@ -1,20 +1,20 @@
 import hashlib
 from pathlib import Path
 
-def generate_hash(file_path: Path, method: str) -> str:
+def generate_hash(file: Path, method: str) -> str:
     hash_func = hashlib.new(method)
 
-    with file_path.open('rb') as f:
+    with file.open('rb') as f:
         while chunk := f.read(8192):
             hash_func.update(chunk)
 
     return hash_func.hexdigest()
 
 
-def get_hash(file_path: Path, method: str, hash_path: Path) -> None:
-    hash_str = generate_hash(file_path, method)
+def get_hash(file: Path, method: str, hash_: Path) -> None:
+    hash_str = generate_hash(file, method)
 
-    with hash_path.open('w') as f:
+    with hash_.open('w') as f:
         f.write(hash_str)
 
 

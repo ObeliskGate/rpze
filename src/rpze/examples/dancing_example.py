@@ -29,6 +29,8 @@ def dancing_example(ctler: Controller, jump_frame=False):
     def extra_check_end(_):
         if iz_test.ground.zombie(0) is None:  # mj死亡直接判负, 以免测试卡死
             return iz_test.end(False)
+        else:
+            return None
 
     @iz_test.flow_factory.add_flow()
     async def flow(_):
