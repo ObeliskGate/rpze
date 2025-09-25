@@ -475,10 +475,10 @@ class IzTest:
         if not self._flow_factory_set:
             self.set_flow_factory()
         with ConnectedContext(ctler) as ctler:
+            frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
             if jump_frame:
                 ctler.start_jump_frame()
             else:
-                frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
                 self.game_board.frame_duration = frame_duration
             ctler.skip_frames()
 
@@ -488,7 +488,7 @@ class IzTest:
                 ctler.skip_frames()
                 while not self._last_test_ended:
                     _flow_manager.run()
-                    if not jump_frame and kbhit() and getwch() == control_speed_key:
+                    if not ctler.is_jumping_frame() and kbhit() and getwch() == control_speed_key:
                         self.game_board.frame_duration = 10 \
                             if self.game_board.frame_duration != 10 else frame_duration
                     # print(_flow_manager.time)
