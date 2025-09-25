@@ -15,7 +15,7 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 - [pypi](https://pypi.org/project/rpze/) 上提供了64位 cp311, cp312 的预编译`.whl`.
 - 32位平台原则上支持, 但需要自行[构建](#构建)
 
-仅支持1.0.0.1051版本 pvz , 测试以[ pt 站上的英语原版 (lcx 版)](https://pvz.tools/download/)为准. 原则上支持各类汉化版, **不支持 [jspvz](http://jspvz.com/download.htm) 上的英语原版.** 各种其他来源的“英语原版”有不小概率出自 jspvz 或者同样没去登录壳, 请注意.
+仅支持1.0.0.1051版本 pvz , 测试以 [pt 站上的英语原版 (lcx 版)](https://pvz.tools/download/)为准. 原则上支持各类汉化版, **不支持 [jspvz](http://jspvz.com/download.htm) 上的英语原版.** 各种其他来源的“英语原版”有不小概率出自 jspvz 或者同样没去登录壳, 请注意.
 
 ## 安装
 在满足上述平台要求后, 执行`python -m pip install rpze`即可.  
@@ -28,7 +28,7 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 
 > 游戏正常启动但并不自动运行脚本 / invalid command / failed to find shared memory?
 
-重新阅读[支持平台](#支持平台). 请考虑你使用的版本是否符合上述要求. 请注意, **仅确保兼容 [lcx 版](https://pvz.tools/download/)!!!**
+重新阅读[支持平台](#支持平台). 请考虑你使用的版本是否符合上述要求. 请注意, **仅确保支持 [lcx 版](https://pvz.tools/download/)!!!**
 
 > failed to create shared memory / 未找到文件?
 
@@ -136,7 +136,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 作者水平很菜但热爱吹毛求疵, 请不要感到气馁, 他真的很欢迎每一个帮助本项目越来越好的人.
 
 ## 许可
-Copyright © 2024 ObeliskGate
+Copyright © 2024-2025 ObeliskGate
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
