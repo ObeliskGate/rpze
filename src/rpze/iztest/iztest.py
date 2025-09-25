@@ -475,7 +475,7 @@ class IzTest:
         if not self._flow_factory_set:
             self.set_flow_factory()
         with ConnectedContext(ctler) as ctler:
-            frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else fd
+            frame_duration = 1 if (fd := round(10 / speed_rate)) == 0 else 200 if fd > 200 else fd
             if jump_frame:
                 ctler.start_jump_frame()
             else:
