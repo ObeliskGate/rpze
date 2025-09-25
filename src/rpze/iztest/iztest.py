@@ -457,10 +457,10 @@ class IzTest:
         开始测试
 
         Args:
-            jump_frame: True则开启跳帧测试.
-            speed_rate: 速度倍率. 仅当 jump_frame = False 时有效.
+            jump_frame: True 则以'跳帧'为初始测试状态
+            speed_rate: 默认速度倍率. '非跳帧'时生效. 非法值会被截断到[0.05, 10.0]区间内
             print_interval: 每隔 print_interval 次测试打印一次结果. 输入0时代表不打印
-            control_speed_key: [[deprecated]] 非跳帧时切换原速/倍速的按键. 默认值为 Ctrl+R
+            control_speed_key: [[deprecated]] '非跳帧'时切换 原速/默认速度倍率 的按键. 默认值为 Ctrl+R
         Returns:
             (测试概率, 使用时间)元组
         """
