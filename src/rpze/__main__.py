@@ -6,7 +6,7 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="rpze command line utility")
-    parser.add_argument("--path", help="specify a path for running the example")
+    parser.add_argument("--path", help="specify a path for running the example", required=True)
     args = parser.parse_args()
     if p := args.path:
         print(f"your game path is {p}, "
