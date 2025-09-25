@@ -70,7 +70,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
                  4-6  4-6  4-6  4-6''')
     print(iz_test.start_test(True))
 ```
-基础学习可以看[寒风的专栏](https://www.bilibili.com/read/readlist/rl858428), 或加上述 QQ 群询问, ~~我看群友们都挺热情愿意回答各种弱智问题的 (~~ 
+基础学习可以看[寒风的专栏](https://www.bilibili.com/read/readlist/rl858428), 或加上述 QQ 群询问, ~~我看群友们都挺热情愿意回答各种弱智问题的(~~ 
 
 ## 结构
 总体分成五个包:
@@ -115,10 +115,11 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 
 ## 构建
 > 100% certified works on my two machines
+> uv 是我亲爹
 
-本框架采用 [xmake](https://xmake.io) 构建, 管理二进制依赖; 使用 MSVC 编译.
+本框架采用 [xmake](https://xmake.io) 构建, 管理二进制依赖; 使用 MSVC 编译二进制依赖; 使用 uv 管理 Python 环境.
 
-安装二者后, 构建 Python `.whl`只需`python -m pip install build`后`python -m build`即可.
+安装三者后, 构建`.whl`包只需要`uv build [--python 3.13]`即可.
 
 可以用`python hatch_build.py -other_xmake_args`来自动设置 xmake config 的编译 arch
 
