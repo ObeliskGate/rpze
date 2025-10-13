@@ -172,6 +172,15 @@ class Plant(GameObject):
 
     m_plant_max_health = max_hp = property_i32(0x44, "最大血量")
 
+    can_attack = property_bool(0x48, "能攻击时为 True")
+
+    m_subclass = property_i32(0x48, """
+        植物子类型: 0 为普通, 1 为发射类
+        
+        和`can_attack`道理相同但在源码中实际按`int`使用
+    """)  # 笨蛋 tod
+
+
     m_state_countdown = status_cd = property_i32(0x54, """
         属性倒计时, 如磁铁 cd
                                      
@@ -218,14 +227,6 @@ class Plant(GameObject):
             在 generate_cd == 25的时候改动一次 launch_cd = 26, 即25后打出子弹
             在 generate_cd == 0时再改改动一次 launch_cd = 26
         """)
-
-    can_attack = property_bool(0x48, "能攻击时为 True")
-
-    m_subclass = property_i32(0x48, """
-        植物子类型: 0 为普通, 1 为发射类
-        
-        和`can_attack`道理相同但在源码中实际按`int`使用
-    """)  # 笨蛋 tod
 
     m_dead = is_dead = property_bool(0x141, "死亡时为 True")
 

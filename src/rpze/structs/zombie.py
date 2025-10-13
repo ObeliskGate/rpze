@@ -226,36 +226,22 @@ class Zombie(ObjNode):
 
     m_vel_x = dx = property_f32(0x34, "x 方向速度")
 
+    m_variant = property_bool(0x50, "有舌头为 True")
+
     m_is_eating = is_eating = property_bool(0x51, "在啃食时为 True")
 
     m_just_go_shot_counter = flash_cd = property_i32(0x54, """
-    发亮倒计时
-                                    
-    - 刚生成僵尸时为0, 受击变为25
-    - 在 flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
+        发亮倒计时
+                                        
+        - 刚生成僵尸时为0, 受击变为25
+        - 在 flash_cd < -500时, 僵尸开始速度重置 + 啃食加速
     """)
 
     m_zombie_age = time_since_spawn = property_i32(0x60, "出生时间")
 
     m_zombie_height = action = property_int_enum(0x64, ZombieAction, "僵尸行为")
 
-    m_body_health = hp = property_i32(0xc8, "本体血量")
-
-    m_body_max_health = max_hp = property_u32(0xcc, "本体血量上限")
-
-    m_helm_type = accessories_type_1 = property_int_enum(
-        0xc4, ZombieAccessoriesType1, "一类饰品类型")
-
-    m_helm_health = accessories_hp_1 = property_i32(0xd0, "一类饰品血量")
-
-    m_helm_max_health = accessories_max_hp_1 = property_i32(0xd4, "一类饰品血量上限")
-
-    m_shield_type = accessories_type_2 = property_int_enum(
-        0xd8, ZombieAccessoriesType2, "二类饰品")
-
-    m_shield_health = accessories_hp_2 = property_i32(0xdc, "二类饰品血量")
-
-    m_shield_max_health = accessories_max_hp_2 = property_i32(0xe0, "二类饰品血量上限")
+    m_phase_counter = property_i32(0x68, "属性倒计时")
 
     m_target_col = bungee_col = property_i32(0x80, "蹦级目标所在列")
 
@@ -281,9 +267,35 @@ class Zombie(ObjNode):
 
     m_ice_trap_counter = freeze_cd = property_i32(0xb4, "冻结倒计时")
 
-    m_dead = is_dead = property_bool(0xec, '是否"彻底"死亡, 即濒死时此条为 False')
-
     m_has_head = is_not_dying = property_bool(0xba, "不在濒死状态时为 True")
+
+    m_has_arm = property_bool(0xbb, "有手时为 True")
+
+    m_has_object = property_bool(0xbc, "存在手持物 / 雪人向左走则为 True")
+
+    m_in_pool = property_bool(0xbd, "在水中时为 True")
+
+    m_high_ground = property_bool(0xbe, "上梯子时的影子跟随")
+
+    m_body_health = hp = property_i32(0xc8, "本体血量")
+
+    m_body_max_health = max_hp = property_u32(0xcc, "本体血量上限")
+
+    m_helm_type = accessories_type_1 = property_int_enum(
+        0xc4, ZombieAccessoriesType1, "一类饰品类型")
+
+    m_helm_health = accessories_hp_1 = property_i32(0xd0, "一类饰品血量")
+
+    m_helm_max_health = accessories_max_hp_1 = property_i32(0xd4, "一类饰品血量上限")
+
+    m_shield_type = accessories_type_2 = property_int_enum(
+        0xd8, ZombieAccessoriesType2, "二类饰品")
+
+    m_shield_health = accessories_hp_2 = property_i32(0xdc, "二类饰品血量")
+
+    m_shield_max_health = accessories_max_hp_2 = property_i32(0xe0, "二类饰品血量上限")
+
+    m_dead = is_dead = property_bool(0xec, '是否"彻底"死亡, 即濒死时此条为 False')
 
     @property
     def master_id(self) -> ObjId:  # mRelatedZombieID
