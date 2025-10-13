@@ -158,6 +158,21 @@ class _IzGround:
             >>> plant = ground["1-1"]  # 获得1-1位置的植物
             >>> brain = ground["5-0"]  # 获得第5行的脑子
         """
+    
+    @overload
+    def __getitem__(self, item: str) -> list[Plant | Griditem | None]:
+        """
+        通过字符串获得测试开始时对应位置的植物或脑子列表.
+
+        Args:
+            item: 由空格分隔的 GridStr 位置字符串
+        Returns:
+            对象不存在 or 已死亡返回None, 否则返回该植物/脑子.
+        Examples:
+            >>> ground: _IzGround = ...
+            >>> plants = ground["1-1 2-2"]  # 获得1-1, 2-2位置的植物列表
+            >>> brains = ground["1-0 2-0 3-0 4-0 5-0"]  # 获得所有脑子的列表
+        """
 
     def __getitem__(self, item):
         match item:
@@ -168,6 +183,9 @@ class _IzGround:
                 t = self.izt.game_board.plant_list.find(*self.origin_plant_ids[row][col])
                 return None if t is None or t.is_dead else t
             case grid:
+                grids = grid.split()
+                if len(grids) > 1:
+                    return [self.__getitem__(parse_grid_str(g)) for g in grids]
                 return self.__getitem__(parse_grid_str(grid))
 
     def zombie(self, i: SupportsIndex) -> Zombie | None:
