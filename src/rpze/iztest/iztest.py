@@ -19,7 +19,7 @@ from ..flow.utils import until
 from ..rp_extend import Controller, HookPosition, RpBaseException
 from ..structs.game_board import GameBoard, get_board
 from ..structs.griditem import Griditem
-from ..structs.plant import PlantType, Plant
+from ..structs.plant import PlantStatus, PlantType, Plant
 from ..structs.zombie import ZombieType, Zombie
 
 
@@ -225,7 +225,6 @@ class IzTest:
         check_tests_end_callback: 判断是否结束测试的回调函数. 默认为 None, 表示重复 repeat_time 次测试.
             参数为(当前测试次数, 成功次数), 返回 None 表示不结束, 返回 float 表示结果概率.
         ground: 用于获取原始植物和脑子的对象, 仅在测试中调用有效.
-
     """
 
     def __init__(self, controller: Controller, reset_generate_cd: bool = True):
@@ -253,7 +252,9 @@ class IzTest:
         self.check_tests_end_callback: Callable[[int, int], float | None] | None = None
         self.ground: _IzGround | None = None
 
-        # 运行时候会时刻改变的量. 不建议修改
+        # 运行时候会时刻改变的量. 不建议修改 / 读取
+        self._wait_squashes: bool = True  # 是否等待所有窝瓜消失后再开始判断输赢
+        self._target_squashes: list[tuple[int, int]] = []  # 所有目标窝瓜
         self._target_plant_ids: list[tuple[int, int]] = []  # 所有目标脑子
         self._target_brain_ids: list[tuple[int, int]] = []  # 所有目标植物
         self._last_test_ended: bool = False  # 用于判断是否结束一次测试
@@ -267,7 +268,8 @@ class IzTest:
         """游戏 GameBoard 对象"""
         return get_board(self.controller)
 
-    def init_by_str(self, iztools_str: str) -> Self:
+    def init_by_str(self, iztools_str: str,
+                    wait_squashes: bool = True) -> Self:
         """
         通过 iztools 字符串初始化 iztest 对象
 
@@ -281,6 +283,7 @@ class IzTest:
 
         Args:
             iztools_str: iztools输入字符串
+            wait_squashes: 是否等待所有窝瓜消失后再开始判断输赢. 默认为 True
         Returns:
             self
         Raises:
@@ -301,6 +304,8 @@ class IzTest:
             如上为iztools默认例子的输入方式.
         """
         lines = iztools_str.strip().splitlines(False)
+
+        self._wait_squashes = wait_squashes
 
         if len(lines) == 7:
             self.place_zombie_list = []
@@ -365,6 +370,7 @@ class IzTest:
 
         self._target_plant_ids = []
         self._target_brain_ids = []
+        self._target_squashes = []
 
         return TickRunnerResult.BREAK_DONE
 
@@ -376,6 +382,15 @@ class IzTest:
             如果结束则返回 TickRunnerResult.BREAK_RUN, 否则返回 None
         """
         board = self.game_board
+        if self._wait_squashes:
+            for ids in self._target_squashes:
+                match board.plant_list.find(*ids):
+                    case None:
+                        continue
+                    case squash:
+                        if squash.m_state is not PlantStatus.NOTREADY:
+                            return None
+
         if (all(board.griditem_list.find(*brain) is None for brain in self._target_brain_ids) and
                 all(board.plant_list.find(*plant) is None for plant in self._target_plant_ids)):
             return self.end(True)
@@ -440,6 +455,8 @@ class IzTest:
                             randomize_generate_cd(plant)
                         if (row, col) in self.target_plants_pos:
                             self._target_plant_ids.append(plant.id.tpl())
+                            if self._wait_squashes and type_ is PlantType.squash:
+                                self._target_squashes.append(plant.id.tpl())
 
             for i in range(5):
                 brain = self.game_board.new_iz_brain(i)
