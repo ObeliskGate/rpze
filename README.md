@@ -119,7 +119,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 
 本框架采用 [xmake](https://xmake.io) 构建, 管理二进制依赖; 使用 MSVC 编译二进制依赖; 使用 uv 管理 Python 环境.
 
-安装三者后, 构建`.whl`包只需要`uv build [--python 3.13]`即可.
+安装三者后, 构建`.whl`包只需要`uv build --python 3.13`即可.
 
 可以用`python hatch_build.py -other_xmake_args`来自动设置 xmake config 的编译 arch
 

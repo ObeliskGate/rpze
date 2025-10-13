@@ -16,15 +16,17 @@
 
 PYBIND11_MODULE(rp_extend, m)
 {
-	py::enum_<HookPosition>(m, "HookPosition")
+	py::native_enum<HookPosition>(m, "HookPosition", "enum.Enum")
 		.value("MAIN_LOOP", HookPosition::MAIN_LOOP)
 		.value("ZOMBIE_PICK_RANDOM_SPEED", HookPosition::ZOMBIE_PICK_RANDOM_SPEED)
 		.value("CHALLENGE_I_ZOMBIE_SCORE_BRAIN", HookPosition::CHALLENGE_I_ZOMBIE_SCORE_BRAIN)
-		.value("CHALLENGE_I_ZOMBIE_PLACE_PLANTS", HookPosition::CHALLENGE_I_ZOMBIE_PLACE_PLANTS);
+		.value("CHALLENGE_I_ZOMBIE_PLACE_PLANTS", HookPosition::CHALLENGE_I_ZOMBIE_PLACE_PLANTS)
+		.finalize();
 
-	py::enum_<SyncMethod>(m, "SyncMethod")
+	py::native_enum<SyncMethod>(m, "SyncMethod", "enum.Enum")
 		.value("SPIN", SyncMethod::SPIN)
-		.value("MUTEX", SyncMethod::MUTEX);
+		.value("MUTEX", SyncMethod::MUTEX)
+		.finalize();
 
 	PYBIND11_CONSTINIT static py::gil_safe_call_once_and_store<py::object> base_exc_storage;
 	base_exc_storage.call_once_and_store_result(

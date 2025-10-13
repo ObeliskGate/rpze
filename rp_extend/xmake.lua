@@ -1,4 +1,4 @@
-add_requires("pybind11 >= 2.13.5")
+add_requires("pybind11 >= 3.0.1") -- for Python 3.14 support
 
 target("rp_extend")
     add_packages("pybind11")
