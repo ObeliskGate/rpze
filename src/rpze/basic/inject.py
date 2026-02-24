@@ -12,6 +12,8 @@ from collections.abc import Iterable
 from contextlib import ContextDecorator, AbstractContextManager
 from typing import Self, overload
 
+from dotenv import load_dotenv
+
 from . import asm
 from .exception import PvzStatusError
 from ..rp_extend import Controller, ControllerError
@@ -104,8 +106,25 @@ class InjectedGame(AbstractContextManager):
         controller: 被注入游戏的控制器
     """
     @overload
-    def __init__(self, process_id: int, /, 
-                 close_when_exit: bool = True, 
+    def __init__(self, /,
+                 close_when_exit: bool = True,
+                 check_hash: bool = True):
+        """
+        从 RP_GAME_PATH 环境变量读取游戏路径并构造 InjectedGame 对象
+
+        会自动加载项目根目录的 .env 文件 (若存在).
+
+        Args:
+            close_when_exit: 是否在退出时关闭 pvz 进程
+            check_hash: 是否检查二进制 hash 值, 默认 True
+        Raises:
+            KeyError: 若 RP_GAME_PATH 未设置则抛出
+            ValueError: 若 hash 检查失败则抛出
+        """
+
+    @overload
+    def __init__(self, process_id: int, /,
+                 close_when_exit: bool = True,
                  check_hash: bool = True):
         """
         通过已经注入的 process id 构造 InjectedGame 对象
@@ -119,7 +138,7 @@ class InjectedGame(AbstractContextManager):
         """
 
     @overload
-    def __init__(self, game_path: str, /, 
+    def __init__(self, game_path: str, /,
                  close_when_exit: bool = True,
                  check_hash: bool = True):
         """
@@ -134,7 +153,7 @@ class InjectedGame(AbstractContextManager):
         """
 
     @overload
-    def __init__(self, controller: Controller, /, 
+    def __init__(self, controller: Controller, /,
                  close_when_exit: bool = True,
                  check_hash: bool = True):
         """
@@ -148,17 +167,20 @@ class InjectedGame(AbstractContextManager):
             ValueError: 若 hash 检查失败则抛出
         """
 
-    def __init__(self, arg, /, 
-                 close_when_exit: bool = True, 
+    def __init__(self, arg=None, /,
+                 close_when_exit: bool = True,
                  check_hash: bool = True):
-        
+
         if check_hash:
             bin_path = Path(__file__).parent.parent / "bin"
             for hash_file in bin_path.glob("*.sha256"):
                 if not _check_hash(hash_file):
                     raise ValueError(f"Hash check failed for {hash_file}")
-                
+
         self._close_when_exit = close_when_exit
+        if arg is None:
+            load_dotenv()
+            arg = os.environ["RP_GAME_PATH"]
         if isinstance(arg, int):
             self.controller: Controller = Controller(arg)
         elif isinstance(arg, str):

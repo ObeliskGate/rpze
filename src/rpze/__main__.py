@@ -3,12 +3,20 @@
 验证安装用
 """
 import argparse
+import os
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="rpze command line utility")
-    parser.add_argument("--path", help="specify a path for running the example", required=True)
+    parser.add_argument("--path", help="pvz game path; defaults to RP_GAME_PATH environment variable")
     args = parser.parse_args()
-    if p := args.path:
+    p = args.path
+    if p is None:
+        from dotenv import load_dotenv
+        load_dotenv()
+        p = os.environ.get("RP_GAME_PATH")
+        if p is None:
+            parser.error("--path is required if RP_GAME_PATH environment variable is not set")
+    if p:
         print(f"your game path is {p}, "
               f"remember that only 1.0.0.1051_EN on pvz.tools is officially supported")
         try:

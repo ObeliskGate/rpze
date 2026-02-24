@@ -10,6 +10,7 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 通过与注入游戏的`.dll`进行 ipc 以实现理论100%精度和不崩溃的原版函数调用.
 
 ## 支持平台
+
 仅支持 Windows 上的 CPython >= 3.11:
 - 3.11及以上的 CPython 仅支持 **Windows 10 及以上**平台
 - [pypi](https://pypi.org/project/rpze/) 上提供了64位 cp311, cp312 的预编译`.whl`.
@@ -18,8 +19,10 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 仅支持1.0.0.1051版本 pvz , 测试以 [pt 站上的英语原版 (lcx 版)](https://pvz.tools/download/)为准. 原则上支持各类汉化版, **不支持 [jspvz](http://jspvz.com/download.htm) 上的英语原版.** 各种其他来源的“英语原版”有不小概率出自 jspvz 或者同样没去登录壳, 请注意.
 
 ## 安装
+
 在满足上述平台要求后, 执行`python -m pip install rpze`即可.  
 若想确认安装成功, 执行`python -m rpze --path "your\path\to\PlantVsZombies.exe"`, 若游戏正常启动且在加载界面加载到一半时自动运行生物钟脚本, 则安装成功.
+
 ### 常见安装 FAQ
 
 > 为什么弹出一个黑色窗口显示 console set? 
@@ -52,6 +55,7 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 
 
 ## 使用
+
  一个简单的完整 rpze 脚本示例如下:
 ```python
 from rpze.iztest import *
@@ -73,6 +77,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 基础学习可以看[寒风的专栏](https://www.bilibili.com/read/readlist/rl858428), 或加上述 QQ 群询问, ~~我看群友们都挺热情愿意回答各种弱智问题的(~~ 
 
 ## 结构
+
 总体分成五个包:
 - `rp_extend`: 对控制 pvz 游戏本地运作的基本操作的封装
 - `basic`: `.dll`注入, 游戏启动, 汇编代码等基础功能
@@ -85,6 +90,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 
 
 ## 优缺点
+
 优点:
 - 使用普及度最高的 Python 编写, 尽可能做到低上手难度
 - 稳定性大幅领先几乎所有远程工具, 并且实现100%精度
@@ -100,6 +106,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 - 作者太菜了, 对软件工程和操作系统变成没有基本认知, 会存在大量浪费时间的试错和重构
 
 ## 鸣谢
+
 - [Reisen](https://github.com/alumkal) - 提供初始思路, 模型以及解答各种问题,   
 - [63enjoy](https://github.com/POP63enjoy), [Ghastasaucey(BiliBili)](https://space.bilibili.com/384775811) 等 - 反汇编结论参考- 以及教学,  
 - [夏日寒风](https://github.com/ivan216)([BiliBili](https://www.bilibili.com/read/readlist/rl858428)) - 好用的功能函数, Bilibili 教程编写, 
@@ -109,13 +116,15 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 以及指针表, 函数表等资源工具 (大量命名和 docstring 参考) 和各位玩家的鼎力支持.
 
 ## 使用的开源项目
+
 - [pybind/pybind11](https://github.com/pybind/pybind11), [LICENSE](https://github.com/pybind/pybind11/blob/master/LICENSE)
 - [TsudaKageyu/minhook](https://github.com/TsudaKageyu/minhook), [LICENSE](https://github.com/TsudaKageyu/minhook/blob/master/LICENSE.txt)
-- [keystone-engine/keystone](https://github.com/keystone-engine/keystone), [FOSS License Exception](https://github.com/keystone-engine/keystone/blob/master/EXCEPTIONS-CLIENT)
 
 ## 构建
+
 > 100% certified works on my two machines
-> uv 是我亲爹
+
+> ~~uv 是我爹~~
 
 本框架采用 [xmake](https://xmake.io) 构建, 管理二进制依赖; 使用 MSVC 编译二进制依赖; 使用 uv 管理 Python 环境.
 
@@ -124,6 +133,7 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 可以用`python hatch_build.py -other_xmake_args`来自动设置 xmake config 的编译 arch
 
 ## 贡献
+
 *请向 `dev`分支提交pull request*, 请遵循 [PEP 8](https://peps.python.org/pep-0008/) 和项目原有的命名, 文档规范.
 
 作者个人强行规定的规范包括但不限于:
