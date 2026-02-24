@@ -39,6 +39,27 @@ class PlaceZombieOp(NamedTuple):
     col: int
 
 
+def parse_place_zombie_op(op_str: str) -> PlaceZombieOp:
+    """
+    解析单条僵尸放置操作字符串
+
+    Args:
+        op_str: 格式为 "类型 时间 行-列", 如 "cg 0 4-6"
+    Returns:
+        对应的 PlaceZombieOp
+    Raises:
+        ValueError: 格式错误时抛出
+    Examples:
+        >>> parse_place_zombie_op("cg 0 4-6")
+        PlaceZombieOp(type_=ZombieType.cone, time=0, row=3, col=5)
+    """
+    parts = op_str.strip().split()
+    if len(parts) != 3:
+        raise ValueError(f"op_str must have 3 parts (type time row-col), not {len(parts)}: {op_str!r}")
+    row, col = parse_grid_str(parts[2])
+    return PlaceZombieOp(type_=zombie_abbr_to_type[parts[0]], time=int(parts[1]), row=row, col=col)
+
+
 PlantTypeList: TypeAlias = list[list[PlantType | None]]
 
 
@@ -213,30 +234,35 @@ class IzTest:
         plant_type_lists: 两个5 * 5列表, 分别表示第一轮, 第二轮种植的植物. 空白值由 None 填充.
         place_zombie_list: 一个列表, 表示所有僵尸操作, 用 PlaceZombieOp 表示.
         repeat_time: 重复次数.
-        mj_init_phase: mj 初始相位. None 表示随机
-        target_plants_pos: 目标植物的位置列表. 元素为(row, col)
-        target_brains_pos: 目标脑子的位置列表. 元素为 row
+        mj_init_phase: mj 初始相位. None 表示随机.
+        target_plants_pos: 目标植物的位置列表. 元素为(row, col).
+        target_brains_pos: 目标脑子的位置列表. 元素为 row.
         controller: 测试使用的 Controller 对象.
         flow_factory: 生成测试逻辑的 FlowFactory 对象.
-        reset_generate_cd: 是否重置植物的 generate_cd , 即, iztools"开启攻击间隔处理" is True
-        enable_default_check_end: 是否启用默认的判断输赢功能, 即, 需要手动设置判断时为 False
-        start_check_end_time: 开始判断一次测试是否输赢的时间, 默认为放下最后一个僵尸的时间.
+        reset_generate_cd: 是否重置植物的 generate_cd, 即, iztools"开启攻击间隔处理" is True.
+        enable_default_check_end: 是否启用默认的判断输赢功能.
+        start_check_end_time: 开始判断一次测试是否输赢的时间.
         end_callback: 一次测试结束时的回调函数, 参数为是否成功 bool.
-        check_tests_end_callback: 判断是否结束测试的回调函数. 默认为 None, 表示重复 repeat_time 次测试.
+        check_tests_end_callback: 判断是否结束测试的回调函数.
             参数为(当前测试次数, 成功次数), 返回 None 表示不结束, 返回 float 表示结果概率.
         ground: 用于获取原始植物和脑子的对象, 仅在测试中调用有效.
     """
 
-    def __init__(self, controller: Controller, reset_generate_cd: bool = True):
+    def __init__(self, controller: Controller, reset_generate_cd: bool | None = None):
         """
         构造 IzTest 对象
 
-        如此构造的对象不能直接使用! 大部分情况下需要调用 init_by_str 初始化.
+        如此构造的对象不能直接使用! 需要调用 init_by_str 或 init_by_kwargs 初始化.
 
         Args:
             controller: 测试使用的 Controller 对象.
-            reset_generate_cd: 攻击间隔处理 in iztools
+            reset_generate_cd: [[deprecated]] 请改用 init_by_kwargs 的同名参数.
         """
+        if reset_generate_cd is not None:
+            warnings.warn("reset_generate_cd in __init__ is deprecated, "
+                          "use init_by_kwargs(reset_generate_cd=...) instead",
+                          DeprecationWarning, stacklevel=2)
+        self.reset_generate_cd: bool = True if reset_generate_cd is None else reset_generate_cd
         self.plant_type_lists: tuple[PlantTypeList, PlantTypeList] = ([], [])
         self.place_zombie_list: list[PlaceZombieOp] = []
         self.repeat_time: int = 0
@@ -250,13 +276,13 @@ class IzTest:
         self.start_check_end_time: int = 0
         self.end_callback: Callable[[bool], None] = lambda _: None
         self.check_tests_end_callback: Callable[[int, int], float | None] | None = None
-        self.ground: _IzGround | None = None
 
         # 运行时候会时刻改变的量. 不建议修改 / 读取
+        self._ground: _IzGround | None = None
         self._wait_squashes: bool = True  # 是否等待所有窝瓜消失后再开始判断输赢
         self._target_squashes: list[tuple[int, int]] = []  # 所有目标窝瓜
-        self._target_plant_ids: list[tuple[int, int]] = []  # 所有目标脑子
-        self._target_brain_ids: list[tuple[int, int]] = []  # 所有目标植物
+        self._target_plant_ids: list[tuple[int, int]] = []  # 所有目标植物
+        self._target_brain_ids: list[tuple[int, int]] = []  # 所有目标脑子
         self._last_test_ended: bool = False  # 用于判断是否结束一次测试
         self._success_count: int = 0  # 成功次数
         self._test_time: int = 0  # 测试次数
@@ -268,22 +294,147 @@ class IzTest:
         """游戏 GameBoard 对象"""
         return get_board(self.controller)
 
+    @property
+    def ground(self) -> _IzGround:
+        """用于获取原始植物和脑子的对象, 仅在测试中调用有效."""
+        if self._ground is None:
+            raise ValueError("ground is not initialized, call start_test first")
+        return self._ground
+
+    def init_by_kwargs(
+            self, *,
+            repeat_time: int = 1000,
+            plant_type_lists: str | tuple[PlantTypeList, PlantTypeList] = "",
+            target_pos: str | list[GridStr] = "",
+            place_zombie_list: str | list[PlaceZombieOp | str] = "",
+            enable_default_check_end: bool = True,
+            start_check_end_time: int = 0,
+            mj_init_phase: int | None = None,
+            wait_squashes: bool = True,
+            reset_generate_cd: bool = True,
+            check_tests_end_callback: Callable[[int, int], float | None] | None = None,
+            end_callback: Callable[[bool], None] | None = None,
+    ) -> Self:
+        """
+        通过关键字参数初始化 iztest 对象
+
+        各参数相互独立, 不存在隐式联动. 所有参数均为 keyword-only.
+        调用侧也可以用 izt.init_by_kwargs(**my_dict) 传字典.
+
+        Args:
+            repeat_time: 重复次数. check_tests_end_callback 为 None 时必须为正整数;
+                提供 check_tests_end_callback 时此值仅用于打印显示, 默认 1000.
+            plant_type_lists: 植物列表. 传入 str 时格式与 iztools 相同 (5行), 传入已解析的 tuple 时直接使用.
+                默认为空串, 即全空场地.
+            target_pos: 目标位置. 传入 str 时为空格分隔的 GridStr, 传入 list[GridStr] 时为 GridStr 列表.
+                行号用 R-0 表示脑子, R-C(C>0) 表示植物. 默认为空, 即无目标.
+            place_zombie_list: 僵尸放置列表. 支持三种格式:
+                - str: 与 iztools 相同的3行格式.
+                - list[str]: 每个元素为 "类型 时间 行-列", 如 "cg 0 4-6".
+                - list[PlaceZombieOp]: 直接使用已构造的对象列表.
+                默认为空, 即不放置僵尸.
+            enable_default_check_end: 是否启用内置判断输赢. 默认 True.
+            start_check_end_time: 开始判断输赢的时刻. 默认 0, 不从僵尸时间自动推导.
+            mj_init_phase: mj 初始相位. None 表示每轮随机. 合法值为 [0, 459]. 默认 None.
+            wait_squashes: 是否等待所有目标窝瓜消失后再开始判断输赢. 默认 True.
+            reset_generate_cd: 是否重置植物的 generate_cd (iztools"攻击间隔处理"). 默认 True.
+            check_tests_end_callback: 判断是否结束全部测试的回调, 参数为 (测试次数, 成功次数),
+                返回 None 继续, 返回 float 作为最终概率并结束. 默认 None, 即按 repeat_time 循环.
+            end_callback: 单轮测试结束时的回调, 参数为是否成功. 默认 None, 即不覆盖已有回调.
+        Returns:
+            self
+        Raises:
+            ValueError: 参数格式或值非法时抛出
+        Examples:
+            >>> ctler: Controller = ...
+            >>> iz_test = IzTest(ctler).init_by_kwargs(
+            ...     repeat_time=1000,
+            ...     target_pos="3-0 4-0 5-0 3-3",
+            ...     plant_type_lists='''
+            ...         .....
+            ...         .....
+            ...         bs3_c
+            ...         b2ljh
+            ...         blyl_''',
+            ...     place_zombie_list=["cg 0 4-6",
+            ...                        "cg 1 4-6",
+            ...                        "xg 300 4-6",
+            ...                        "ww 700 4-6"],
+            ...     start_check_end_time=700)
+            以上与 init_by_str 的默认例子等价. 注意 start_check_end_time 需显式传入.
+        """
+        if check_tests_end_callback is None and repeat_time < 1:
+            raise ValueError(f"repeat_time must be a positive integer, not {repeat_time}")
+        if mj_init_phase is not None and not (0 <= mj_init_phase < 460):
+            raise ValueError(f"mj_init_phase must be in [0, 459] or None, not {mj_init_phase}")
+
+        self._wait_squashes = wait_squashes
+        self.mj_init_phase = mj_init_phase
+        self.repeat_time = repeat_time
+        self.start_check_end_time = start_check_end_time
+        self.enable_default_check_end = enable_default_check_end
+        self.reset_generate_cd = reset_generate_cd
+
+        if isinstance(plant_type_lists, str):
+            self.plant_type_lists = (parse_plant_type_list(plant_type_lists)
+                                     if plant_type_lists.strip()
+                                     else ([[None] * 5 for _ in range(5)],
+                                           [[None] * 5 for _ in range(5)]))
+        else:
+            self.plant_type_lists = plant_type_lists
+
+        if isinstance(place_zombie_list, str):
+            self.place_zombie_list = (parse_zombie_place_list(place_zombie_list)
+                                      if place_zombie_list.strip() else [])
+        else:
+            self.place_zombie_list = [
+                parse_place_zombie_op(op) if isinstance(op, str) else op
+                for op in place_zombie_list
+            ]
+
+        target_str = target_pos if isinstance(target_pos, str) else ' '.join(target_pos)
+        if target_str.strip():
+            self.target_plants_pos, self.target_brains_pos = parse_target_list(target_str)
+        else:
+            self.target_plants_pos, self.target_brains_pos = [], []
+
+        for pos in self.target_plants_pos:
+            if (self.plant_type_lists[0][pos[0]][pos[1]] is None and
+                    self.plant_type_lists[1][pos[0]][pos[1]] is None):
+                raise ValueError(f"target plant at {pos} is None")
+
+        if check_tests_end_callback is not None:
+            self.check_tests_end_callback = check_tests_end_callback
+        if end_callback is not None:
+            self.end_callback = end_callback
+
+        return self
+
     def init_by_str(self, iztools_str: str,
-                    wait_squashes: bool = True) -> Self:
+                    wait_squashes: bool = True,
+                    reset_generate_cd: bool = True) -> Self:
         """
         通过 iztools 字符串初始化 iztest 对象
 
         与 iztools 的输入格式不完全相同:
             - 允许首尾空行以及每行首尾空格.
-            - 支持“测试次数”输入-1表示自定义结束行为:
+            - 支持"测试次数"输入-1表示自定义结束行为:
                 结束行为默认为测试无限次, 可以通过 self.check_tests_end() 设置何时结束.
             - 支持第二行空行表示无目标: 若此行为空, 则不启用内置的判断输赢功能.
             - 支持不输入8 9 10行表示不放置僵尸: 若此三行为空, 则不启用内置的判断输赢功能.
             - (暂且)不支持通过书写顺序调整僵尸编号, 可以通过 ObjList 相关接口调整.
 
+        以下三个变量由此方法根据字符串内容自动推导, 而非由调用方显式控制:
+            - enable_default_check_end: 目标行(第2行)非空时置 True, 否则保持 __init__ 默认值 False.
+            - start_check_end_time: 有僵尸行(第8-10行)时置为所有僵尸中最晚的放置时间, 否则保持 0.
+            - check_tests_end_callback: repeat_time 为 -1 时置为无限循环 lambda, 否则保持 None.
+
+        在本方法中未提到的参数使用 init_by_kwargs 中说明的默认值, 如需控制这些参数请使用 init_by_kwargs.
+
         Args:
             iztools_str: iztools输入字符串
             wait_squashes: 是否等待所有窝瓜消失后再开始判断输赢. 默认为 True
+            reset_generate_cd: 是否重置植物的 generate_cd (iztools"攻击间隔处理"). 默认 True
         Returns:
             self
         Raises:
@@ -305,37 +456,35 @@ class IzTest:
         """
         lines = iztools_str.strip().splitlines(False)
 
-        self._wait_squashes = wait_squashes
-
         if len(lines) == 7:
-            self.place_zombie_list = []
+            place_zombie_ops: list[PlaceZombieOp] = []
+            start_check_end_time = 0
         elif len(lines) == 10:
-            self.place_zombie_list = parse_zombie_place_list('\n'.join(lines[7:10]))
-            self.start_check_end_time = max(op.time for op in self.place_zombie_list)
+            place_zombie_ops = parse_zombie_place_list('\n'.join(lines[7:10]))
+            start_check_end_time = max(op.time for op in place_zombie_ops)
         else:
             raise ValueError(f"iztools_str must have 7 or 10 lines, not {len(lines)} lines")
 
         repeat_time, mj_init_phase = map(int, lines[0].strip().split())
         if mj_init_phase < -1 or mj_init_phase >= 460:
             raise ValueError(f"mj_init_phase must be in [-1, 459], not {mj_init_phase}")
-        self.mj_init_phase = mj_init_phase if mj_init_phase != -1 else None
         if repeat_time < -1 or repeat_time == 0:
             raise ValueError(f"repeat_time must be positive or -1, not {repeat_time}")
-        if repeat_time != -1:
-            self.repeat_time = repeat_time
-        else:
-            self.check_tests_end_callback = lambda _, __: None
 
-        self.target_plants_pos, self.target_brains_pos = parse_target_list(lines[1])
-        if self.target_plants_pos or self.target_brains_pos:
-            self.enable_default_check_end = True
+        target_plants, target_brains = parse_target_list(lines[1])
 
-        self.plant_type_lists = parse_plant_type_list('\n'.join(lines[2:7]))
-        for target_pos in self.target_plants_pos:
-            if (self.plant_type_lists[0][target_pos[0]][target_pos[1]] is None and
-                    self.plant_type_lists[1][target_pos[0]][target_pos[1]] is None):
-                raise ValueError(f"target plant at {target_pos} is None")
-        return self
+        return self.init_by_kwargs(
+            repeat_time=repeat_time if repeat_time != -1 else 0,
+            plant_type_lists='\n'.join(lines[2:7]),
+            target_pos=lines[1],
+            place_zombie_list=place_zombie_ops,
+            enable_default_check_end=bool(target_plants or target_brains),
+            start_check_end_time=start_check_end_time,
+            mj_init_phase=mj_init_phase if mj_init_phase != -1 else None,
+            wait_squashes=wait_squashes,
+            reset_generate_cd=reset_generate_cd,
+            check_tests_end_callback=(lambda _, __: None) if repeat_time == -1 else None,
+        )
 
     def on_game_end(self) -> Callable[[Callable[[bool], None]], Callable[[bool], None]]:
         """
@@ -464,14 +613,14 @@ class IzTest:
                 if i in self.target_brains_pos:
                     self._target_brain_ids.append(brain.id.tpl())
 
-            self.ground = _IzGround(origin_plant_ids, origin_brain_ids, self)
+            self._ground = _IzGround(origin_plant_ids, origin_brain_ids, self)
 
         for op in self.place_zombie_list:
             @self.flow_factory.add_tick_runner(place_priority)
             def _place_zombie(fm: FlowManager, _op=op):
                 if fm.time == _op.time:
                     t = self.game_board.iz_place_zombie(_op.row, _op.col, _op.type_)
-                    self.ground.zombie_ids.append(t.id.tpl())
+                    self._ground.zombie_ids.append(t.id.tpl())
                     return TickRunnerResult.DONE
                 return None
 

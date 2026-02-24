@@ -5,6 +5,9 @@
 # don't show main.py
 main.py
 
+# load_dotenv() file
+.env
+
 
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
@@ -331,6 +334,8 @@ paket-files/
 __pycache__/
 *.pyc
 *.pyd
+*.venv/
+.mypy_cache/
 
 # Cake - Uncomment if you are using it
 # tools/**
