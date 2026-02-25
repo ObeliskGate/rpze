@@ -242,6 +242,7 @@ class IzTest:
         reset_generate_cd: 是否重置植物的 generate_cd, 即, iztools"开启攻击间隔处理" is True.
         enable_default_check_end: 是否启用默认的判断输赢功能.
         start_check_end_time: 开始判断一次测试是否输赢的时间.
+        wait_squashes: 是否等待所有目标窝瓜消失后再开始判断输赢.
         end_callback: 一次测试结束时的回调函数, 参数为是否成功 bool.
         check_tests_end_callback: 判断是否结束测试的回调函数.
             参数为(当前测试次数, 成功次数), 返回 None 表示不结束, 返回 float 表示结果概率.
@@ -274,20 +275,24 @@ class IzTest:
         self.reset_generate_cd: bool = reset_generate_cd
         self.enable_default_check_end: bool = False
         self.start_check_end_time: int = 0
+        self.wait_squashes: bool = True
         self.end_callback: Callable[[bool], None] = lambda _: None
         self.check_tests_end_callback: Callable[[int, int], float | None] | None = None
 
-        # 运行时候会时刻改变的量. 不建议修改 / 读取
+        # 以下是运行时候会时刻改变的量. 不建议修改 / 读取
+
+        self._flow_factory_set: bool = False  # 用于判断是否设置了flow_factory
+
+        # 每次运行重置的量
         self._ground: _IzGround | None = None
-        self._wait_squashes: bool = True  # 是否等待所有窝瓜消失后再开始判断输赢
         self._target_squashes: list[tuple[int, int]] = []  # 所有目标窝瓜
         self._target_plant_ids: list[tuple[int, int]] = []  # 所有目标植物
         self._target_brain_ids: list[tuple[int, int]] = []  # 所有目标脑子
         self._last_test_ended: bool = False  # 用于判断是否结束一次测试
+
+        # 跨测试累计的量
         self._success_count: int = 0  # 成功次数
         self._test_time: int = 0  # 测试次数
-
-        self._flow_factory_set: bool = False  # 用于判断是否设置了flow_factory
 
     @property
     def game_board(self) -> GameBoard:
@@ -368,7 +373,7 @@ class IzTest:
         if mj_init_phase is not None and not (0 <= mj_init_phase < 460):
             raise ValueError(f"mj_init_phase must be in [0, 459] or None, not {mj_init_phase}")
 
-        self._wait_squashes = wait_squashes
+        self.wait_squashes = wait_squashes
         self.mj_init_phase = mj_init_phase
         self.repeat_time = repeat_time
         self.start_check_end_time = start_check_end_time
@@ -434,7 +439,7 @@ class IzTest:
         Args:
             iztools_str: iztools输入字符串
             wait_squashes: 是否等待所有窝瓜消失后再开始判断输赢. 默认为 True
-            reset_generate_cd: 是否重置植物的 generate_cd (iztools"攻击间隔处理"). 默认 True
+            reset_generate_cd: 是否重置植物的 generate_cd (iztools "攻击间隔处理"). 默认 True
         Returns:
             self
         Raises:
@@ -517,10 +522,6 @@ class IzTest:
             self._success_count += 1
         self._test_time += 1
 
-        self._target_plant_ids = []
-        self._target_brain_ids = []
-        self._target_squashes = []
-
         return TickRunnerResult.BREAK_DONE
 
     def check_end(self) -> TickRunnerResult | None:
@@ -531,7 +532,7 @@ class IzTest:
             如果结束则返回 TickRunnerResult.BREAK_RUN, 否则返回 None
         """
         board = self.game_board
-        if self._wait_squashes:
+        if self.wait_squashes:
             for ids in self._target_squashes:
                 match board.plant_list.find(*ids):
                     case None:
@@ -564,13 +565,15 @@ class IzTest:
 
     def set_flow_factory(self,
                          place_priority: int = DEFAULT_PRIORITY + 10,
-                         check_end_priority: int = DEFAULT_PRIORITY - 10) -> Self:
+                         check_end_priority: int = DEFAULT_PRIORITY - 10,
+                         clean_priority: int = DEFAULT_PRIORITY - 10) -> Self:
         """
         设置 flow_factory
 
         Args:
             place_priority: 初始化及放置僵尸 tick runner 的优先级, 默认为 default + 10
             check_end_priority: 判断输赢 tick runner 的优先级, 默认为 default - 10
+            clean_priority: 清理 tick runner 的优先级, 默认为 default - 10
         Returns:
             self
         Raises:
@@ -604,7 +607,7 @@ class IzTest:
                             randomize_generate_cd(plant)
                         if (row, col) in self.target_plants_pos:
                             self._target_plant_ids.append(plant.id.tpl())
-                            if self._wait_squashes and type_ is PlantType.squash:
+                            if self.wait_squashes and type_ is PlantType.squash:
                                 self._target_squashes.append(plant.id.tpl())
 
             for i in range(5):
@@ -630,6 +633,17 @@ class IzTest:
                 if fm.time >= self.start_check_end_time:
                     return self.check_end()
                 return None
+
+        @self.flow_factory.add_destructor(clean_priority)
+        def _cleanup(_):
+            # 重置每轮测试的运行时状态到默认值
+            # _success_count 和 _test_time 是跨轮次累计统计量, 不在此重置
+            self._ground = None
+            self._target_plant_ids = []
+            self._target_brain_ids = []
+            self._target_squashes = []
+            self._last_test_ended = False
+
         return self
 
     def start_test(self, jump_frame: bool = False,
@@ -650,7 +664,7 @@ class IzTest:
         """
         if control_speed_key != '\x12':
             warnings.warn("deprecated param `control_speed_key`", DeprecationWarning)
-        if self.controller.read_i32(0x6a9ec0, 0x7f8) != 70:  # gLawnApp->mGameMode == ize
+        if self.controller.read_i32(0x6a9ec0, 0x7f8) != 70:  # gLawnApp->mGameMode != ize
             enter_ize(self.controller)
         start_time = time.time()
         last_time = start_time
@@ -683,7 +697,6 @@ class IzTest:
                             if self.game_board.frame_duration != 10 else frame_duration
                     # print(_flow_manager.time)
                     ctler.skip_frames()
-                self._last_test_ended = False
                 _flow_manager.end()
                 if print_interval and self._test_time % print_interval == 0:
                     print(f"ended {self._test_time} of {self.repeat_time}, "
