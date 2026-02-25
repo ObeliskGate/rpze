@@ -289,6 +289,7 @@ class IzTest:
         self._target_plant_ids: list[tuple[int, int]] = []  # 所有目标植物
         self._target_brain_ids: list[tuple[int, int]] = []  # 所有目标脑子
         self._last_test_ended: bool = False  # 用于判断是否结束一次测试
+        self._check_end_active: bool = False  # 运行时开关，每轮测试前重置为 enable_default_check_end 的值
 
         # 跨测试累计的量
         self._success_count: int = 0  # 成功次数
@@ -303,8 +304,31 @@ class IzTest:
     def ground(self) -> _IzGround:
         """用于获取原始植物和脑子的对象, 仅在测试中调用有效."""
         if self._ground is None:
-            raise ValueError("ground is not initialized, call start_test first")
+            raise RpBaseException("ground is not initialized, call start_test first")
         return self._ground
+
+    @property
+    def check_end_active(self) -> bool:
+        """
+        当前测试轮次中, 内置结束判断逻辑是否处于激活状态.
+
+        可在测试运行过程中自由读写, 以动态开启或暂停 check_end 的自动调用.
+        每轮测试开始前自动重置为 enable_default_check_end 的值.
+
+        - `start_check_end_time == 0`时, 本 property 直接控制 check_end 开关.
+        - 否则, 需要在本 property 为 True 且 start_check_end_time 时间过后才开始 check_end.
+
+        在使用 init_by_str 时, 
+        由于 start_check_end_time 和 enable_default_check_end 的值都是推导得出, 
+        请小心使用本 property.
+        """
+        return self._check_end_active
+
+    @check_end_active.setter
+    def check_end_active(self, value: bool) -> None:
+        if not self._flow_factory_set:
+            raise RpBaseException("cannot set check_end_active before setting flow factory")
+        self._check_end_active = value
 
     def init_by_kwargs(
             self, *,
@@ -582,6 +606,7 @@ class IzTest:
         if self._flow_factory_set:
             raise RpBaseException("cannot set flow factory twice!")
         self._flow_factory_set = True
+        self._check_end_active = self.enable_default_check_end
 
         @self.flow_factory.connect(until(0), only_once=True, priority=place_priority)
         def _init(_):
@@ -627,12 +652,11 @@ class IzTest:
                     return TickRunnerResult.DONE
                 return None
 
-        if self.enable_default_check_end:
-            @self.flow_factory.add_tick_runner(check_end_priority)
-            def _check_end(fm: FlowManager):
-                if fm.time >= self.start_check_end_time:
-                    return self.check_end()
-                return None
+        @self.flow_factory.add_tick_runner(check_end_priority)
+        def _check_end(fm: FlowManager):
+            if self._check_end_active and fm.time >= self.start_check_end_time:
+                return self.check_end()
+            return None
 
         @self.flow_factory.add_destructor(clean_priority)
         def _cleanup(_):
@@ -643,6 +667,7 @@ class IzTest:
             self._target_brain_ids = []
             self._target_squashes = []
             self._last_test_ended = False
+            self._check_end_active = self.enable_default_check_end
 
         return self
 
