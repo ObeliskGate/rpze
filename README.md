@@ -1,12 +1,12 @@
 # rpze
 
-Remote Python, Zombie Endless (or endless rp?)
+> Remote Python, Zombie Endless (or endless rp?)
 
 一个远程 Python 的 Plants vs. Zombies (pvz) TAS / 修改器 及 I, Zombie Endless (ize) 测试框架.
 
 ## 介绍
 
-rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度、少崩溃的同时大幅简化 ize 非定态测试脚本的编写.  
+rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度、少崩溃的同时大幅简化 ize 非定态测试脚本的编写. <br>
 通过与注入游戏的`.dll`进行 ipc 以实现理论100%精度和不崩溃的原版函数调用.
 
 ## 支持平台
@@ -21,7 +21,10 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 ## 安装
 
 在满足上述平台要求后, 执行`python -m pip install rpze`即可.  
+
 若想确认安装成功, 执行`python -m rpze --path "your\path\to\PlantVsZombies.exe"`, 若游戏正常启动且在加载界面加载到一半时自动运行生物钟脚本, 则安装成功.
+
+> 无论在安装还是脚本测试中, 现在都可以通过`RP_GAME_PATH`设置游戏`.exe`路径
 
 ### 常见安装 FAQ
 
@@ -60,7 +63,10 @@ rpze 是一个用于 ize 测试的框架, 旨在保持一定性能、高精度�
 ```python
 from rpze.iztest import *
 
-with InjectedGame(r"your\path\to\pvz.exe") as game:
+with InjectedGame(r"your\path\to\pvz.exe") as game:  
+    # 或者设置环境变量 `set RP_GAME_PATH=your\path\to\pvz.exe`
+    # 将 your\path\to\pvz.exe 替换成自己的游戏路径
+    
     iz_test = IzTest(game.controller).init_by_str('''
                  1000 -1
                  3-0 4-0 5-0 3-3
@@ -85,6 +91,8 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 - `flow`: coroutine-like 测试编写相关的函数
 - `iztest`: `IzTest`测试功能以及工具函数
 - `examples`: `iztest`编写例子
+
+![架构图](./mermaid-structure.png)
 
 其中, 若仅对 Python pvz 框架感兴趣则只需关注前三个包, 对 ize 测试感兴趣则着重模仿`examples`并大致了解`structs`的成员(`Plants`和`Zombies`).
 
