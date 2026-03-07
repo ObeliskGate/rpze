@@ -110,6 +110,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 	while (phaseCode == PhaseCode::JUMP_FRAME)
 	{
 		mainHook<1>(pSharedMemory);
+#if defined(_MSC_VER)
 		__asm
 		{
 			mov edi, ds:[0x6a9ec0]
@@ -128,6 +129,30 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode)
 			mov edx, 0x4524F0 // LawnApp::CheckForGameEnd
 			call edx
 		}
+#else
+		__asm__ volatile (
+			".intel_syntax noprefix\n\t"
+			"mov edi, DWORD PTR [0x6a9ec0]\n\t"  // mjClock++
+			"inc DWORD PTR [edi + 0x838]\n\t"
+			"mov esi, DWORD PTR [edi + 0x768]\n\t"
+			"mov edx, 0x41BAD0\n\t"               // Board::ProcessDeleteQueue
+			"call edx\n\t"
+			"mov ecx, esi\n\t"
+			"mov edx, DWORD PTR [esi]\n\t"
+			"call DWORD PTR [edx + 0x58]\n\t"     // Board::Update
+			"mov esi, edi\n\t"
+			"push DWORD PTR [esi + 0x820]\n\t"
+			"mov edx, 0x445680\n\t"               // EffectSystem::ProcessDeleteQueue
+			"call edx\n\t"
+			"mov eax, esi\n\t"
+			"mov edx, 0x4524F0\n\t"               // LawnApp::CheckForGameEnd
+			"call edx\n\t"
+			".att_syntax prefix\n\t"
+			:
+			:
+			: "eax", "ecx", "edx", "esi", "edi", "memory", "cc"
+		);
+#endif
 		if (!(time(nullptr) % 5))
 		{
 			MSG msg;

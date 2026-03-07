@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 #define WIN32_LEAN_AND_MEAN             // 从 Windows 头文件中排除极少使用的内容
-#define NOMINMAX
+
 // Windows 头文件
 #include <Windows.h> 
 
@@ -65,43 +65,48 @@ inline constexpr size_t getHookIndex(HookPosition pos) { return static_cast<size
 
 #ifdef _MSC_VER
 #pragma warning(push)  // 保存警告状态
-#pragma warning(disable : 4324)
+#pragma warning(disable : 4201)  // 使用了非标准扩展: 无名称的结构/联合
 #endif
 
 #pragma pack(push, 1)
 struct Shm
 {
-    volatile PhaseCode phaseCode;
-    volatile RunState runState;
-    volatile uint32_t boardPtr;
-    volatile PhaseCode jumpingPhaseCode;
-    volatile RunState jumpingRunState;
-    volatile uint32_t memoryNum; // size of memory to be read & writed
-
     static constexpr size_t OFFSETS_LEN = 16;
     static constexpr uint32_t OFFSET_END = UINT32_MAX;
-    volatile uint32_t offsets[OFFSETS_LEN];  // offsets of memory be read & writed
-
-    volatile HookState globalState;
-    volatile ExecuteResult executeResult;
-
     static constexpr size_t HOOK_LEN = 16;
-    volatile HookState hookStateArr[HOOK_LEN];
-    volatile SyncMethod syncMethod;
-    volatile SyncMethod jumpingSyncMethod;
-
-    volatile ShmError error;
-
-    volatile bool isBoardPtrValid;
-    volatile bool alreadyShared;
-
     static constexpr uint32_t BUFFER_OFFSET = 256;
     static constexpr uint32_t ASM_OFFSET = 1024 * 4;
     static constexpr uint32_t BUFFER_SIZE = ASM_OFFSET - BUFFER_OFFSET;
     static constexpr uint32_t ASM_SIZE = SHARED_MEMORY_SIZE - ASM_OFFSET;
 
-    alignas(BUFFER_OFFSET) volatile char readWriteBuffer[BUFFER_SIZE];
-    alignas(ASM_OFFSET) volatile char asmBuffer[ASM_SIZE];
+    union {
+        struct {
+            volatile PhaseCode phaseCode;
+            volatile RunState runState;
+            volatile uint32_t boardPtr;
+            volatile PhaseCode jumpingPhaseCode;
+            volatile RunState jumpingRunState;
+            volatile uint32_t memoryNum; // size of memory to be read & writed
+
+            volatile uint32_t offsets[OFFSETS_LEN];  // offsets of memory be read & writed
+
+            volatile HookState globalState;
+            volatile ExecuteResult executeResult;
+
+            volatile HookState hookStateArr[HOOK_LEN];
+            volatile SyncMethod syncMethod;
+            volatile SyncMethod jumpingSyncMethod;
+
+            volatile ShmError error;
+
+            volatile bool isBoardPtrValid;
+            volatile bool alreadyShared;
+        };
+        uint8_t __padding_before_buffers[BUFFER_OFFSET];
+    };
+
+    volatile char readWriteBuffer[BUFFER_SIZE];
+    volatile char asmBuffer[ASM_SIZE];
 
     template <typename T = void>
     volatile T* getReadWriteBuffer() volatile { return reinterpret_cast<volatile T*>(readWriteBuffer); }

@@ -28,7 +28,6 @@ target("prebuild")
 
 
 target("rp_dll")
-    set_arch("x86")
     add_deps("prebuild")
     after_build(function (target)
         os.cp(target:targetfile(), "./src/rpze/bin/")
@@ -36,7 +35,6 @@ target("rp_dll")
     end)
 
 target("rp_injector")
-    set_arch("x86")
     add_deps("prebuild")
     after_build(function (target)
         os.cp(target:targetfile(), "./src/rpze/bin/")

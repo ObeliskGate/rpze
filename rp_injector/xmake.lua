@@ -1,4 +1,5 @@
 target("rp_injector")
+    set_arch("x86")
     set_kind("binary")
     add_files("*.cpp")
     set_languages("cxx23")

@@ -19,7 +19,7 @@ public:
 
     virtual const char* whatWhenNotCaught() const override { return messageWhenNotCaught.c_str(); }
 
-    virtual const char* what() const override { return message.c_str(); }
+    virtual const char* what() const noexcept override { return message.c_str(); }
 };
 
 template <typename T>

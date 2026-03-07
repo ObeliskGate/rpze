@@ -5,6 +5,8 @@
 # don't show main.py
 main.py
 
+/rp_test
+
 # load_dotenv() file
 .env
 

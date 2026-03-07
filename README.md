@@ -134,11 +134,11 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 
 > ~~uv 是我爹~~
 
-本框架采用 [xmake](https://xmake.io) 构建, 管理二进制依赖; 使用 MSVC 编译二进制依赖; 使用 uv 管理 Python 环境.
+本框架采用 [xmake](https://xmake.io) 构建, 管理二进制依赖; 使用 MSVC **与32位 MinGW-w64 (我个人从 [winlibs](https://winlibs.com/) 上下载)** 编译二进制依赖; 使用 uv 管理 Python 环境.
 
-安装三者后, 构建`.whl`包只需要`uv build --python 3.13`即可.
+安装上述包后, 构建`.whl`包只需要`uv build --python 3.xx`即可.
 
-可以用`python hatch_build.py -other_xmake_args`来自动设置 xmake config 的编译 arch
+可以用`python hatch_build.py -other_xmake_args`来自动设置 xmake config 的编译 arch. 你可能需要`--mingw==your\path\to\mingw32`来手动设置 MinGW 路径.
 
 ## 贡献
 
