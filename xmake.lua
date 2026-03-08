@@ -8,6 +8,12 @@ add_rules("mode.debug", "mode.releasedbg", "mode.release")
 add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode", lsp = "clangd"})
 
 
+option("stacktrace")
+    set_default(false)
+    set_showmenu(true)
+    set_description("Enable stack trace support (requires MinGW-w64 toolchain)")
+
+
 target("prebuild")
     set_kind("phony")
     on_config(function(target)

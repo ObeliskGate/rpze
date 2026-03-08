@@ -1,5 +1,5 @@
-if is_plat("mingw") then
-    add_requires("minhook >= 1.3.4", { arch = "i386", configs = { 
+if get_config("stacktrace") then
+    add_requires("minhook >= 1.3.4", { plat="mingw", arch = "i386", configs = { 
             runtimes  = "MT", 
             -- lto = true,  -- LTO 会导致链接失败，应该是 xmake/minhook 上游 bug
             shflags = { "-static" },
@@ -20,13 +20,14 @@ target("rp_dll")
     add_syslinks("User32")
     set_encodings("utf-8")
 
-    if is_plat("mingw") then
+    if get_config("stacktrace") then
+        set_plat("mingw")
         set_arch("i386")
         add_links("stdc++exp")
         add_ldflags("-static", {force = true})
         add_shflags("-static", {force = true})
         set_symbols("debug")
-        set_strip("all")
+        set_strip("none")
     else 
         set_arch("x86")
         add_defines("NOMINMAX")
