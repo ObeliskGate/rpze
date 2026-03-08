@@ -134,7 +134,9 @@ with InjectedGame(r"your\path\to\pvz.exe") as game:
 
 > ~~uv 是我爹~~
 
-本框架采用 [xmake](https://xmake.io) 构建, 管理二进制依赖; 使用 MSVC **与32位 MinGW-w64 (我个人从 [winlibs](https://winlibs.com/) 上下载)** 编译二进制依赖; 使用 uv 管理 Python 环境.
+本框架采用 [xmake](https://xmake.io) 构建, 管理二进制依赖; 使用 MSVC 编译二进制依赖; 使用 uv 管理 Python 环境.
+
+> 分支 `stacktrace` 同时需要32位 MinGW-w64 (我个人从 [winlibs](https://winlibs.com/) 上下载). 由于感觉有生之年看不到本项目在 MSVC 上使用`stacktrace`类似库的可能性, 这个分支用于测试通过 MinGW 在本项目加入相关库的可能.
 
 安装上述包后, 构建`.whl`包只需要`uv build --python 3.xx`即可.
 
