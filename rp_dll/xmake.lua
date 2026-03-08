@@ -5,6 +5,11 @@ if get_config("stacktrace") then
             shflags = { "-static" },
             ldflags = { "-static" },
         } })
+    add_requires("cpptrace", { plat="mingw", arch="i386", configs = {
+            runtimes  = "MT", 
+            shflags = { "-static" },
+            ldflags = { "-static" },
+    }})
 else
     add_requires("minhook >= 1.3.4", { arch = "x86", configs = { 
             lto = true,  
@@ -21,6 +26,7 @@ target("rp_dll")
     set_encodings("utf-8")
 
     if get_config("stacktrace") then
+        add_packages("cpptrace")
         set_plat("mingw")
         set_arch("i386")
         add_links("stdc++exp")

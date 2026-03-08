@@ -269,10 +269,10 @@ void initInThread(const SharedMemory* pSharedMemory)
 			dllExit();
 		});
 #ifndef NDEBUG
-InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
+InsertHook::addInsert(reinterpret_cast<void*>(0x42a0f0),
 	[](HookContext& reg)
 	{
-		throw RpDllException("test at dll");
+		throw RpDllException("test at dll", cpptrace::generate_trace().to_string());
 	});
 #endif
 

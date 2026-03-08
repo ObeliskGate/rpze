@@ -27,4 +27,5 @@
 #include <optional>
 #include <iostream>
 
+#include <cpptrace/cpptrace.hpp>
 #include <MinHook.h>
