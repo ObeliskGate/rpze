@@ -1,12 +1,15 @@
+# -*- coding: utf_8 -*-
 import subprocess
 import sys
 from typing import Any
 
 
 def config_xmake(args):
-    subprocess.run(["xmake", "f",
-                    "-a", 'x86' if sys.maxsize < 2 ** 32 else 'x64']
-                   + args)
+    subprocess.run(
+        ["xmake", "f", "-a", "x86" if sys.maxsize < 2 ** 32 else "x64"]
+        + args,
+        check=True,
+    )
 
 
 if __name__ == "__main__":
@@ -20,7 +23,7 @@ except ImportError:
 
 class CustomBuildHook(BuildHookInterface):
     def clean(self, versions: list[str]):  # noqa
-        subprocess.run("xmake c")
+        subprocess.run(["xmake", "c"], check=True)
 
     def initialize(self, version: str, build_data: dict[str, Any]) -> None:  # noqa
         platform = "win32" if sys.maxsize < 2 ** 32 else "win_amd64"
@@ -28,7 +31,7 @@ class CustomBuildHook(BuildHookInterface):
         build_data["tag"] = f"{pyver}-{pyver}-{platform}"
         build_data["pure_python"] = False
         config_xmake(["-m", "release", "-c", "-y"])
-        subprocess.run("xmake -r")
+        subprocess.run(["xmake", "-r"], check=True)
 
     def dependencies(self):  # noqa
         try:

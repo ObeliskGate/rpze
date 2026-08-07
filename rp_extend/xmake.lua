@@ -1,10 +1,10 @@
-add_requires("pybind11 >= 2.13.5")
+add_requires("pybind11 >= 3.0.1") -- supports Python 3.11+
 
 target("rp_extend")
     add_packages("pybind11")
     set_languages("cxx23")
     set_encodings("utf-8")
-    add_rules("python.library", { soabi = true })
+    add_rules("python.module", { soabi = true })
     add_includedirs("../sharedinc")
     add_includedirs("inc")
     add_files("src/*.cpp")
@@ -15,4 +15,3 @@ target("rp_extend")
     end
     -- add_shflags("/PDBALTPATH:%_PDB%")
     -- add_ldflags("/PDBALTPATH:%_PDB%")
-    
