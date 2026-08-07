@@ -3,6 +3,11 @@
 ##
 
 # don't show main.py
+
+# downloaded bilibili articles (not part of the project)
+/articles
+
+# temp scripts
 main.py
 
 /rp_test

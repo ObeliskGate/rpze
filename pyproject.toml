@@ -38,4 +38,9 @@ core-metadata-version = "2.1"
 [tool.hatch.build.targets.sdist]
 core-metadata-version = "2.1"
 
+[dependency-groups]
+dev = [
+    "pylint>=4.0.5",
+]
+
 [tool.hatch.build.targets.wheel.hooks.custom]
