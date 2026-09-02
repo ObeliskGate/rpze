@@ -1,7 +1,7 @@
 # -*- coding: utf_8 -*-
 # extend module of game controller
 from enum import Enum
-from typing import Self
+from typing import Self, overload
 
 
 class HookPosition(Enum):
@@ -18,6 +18,61 @@ class HookPosition(Enum):
 class SyncMethod(Enum):
     SPIN = 1  # better performance for testing
     MUTEX = 2  # better performance for normal case like modifier
+
+
+class ObjType(Enum):
+    PLANT = 0
+    ZOMBIE = 1
+    PROJECTILE = 2
+    GRID_ITEM = 3
+
+    @property
+    def ITEM_SIZE(self) -> int: ...  # object payload size in bytes; a slot is ITEM_SIZE + 4
+
+    @property
+    def BOARD_ARRAY_OFFSET(self) -> int: ...  # offset of this object's array from Board
+
+
+class ObjTypeInfo:
+    @property
+    def ITEM_SIZE(self) -> int: ...  # object payload size in bytes; a slot is ITEM_SIZE + 4
+
+    @property
+    def BOARD_ARRAY_OFFSET(self) -> int: ...  # offset of this object's array from Board
+
+
+class ObjUuid:
+    @overload
+    def __init__(self) -> None: ...
+
+    @overload
+    def __init__(self, uuid_cnt: int, index: int, type: ObjType) -> None: ...
+
+    @property
+    def uuid_cnt(self) -> int: ...  # generation counter; changes when a slot is reused
+
+    @property
+    def index(self) -> int: ...  # slot index in the object's block
+
+    @property
+    def type(self) -> ObjType: ...  # object category of this UUID
+
+    @property
+    def value(self) -> int: ...  # packed 64-bit representation of uuid_cnt, index, and type
+
+    def __bool__(self) -> bool: ...
+
+    def __int__(self) -> int: ...
+
+    def __eq__(self, other: Self, /) -> bool: ...
+
+    def __hash__(self) -> int: ...
+
+    def __repr__(self) -> str: ...
+
+
+OBJ_UUID_SLOT_COUNT: int
+OBJ_TYPE_INFO: tuple[ObjTypeInfo, ObjTypeInfo, ObjTypeInfo, ObjTypeInfo]
 
 
 class RpBaseException(Exception): ...
@@ -89,6 +144,22 @@ class Controller:
     def end_jump_frame(self) -> bool: ...  # assert prepared; return False if not jumping, skip a frame
 
     def get_p_board(self) -> tuple[bool, int]: ...  # return (is_p_board_new, p_board)
+
+    def get_obj_array_ptr(self, type: ObjType, /) -> int: ...
+
+    def get_obj_block_ptr(self, type: ObjType, /) -> int: ...
+
+    def get_obj_max_size(self, type: ObjType, /) -> int: ...
+
+    @overload
+    def get_obj_base_ptr(self, type: ObjType, index: int, /) -> int: ...
+
+    @overload
+    def get_obj_base_ptr(self, uuid: ObjUuid, /) -> int: ...
+
+    def get_obj_uuid(self, type: ObjType, index: int, /) -> ObjUuid: ...
+
+    def get_obj_uuid_by_ptr(self, type: ObjType, ptr: int, /) -> ObjUuid: ...
 
     def run_code(self, asm_bytes: bytes, /) -> bool: ...  # assert prepared; return False if failed
 
