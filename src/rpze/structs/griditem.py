@@ -70,6 +70,7 @@ class Griditem(ObjNode):
             push esi
             mov esi, {self.base_ptr}
             call {0x44D000}  // Griditem::GriditemDie
+            pop esi
             ret"""
         asm.run(code, self.controller)
 

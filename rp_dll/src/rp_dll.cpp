@@ -236,7 +236,7 @@ void initInThread(const SharedMemory* pSharedMemory)
 		{
 			pSharedMemory->shm().error = ShmError::CAUGHT_SEH;
 
-			auto lpEP = reinterpret_cast<EXCEPTION_POINTERS*>(hookCtx.esp + 4);
+			auto lpEP = *reinterpret_cast<EXCEPTION_POINTERS**>(hookCtx.esp + 4);
 
 			const PEXCEPTION_RECORD er = lpEP->ExceptionRecord;
 			const PCONTEXT ctx = lpEP->ContextRecord;
@@ -270,7 +270,15 @@ InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 	});
 #endif
 
-	initializeObjectUuid();
+	try
+	{
+		initializeObjectUuid();
+	}
+	catch (const std::exception& e)
+	{
+		std::println(std::cerr, "object UUID hook initialization failed: {}", e.what());
+		throw;
+	}
 
 }
 

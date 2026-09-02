@@ -33,16 +33,20 @@ namespace
 
     void addFreeHooks()
     {
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41BB4F), [](const HookContext& reg) {
+        // The originally identified 0x41BB4F/0x41BC23/0x41BCDB/0x41BE49
+        // sites are unconditional jumps and cannot host a MinHook trampoline.
+        // Hook the immediately preceding mSize update; the index registers are
+        // already final here and the UUID is still invalidated before return.
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41BB49), [](const HookContext& reg) {
             getUuidManager().onFree(ObjType::Plant, static_cast<uint16_t>(reg.edx));
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41BC23), [](const HookContext& reg) {
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41BC18), [](const HookContext& reg) {
             getUuidManager().onFree(ObjType::Zombie, static_cast<uint16_t>(reg.ecx));
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41BCDB), [](const HookContext& reg) {
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41BCD5), [](const HookContext& reg) {
             getUuidManager().onFree(ObjType::Projectile, static_cast<uint16_t>(reg.ecx));
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41BE49), [](const HookContext& reg) {
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41BE43), [](const HookContext& reg) {
             getUuidManager().onFree(ObjType::GridItem, static_cast<uint16_t>(reg.edi));
         });
     }
