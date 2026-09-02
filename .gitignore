@@ -57,6 +57,7 @@ build/
 .vscode/
 .idea/
 .VSCodeCounter/
+.codex
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/
