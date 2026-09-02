@@ -9,6 +9,9 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <algorithm>
+#include <array>
+
 #include <string>
 #include <string_view>
 #include <print>

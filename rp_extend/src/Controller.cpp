@@ -16,6 +16,48 @@
 
 PYBIND11_MODULE(rp_extend, m)
 {
+	auto objType = py::enum_<ObjType>(m, "ObjType");
+	objType
+		.value("PLANT", ObjType::Plant)
+		.value("ZOMBIE", ObjType::Zombie)
+		.value("PROJECTILE", ObjType::Projectile)
+		.value("GRID_ITEM", ObjType::GridItem)
+		.def_property_readonly("ITEM_SIZE", [](ObjType type) {
+			return getObjTypeInfo(type).ITEM_SIZE;
+		})
+		.def_property_readonly("BOARD_ARRAY_OFFSET", [](ObjType type) {
+			return getObjTypeInfo(type).BOARD_ARRAY_OFFSET;
+		});
+
+	py::class_<ObjTypeInfo>(m, "ObjTypeInfo")
+		.def_property_readonly("ITEM_SIZE", [](const ObjTypeInfo& info) { return info.ITEM_SIZE; })
+		.def_property_readonly("BOARD_ARRAY_OFFSET", [](const ObjTypeInfo& info) {
+			return info.BOARD_ARRAY_OFFSET;
+		});
+
+	py::class_<ObjUuid>(m, "ObjUuid")
+		.def(py::init<>())
+		.def(py::init<uint32_t, uint16_t, ObjType>(),
+			py::arg("uuid_cnt"), py::arg("index"), py::arg("type"))
+		.def_property_readonly("uuid_cnt", [](const ObjUuid& uuid) { return uuid.fields.uuidCnt; })
+		.def_property_readonly("index", [](const ObjUuid& uuid) { return uuid.fields.index; })
+		.def_property_readonly("type", [](const ObjUuid& uuid) { return uuid.fields.type; })
+		.def_property_readonly("value", &ObjUuid::asValue)
+		.def("__bool__", [](const ObjUuid& uuid) { return static_cast<bool>(uuid); })
+		.def("__int__", &ObjUuid::asValue)
+		.def("__eq__", &ObjUuid::operator==)
+		.def("__hash__", [](const ObjUuid& uuid) {
+			return py::hash(py::int_(uuid.asValue()));
+		})
+		.def("__repr__", [](const ObjUuid& uuid) {
+			return std::format("ObjUuid(uuid_cnt={}, index={}, type={})",
+				uuid.fields.uuidCnt, uuid.fields.index, static_cast<uint16_t>(uuid.fields.type));
+		});
+
+	m.attr("OBJ_UUID_SLOT_COUNT") = py::int_(OBJ_UUID_SLOT_COUNT);
+	m.attr("OBJ_TYPE_INFO") = py::make_tuple(
+		OBJ_TYPE_INFO[0], OBJ_TYPE_INFO[1], OBJ_TYPE_INFO[2], OBJ_TYPE_INFO[3]);
+
 	py::native_enum<HookPosition>(m, "HookPosition", "enum.Enum")
 		.value("MAIN_LOOP", HookPosition::MAIN_LOOP)
 		.value("ZOMBIE_PICK_RANDOM_SPEED", HookPosition::ZOMBIE_PICK_RANDOM_SPEED)
@@ -53,6 +95,17 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("start_jump_frame", &Controller::start_jump_frame)
 		.def("end_jump_frame", &Controller::end_jump_frame)
 		.def("get_p_board", &Controller::get_p_board)
+		.def("get_obj_array_ptr", &Controller::get_obj_array_ptr)
+		.def("get_obj_block_ptr", &Controller::get_obj_block_ptr)
+		.def("get_obj_max_size", &Controller::get_obj_max_size)
+		.def("get_obj_base_ptr",
+			py::overload_cast<ObjType, int64_t>(&Controller::get_obj_base_ptr, py::const_),
+			py::arg("type"), py::arg("index"))
+		.def("get_obj_base_ptr",
+			py::overload_cast<const ObjUuid&>(&Controller::get_obj_base_ptr, py::const_),
+			py::arg("uuid"))
+		.def("get_obj_uuid", &Controller::get_obj_uuid)
+		.def("get_obj_uuid_by_ptr", &Controller::get_obj_uuid_by_ptr)
 		.def("run_code", &Controller::run_code)
 		.def("start", &Controller::start)
 		.def("end", &Controller::end)
@@ -107,4 +160,77 @@ bool Controller::write_bytes(const py::bytes& in, const py::args& offsets, bool 
 	return mem.writeBytes(in, 
 		transform_to_offset(offsets), 
 		force_remote);
+}
+
+namespace
+{
+	const ObjArrayMeta& checkedMeta(const Memory& mem, ObjType type)
+	{
+		const auto* meta = mem.getObjArrayMeta(type);
+		if (meta == nullptr)
+			throw std::invalid_argument("invalid object type");
+		return *meta;
+	}
+
+	uint32_t boundedMaxSize(const ObjArrayMeta& meta)
+	{
+		return std::min(meta.maxSize, static_cast<uint32_t>(OBJ_UUID_SLOT_COUNT));
+	}
+}
+
+uint32_t Controller::get_obj_array_ptr(ObjType type) const
+{
+	return checkedMeta(mem, type).dataArrayPtr;
+}
+
+uint32_t Controller::get_obj_block_ptr(ObjType type) const
+{
+	return checkedMeta(mem, type).blockPtr;
+}
+
+uint32_t Controller::get_obj_max_size(ObjType type) const
+{
+	return checkedMeta(mem, type).maxSize;
+}
+
+uint32_t Controller::get_obj_base_ptr(ObjType type, int64_t index) const
+{
+	const auto& meta = checkedMeta(mem, type);
+	if (meta.blockPtr == 0 || index < 0 || static_cast<uint64_t>(index) >= boundedMaxSize(meta))
+		return 0;
+	return meta.blockPtr + getObjStride(type) * static_cast<uint32_t>(index);
+}
+
+uint32_t Controller::get_obj_base_ptr(const ObjUuid& uuid) const
+{
+	if (!uuid || !isValidObjType(uuid.fields.type))
+		return 0;
+	const auto& meta = *mem.getObjArrayMeta(uuid.fields.type);
+	if (meta.blockPtr == 0 || uuid.fields.index >= boundedMaxSize(meta) ||
+		meta.uuidCnt[uuid.fields.index] != uuid.fields.uuidCnt)
+		return 0;
+	return meta.blockPtr + getObjStride(uuid.fields.type) * uuid.fields.index;
+}
+
+ObjUuid Controller::get_obj_uuid(ObjType type, int64_t index) const
+{
+	const auto& meta = checkedMeta(mem, type);
+	if (index < 0 || static_cast<uint64_t>(index) >= boundedMaxSize(meta))
+		return {};
+	return {meta.uuidCnt[index], static_cast<uint16_t>(index), type};
+}
+
+ObjUuid Controller::get_obj_uuid_by_ptr(ObjType type, uint32_t ptr) const
+{
+	const auto& meta = checkedMeta(mem, type);
+	if (meta.blockPtr == 0 || ptr < meta.blockPtr)
+		return {};
+	const auto delta = ptr - meta.blockPtr;
+	const auto stride = getObjStride(type);
+	if (delta % stride != 0)
+		return {};
+	const auto index = delta / stride;
+	if (index >= boundedMaxSize(meta))
+		return {};
+	return {meta.uuidCnt[index], static_cast<uint16_t>(index), type};
 }

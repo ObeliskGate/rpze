@@ -16,4 +16,3 @@ target("rp_extend")
         set_policy("build.optimization.lto", true)
         set_warnings("allextra")
     end
-    

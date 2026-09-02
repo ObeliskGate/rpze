@@ -172,6 +172,7 @@ bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook)
 }
 
 static void* pTrampoline = nullptr;
+static void* pUpdateAppTarget = nullptr;
 void __fastcall hookUpdateApp(DWORD lawnAppAddr)
 {
 	try 
@@ -203,24 +204,17 @@ void initInThread(const SharedMemory* pSharedMemory)
 	std::println("start init");
 #endif
 
-	auto pUpdateApp = readMemory<void*>(0x6a9ec0, 0x0, 0x180).value();
-	if (MH_CreateHook(pUpdateApp, 
+	pUpdateAppTarget = readMemory<void*>(0x6a9ec0, 0x0, 0x180).value();
+	if (MH_CreateHook(pUpdateAppTarget,
 			reinterpret_cast<void*>(&hookUpdateApp), &pTrampoline) != MH_OK)
 		throw std::runtime_error("LawnApp::UpdateApp create hook failed");
 	
-	if (MH_EnableHook(pUpdateApp) != MH_OK)
+	if (MH_EnableHook(pUpdateAppTarget) != MH_OK)
 		throw std::runtime_error("LawnApp::UpdateApp enable hook failed");
 	
 #ifndef NDEBUG
 	std::println("LawnApp::UpdateApp hooked, trampoline: {}", pTrampoline);
 #endif
-	InsertHook::addInsert(reinterpret_cast<void*>(0x407b52), 
-	[pSharedMemory](const HookContext& reg) // Board::Board
-	{
-		pSharedMemory->shm().isBoardPtrValid = false;
-		pSharedMemory->shm().boardPtr = *reinterpret_cast<uint32_t*>(reg.esp + 8); // stack is (... pBoard rta -1) now	
-	});
-
 	InsertHook::addReplace(reinterpret_cast<void*>(0x42B8B0), reinterpret_cast<void*>(0x42b967),
 		[pSharedMemory](const HookContext&) -> std::optional<uint32_t>
 		{
@@ -276,13 +270,27 @@ InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 	});
 #endif
 
+	initializeObjectUuid();
+
 }
 
 void dllExit()
 {
-	fclose(stderr);
-	SharedMemory::deleteInstance();
+	static bool exiting = false;
+	if (exiting)
+		return;
+	exiting = true;
+
+	MH_DisableHook(MH_ALL_HOOKS);
 	InsertHook::deleteAll();
+	if (pUpdateAppTarget != nullptr)
+	{
+		MH_RemoveHook(pUpdateAppTarget);
+		pUpdateAppTarget = nullptr;
+		pTrampoline = nullptr;
+	}
+	SharedMemory::deleteInstance();
 	MH_Uninitialize();
+	fclose(stderr);
 }
 

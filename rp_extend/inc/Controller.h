@@ -87,6 +87,14 @@ public:
 	py::object read_bytes(uint32_t size, const py::args& offsets, bool force_remote = false);
 
 	bool write_bytes(const py::bytes& in, const py::args& offsets, bool force_remote = false);
+
+	uint32_t get_obj_array_ptr(ObjType type) const;
+	uint32_t get_obj_block_ptr(ObjType type) const;
+	uint32_t get_obj_max_size(ObjType type) const;
+	uint32_t get_obj_base_ptr(ObjType type, int64_t index) const;
+	uint32_t get_obj_base_ptr(const ObjUuid& uuid) const;
+	ObjUuid get_obj_uuid(ObjType type, int64_t index) const;
+	ObjUuid get_obj_uuid_by_ptr(ObjType type, uint32_t ptr) const;
 };
 
 template <typename T>

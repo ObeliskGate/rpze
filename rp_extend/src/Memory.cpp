@@ -169,7 +169,7 @@ bool Memory::endJumpFrame()
 
 bool Memory::runCode(const std::string_view codes) const
 {
-	if (codes.size() > SHARED_MEMORY_SIZE) [[unlikely]]
+	if (codes.size() > Shm::ASM_SIZE) [[unlikely]]
 		throw std::invalid_argument("runCode: too many codes");
 	
 	if (!isShmPrepared()) [[unlikely]]

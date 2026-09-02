@@ -14,6 +14,8 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <algorithm>
+
 #include <string>
 #include <string_view>
 #include <print>

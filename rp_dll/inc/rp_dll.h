@@ -53,7 +53,6 @@ bool writeMemory(T&& val, U base, Args... offsets)
 template<DWORD isInGame>
 void mainHook(const SharedMemory* pSharedMemory)
 {
-	pSharedMemory->shm().boardPtr = readMemory<DWORD>(0x6a9ec0, 0x768).value_or(0);
 	if (pSharedMemory->shm().globalState == HookState::NOT_CONNECTED ||
 		pSharedMemory->shm().hookStateArr[getHookIndex(HookPosition::MAIN_LOOP)] == HookState::NOT_CONNECTED) return;
 	volatile PhaseCode* pPhaseCode;
@@ -96,5 +95,7 @@ void doWhenJmpFrame(volatile PhaseCode& phaseCode);
 bool closableHook(const SharedMemory* pSharedMemory, HookPosition hook);
 
 void initInThread(const SharedMemory* pSharedMemory);
+
+void initializeObjectUuid();
 
 void dllExit();

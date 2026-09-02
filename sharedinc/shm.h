@@ -1,13 +1,14 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include "obj_uuid.h"
 
 #define WIN32_LEAN_AND_MEAN             // 从 Windows 头文件中排除极少使用的内容
 
 // Windows 头文件
 #include <Windows.h> 
 
-constexpr size_t SHARED_MEMORY_SIZE = 1024 * 8;
+inline constexpr size_t SHARED_MEMORY_SIZE = 0x10000;
 
 enum class PhaseCode : int32_t
 {
@@ -74,10 +75,13 @@ struct Shm
     static constexpr size_t OFFSETS_LEN = 16;
     static constexpr uint32_t OFFSET_END = UINT32_MAX;
     static constexpr size_t HOOK_LEN = 16;
-    static constexpr uint32_t BUFFER_OFFSET = 256;
-    static constexpr uint32_t ASM_OFFSET = 1024 * 4;
+    static constexpr uint32_t BUFFER_OFFSET = 0x0100;
+    static constexpr uint32_t ASM_OFFSET = 0x1000;
+    static constexpr uint32_t OBJ_META_OFFSET = 0x2000;
     static constexpr uint32_t BUFFER_SIZE = ASM_OFFSET - BUFFER_OFFSET;
-    static constexpr uint32_t ASM_SIZE = SHARED_MEMORY_SIZE - ASM_OFFSET;
+    static constexpr uint32_t ASM_SIZE = OBJ_META_OFFSET - ASM_OFFSET;
+    static constexpr uint32_t RESERVED_OFFSET = OBJ_META_OFFSET + sizeof(ObjMeta);
+    static constexpr uint32_t RESERVED_SIZE = SHARED_MEMORY_SIZE - RESERVED_OFFSET;
 
     union {
         struct {
@@ -107,6 +111,8 @@ struct Shm
 
     volatile char readWriteBuffer[BUFFER_SIZE];
     volatile char asmBuffer[ASM_SIZE];
+    ObjMeta objMeta;
+    uint8_t reserved[RESERVED_SIZE];
 
     template <typename T = void>
     volatile T* getReadWriteBuffer() volatile { return reinterpret_cast<volatile T*>(readWriteBuffer); }
@@ -124,6 +130,8 @@ struct Shm
 
 static_assert(offsetof(Shm, readWriteBuffer) == Shm::BUFFER_OFFSET, "Shm buffer offset error");
 static_assert(offsetof(Shm, asmBuffer) == Shm::ASM_OFFSET, "Shm asm buffer offset error");
+static_assert(offsetof(Shm, objMeta) == Shm::OBJ_META_OFFSET, "Shm object metadata offset error");
+static_assert(Shm::RESERVED_OFFSET == 0x6030, "Shm reserved offset error");
 static_assert(sizeof(Shm) == SHARED_MEMORY_SIZE, "Shm size error");
 
 inline std::string toShmName(std::string_view name, std::optional<DWORD> pid = {}) {

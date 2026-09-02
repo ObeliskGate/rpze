@@ -7,6 +7,7 @@ from enum import IntEnum
 
 from .obj_base import property_i32, property_bool, property_int_enum, ObjId, obj_list, GameObject
 from ..basic import asm
+from ..rp_extend import ObjType
 
 
 class PlantType(IntEnum):
@@ -152,7 +153,7 @@ class Plant(GameObject):
     """
     ITERATOR_FUNC_ADDRESS = 0x41c950
 
-    OBJ_SIZE = 0x14c
+    OBJ_SIZE = ObjType.PLANT.ITEM_SIZE + 4
 
     x = property_i32(0x8, "x")
 

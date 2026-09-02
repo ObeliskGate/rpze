@@ -144,6 +144,13 @@ public:
 	void setJumpingSyncMethod(SyncMethod val);
 
 	std::pair<bool, uint32_t> getPBoard() const; // 第一位返回0表示无须换新
+
+	const ObjArrayMeta* getObjArrayMeta(ObjType type) const
+	{
+		if (!isValidObjType(type))
+			return nullptr;
+		return &shm().objMeta.arrays[objTypeIndex(type)];
+	}
 };
 
 template <bool check_sync>

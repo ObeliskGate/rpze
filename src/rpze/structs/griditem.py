@@ -7,6 +7,7 @@ from typing import Self
 
 from .obj_base import ObjNode, property_int_enum, property_i32, property_bool, property_f32, obj_list
 from ..basic import asm
+from ..rp_extend import ObjType
 
 
 class GriditemType(IntEnum):
@@ -32,7 +33,7 @@ class Griditem(ObjNode):
     """
     场地物品. 包括脑子, 梯子等
     """
-    OBJ_SIZE = 0xEC
+    OBJ_SIZE = ObjType.GRID_ITEM.ITEM_SIZE + 4
 
     ITERATOR_FUNC_ADDRESS = 0x41CAD0
 

@@ -13,7 +13,7 @@ from .reanimation import ReanimationList
 from .zombie import ZombieList, ZombieType, Zombie
 from ..basic import asm
 from ..basic.exception import PvzStatusError
-from ..rp_extend import Controller, RpBaseException
+from ..rp_extend import Controller, ObjType, RpBaseException
 
 
 class GameBoard(ObjBase):
@@ -32,10 +32,14 @@ class GameBoard(ObjBase):
 
     def __init__(self, base_ptr: int, controller: Controller):
         super().__init__(base_ptr, controller)
-        self.zombie_list: ZombieList = ZombieList(base_ptr + 0x90, controller)
-        self.plant_list: PlantList = PlantList(base_ptr + 0xac, controller)
-        self.projectile_list: ProjectileList = ProjectileList(base_ptr + 0xc8, controller)
-        self.griditem_list: GriditemList = GriditemList(base_ptr + 0x11c, controller)
+        self.zombie_list: ZombieList = ZombieList(
+            base_ptr + ObjType.ZOMBIE.BOARD_ARRAY_OFFSET, controller)
+        self.plant_list: PlantList = PlantList(
+            base_ptr + ObjType.PLANT.BOARD_ARRAY_OFFSET, controller)
+        self.projectile_list: ProjectileList = ProjectileList(
+            base_ptr + ObjType.PROJECTILE.BOARD_ARRAY_OFFSET, controller)
+        self.griditem_list: GriditemList = GriditemList(
+            base_ptr + ObjType.GRID_ITEM.BOARD_ARRAY_OFFSET, controller)
 
     _p_challenge = property_u32(0x160, "Challenge对象指针")
 

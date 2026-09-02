@@ -8,6 +8,7 @@ from typing import Self
 from .obj_base import ObjNode, property_i32, property_int_enum, property_f32, property_bool, property_u32, ObjId, \
     obj_list
 from ..basic import asm
+from ..rp_extend import ObjType
 
 
 class ZombieType(IntEnum):
@@ -208,7 +209,7 @@ class Zombie(ObjNode):
     """
     ITERATOR_FUNC_ADDRESS = 0x41C8F0
 
-    OBJ_SIZE = 0x15c
+    OBJ_SIZE = ObjType.ZOMBIE.ITEM_SIZE + 4
 
     int_x = property_i32(0x8, "整数 x 坐标")
 

@@ -29,6 +29,9 @@ SharedMemory::SharedMemory()
 
 	for (size_t i = 0; i < Shm::OFFSETS_LEN; i++)
 		shm().offsets[i] = Shm::OFFSET_END;
+
+	shm().boardPtr = 0;
+	memset(&shm().objMeta, 0, sizeof(shm().objMeta));
 	
 	shm().globalState = HookState::NOT_CONNECTED;
 	shm().isBoardPtrValid = false;

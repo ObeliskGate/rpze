@@ -7,7 +7,8 @@ void InsertHook::callBackFunc(InsertHook* this_, HookContext* hookContext)
 
 InsertHook::~InsertHook()
 {
-    if (MH_DisableHook(addr) != MH_OK)
+    const auto disableStatus = MH_DisableHook(addr);
+    if (disableStatus != MH_OK && disableStatus != MH_ERROR_DISABLED)
         std::println(std::cerr, "failed to disable hook at {}", addr);
     
     if (MH_RemoveHook(addr) != MH_OK)
