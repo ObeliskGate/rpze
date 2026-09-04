@@ -5,6 +5,11 @@
 # don't show main.py
 main.py
 
+/rp_test
+
+# load_dotenv() file
+.env
+
 
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
@@ -331,6 +336,8 @@ paket-files/
 __pycache__/
 *.pyc
 *.pyd
+*.venv/
+.mypy_cache/
 
 # Cake - Uncomment if you are using it
 # tools/**
@@ -380,3 +387,11 @@ FodyWeavers.xsd
 
 # package metadata
 rpze.egg-info/
+
+# hash file
+*.sha256
+*.sha512
+*.md5
+
+# Claude Code temporary files
+tmpclaude-*
