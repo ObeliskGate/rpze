@@ -60,6 +60,13 @@ jobs:
       - name: Check wheel metadata
         run: python -m twine check dist/*
 
+      - name: Smoke-test wheel
+        shell: pwsh
+        run: |
+          $wheel = Get-ChildItem dist\*.whl
+          python -m pip install --force-reinstall --no-deps $wheel.FullName
+          python -c "import importlib.metadata as metadata; import rpze.rp_extend as ext; print(metadata.version('rpze')); print(ext.__file__)"
+
       - name: Upload wheel artifact
         uses: actions/upload-artifact@v7
         with:
