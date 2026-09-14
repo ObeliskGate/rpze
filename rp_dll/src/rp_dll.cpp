@@ -45,7 +45,10 @@ void doAsPhaseCode(volatile PhaseCode& phaseCode, const SharedMemory* pSharedMem
 		case PhaseCode::CONTINUE:
 			return;
 		case PhaseCode::WAIT:
-			while (phaseCode == PhaseCode::WAIT) {}
+			while (phaseCode == PhaseCode::WAIT)
+			{
+				YieldProcessor();
+			}
 			continue;
 		case PhaseCode::RUN_CODE:
 			{

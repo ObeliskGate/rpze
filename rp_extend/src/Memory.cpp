@@ -268,4 +268,5 @@ void Memory::waiting(std::string_view callerName) const
 		}
 		throw MemoryException(std::format("waiting at `{}`: {}", callerName, message), this->pid);
 	}
+	YieldProcessor();
 }
