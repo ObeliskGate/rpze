@@ -21,6 +21,7 @@ class SyncMethod(Enum):
 
 
 class ObjType(Enum):
+    # object category used by the object and UUID APIs
     PLANT = 0
     ZOMBIE = 1
     PROJECTILE = 2
@@ -34,6 +35,8 @@ class ObjType(Enum):
 
 
 class ObjTypeInfo:
+    # layout metadata for one object category
+
     @property
     def ITEM_SIZE(self) -> int: ...  # object payload size in bytes; a slot is ITEM_SIZE + 4
 
@@ -42,6 +45,7 @@ class ObjTypeInfo:
 
 
 class ObjUuid:
+    # identifies an allocation by type, slot, and generation; zero uuid_cnt is invalid
     @overload
     def __init__(self) -> None: ...
 
@@ -49,30 +53,30 @@ class ObjUuid:
     def __init__(self, uuid_cnt: int, index: int, type: ObjType) -> None: ...
 
     @property
-    def uuid_cnt(self) -> int: ...  # generation counter; changes when a slot is reused
+    def uuid_cnt(self) -> int: ...  # per-type generation counter; changes when a slot is reused
 
     @property
-    def index(self) -> int: ...  # slot index in the object's block
+    def index(self) -> int: ...  # slot index in the type's object block
 
     @property
     def type(self) -> ObjType: ...  # object category of this UUID
 
     @property
-    def value(self) -> int: ...  # packed 64-bit representation of uuid_cnt, index, and type
+    def value(self) -> int: ...  # packed 64-bit UUID value
 
-    def __bool__(self) -> bool: ...
+    def __bool__(self) -> bool: ...  # true when uuid_cnt is nonzero
 
-    def __int__(self) -> int: ...
+    def __int__(self) -> int: ...  # return the packed 64-bit value
 
-    def __eq__(self, other: Self, /) -> bool: ...
+    def __eq__(self, other: Self, /) -> bool: ...  # compare packed UUID values
 
-    def __hash__(self) -> int: ...
+    def __hash__(self) -> int: ...  # hash the packed UUID value
 
-    def __repr__(self) -> str: ...
+    def __repr__(self) -> str: ...  # return a field-oriented representation
 
 
-OBJ_UUID_SLOT_COUNT: int
-OBJ_TYPE_INFO: tuple[ObjTypeInfo, ...]
+OBJ_UUID_SLOT_COUNT: int  # number of UUID slots tracked per object type
+OBJ_TYPE_INFO: tuple[ObjTypeInfo, ...]  # layout metadata in ObjType order
 
 
 class RpBaseException(Exception): ...
@@ -145,23 +149,23 @@ class Controller:
 
     def get_p_board(self) -> tuple[bool, int]: ...  # return (is_p_board_new, p_board)
 
-    def get_obj_array_ptr(self, type: ObjType, /) -> int: ...
+    def get_obj_array_ptr(self, type: ObjType, /) -> int: ...  # address of the game's object array, or 0 when unavailable
 
-    def get_obj_block_ptr(self, type: ObjType, /) -> int: ...
+    def get_obj_block_ptr(self, type: ObjType, /) -> int: ...  # address of its object block, or 0 when unavailable
 
-    def get_obj_max_size(self, type: ObjType, /) -> int: ...
+    def get_obj_max_size(self, type: ObjType, /) -> int: ...  # maximum slot count reported by the game; UUID lookups cap at OBJ_UUID_SLOT_COUNT
 
-    def get_obj_next_uuid_cnt(self, type: ObjType, /) -> int: ...  # authoritative next UUID value, preserved/readable without a Board
-
-    @overload
-    def get_obj_base_ptr(self, type: ObjType, index: int, /) -> int: ...
+    def get_obj_next_uuid_cnt(self, type: ObjType, /) -> int: ...  # authoritative next UUID counter for this type; preserved without a Board
 
     @overload
-    def get_obj_base_ptr(self, uuid: ObjUuid, /) -> int: ...
+    def get_obj_base_ptr(self, type: ObjType, index: int, /) -> int: ...  # slot address, or 0 if unavailable or out of range
 
-    def get_obj_uuid(self, type: ObjType, index: int, /) -> ObjUuid: ...
+    @overload
+    def get_obj_base_ptr(self, uuid: ObjUuid, /) -> int: ...  # current slot address, or 0 for an invalid or stale UUID
 
-    def get_obj_uuid_by_ptr(self, type: ObjType, ptr: int, /) -> ObjUuid: ...
+    def get_obj_uuid(self, type: ObjType, index: int, /) -> ObjUuid: ...  # UUID for a slot, or invalid if out of range or unused
+
+    def get_obj_uuid_by_ptr(self, type: ObjType, ptr: int, /) -> ObjUuid: ...  # UUID for an exact slot address, or invalid if unmatched or unused
 
     def run_code(self, asm_bytes: bytes, /) -> bool: ...  # assert prepared; return False if failed
 
