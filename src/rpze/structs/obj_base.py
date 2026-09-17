@@ -9,7 +9,7 @@ from typing import ClassVar, Self, TypeVar, overload, SupportsIndex, Generic, An
 
 from ..basic import asm
 from ..basic.exception import PvzStatusError
-from ..rp_extend import Controller
+from ..rp_extend import Controller, ObjType, ObjUuid
 
 
 class ObjBase(abc.ABC):
@@ -304,6 +304,27 @@ class ObjNode(ObjBase, abc.ABC):
         ObjBase.__init__(self, base_ptr, ctler)
         self.id = ObjId(base_ptr + self.OBJ_SIZE - 4, ctler)
 
+    OBJ_TYPE: ClassVar[ObjType | None] = None
+    """对象的 UUID 类别, 不支持 UUID 的类型为 None"""
+
+    @property
+    def uuid(self) -> ObjUuid:
+        """
+        获取当前位置上对象的 UUID
+
+        只读取共享内存, 不读取游戏内存. 要在之后找回这个对象, 请保存返回值并用 find 查找.
+        槽位被复用后, 再次访问此属性会得到新对象的 UUID.
+        UUID 不记录所属游戏, 不能拿到另一个游戏中查找.
+
+        Returns:
+            当前位置上对象的 UUID, 空闲槽位返回无效 UUID
+        Raises:
+            NotImplementedError: 对象类型不支持 UUID, 如 Reanimation
+        """
+        if self.OBJ_TYPE is None:
+            raise NotImplementedError(f"{type(self).__name__} does not support UUIDs")
+        return self.controller.get_obj_uuid_by_ptr(self.OBJ_TYPE, self.base_ptr)
+
     ITERATOR_FUNC_ADDRESS: ClassVar[int] = NotImplemented
     """返回 pvz 中迭代对象的函数地址, 必须在所有非抽象子类中赋值"""
 
@@ -397,6 +418,21 @@ class ObjList(ObjBase, Sequence[_T_node], abc.ABC):
     def alive_iterator(self) -> Iterator[_T_node]:
         """与 __invert__() 相同"""
         return ~self
+
+    @overload
+    def find(self, uuid: ObjUuid, /) -> _T_node | None:
+        """
+        通过 UUID 查找对象
+
+        仅支持植物、僵尸、子弹和场地物品列表. 只读取共享内存, 不读取游戏内存.
+        不检查 is_dead, 已标记死亡但尚未回收的对象仍会返回.
+
+        Args:
+            uuid: 从同一个游戏中保存的 UUID
+        Returns:
+            对应的未回收对象. UUID 无效、类型不符、对象已回收,
+            或列表不属于当前 Board 时返回 None
+        """
 
     @overload
     def find(self, index: SupportsIndex | ObjId, /) -> _T_node | None:
@@ -528,13 +564,22 @@ def obj_list(node_cls: type[_T_node]) -> type[ObjList[_T_node]]:
                     #     return None
                     return target if target.id.rank == rank else None
                 case (idx, ):
+                    if isinstance(idx, ObjUuid):
+                        type_ = node_cls.OBJ_TYPE
+                        if type_ is None or idx.type != type_:
+                            return None
+                        # UUID metadata belongs to the current Board, not a stale array view.
+                        if self.controller.get_obj_array_ptr(type_) != self.base_ptr:
+                            return None
+                        ptr = self.controller.get_obj_base_ptr(idx)
+                        return node_cls(ptr, self.controller) if ptr else None
                     if isinstance(idx, SupportsIndex):
                         target = self.at(idx.__index__())
                         return target if target.id.rank != 0 else None
                     if isinstance(idx, ObjId):
                         target = self.at(idx.index)
                         return target if target.id == idx else None
-                    raise TypeError("index must be int or ObjId instance")
+                    raise TypeError("index must be int, ObjId or ObjUuid instance")
                 case _:
                     raise ValueError("the function should have 1 or 2 parameters, "
                                      f"not {len(args)} parameters")

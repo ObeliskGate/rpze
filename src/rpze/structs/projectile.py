@@ -53,6 +53,8 @@ class Projectile(GameObject):
     """
     ITERATOR_FUNC_ADDRESS = 0x41C9B0
 
+    OBJ_TYPE = ObjType.PROJECTILE
+
     OBJ_SIZE = ObjType.PROJECTILE.ITEM_SIZE + 4
 
     int_x = property_i32(0x8, "图像整数 x 坐标")

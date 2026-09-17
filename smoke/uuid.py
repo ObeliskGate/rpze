@@ -109,6 +109,7 @@ def live_uuids(controller: Controller, type_: ObjType) -> list[ObjUuid]:
             ptr = block + stride * index
             assert controller.get_obj_base_ptr(uuid) == ptr
             assert controller.get_obj_uuid_by_ptr(type_, ptr) == uuid
+            assert_python_lookup(get_board(controller), type_, uuid, ptr)
             result.append(uuid)
     return result
 
@@ -145,6 +146,21 @@ def object_list(board: GameBoard, type_: ObjType) -> Any:
     raise AssertionError(f"no smoke list for object type {type_!r}")
 
 
+def assert_python_lookup(board: GameBoard, type_: ObjType, uuid: ObjUuid, ptr: int) -> None:
+    """Check Python lookup without replacing the independent native mID oracle."""
+    obj = board.find(uuid)
+    assert obj is not None and obj.base_ptr == ptr
+    assert obj.uuid == uuid and obj.OBJ_TYPE == type_
+    objects = object_list(board, type_)
+    found = objects.find(uuid)
+    assert found is not None and found.base_ptr == ptr
+    assert objects.find(ObjUuid()) is None
+    assert board.find(ObjUuid()) is None
+    for other_type in OBJ_TYPES:
+        if other_type != type_:
+            assert object_list(board, other_type).find(uuid) is None
+
+
 def factory_for(board: GameBoard, type_: ObjType) -> Factory:
     if type_ == ObjType.PLANT:
         def create_plant() -> Plant:
@@ -175,6 +191,8 @@ def exact_allocation(
     assert uuid and uuid.uuid_cnt == before[type_]
     assert controller.get_obj_base_ptr(uuid) == ptr
     assert controller.get_obj_uuid_by_ptr(type_, ptr) == uuid
+    assert obj.uuid == uuid
+    assert_python_lookup(get_board(controller), type_, uuid, ptr)
     return obj, uuid
 
 
@@ -191,8 +209,12 @@ def physical_single_free_realloc(
     # die()/die_no_loot() only marks an object for deletion.  Do not inspect
     # UUID invalidation until ProcessDeleteQueue has physically reclaimed it.
     killer(obj)
+    assert board.find(old_uuid) is not None
+    assert object_list(board, type_).find(old_uuid) is not None
     board.process_delete_queue()
     assert controller.get_obj_base_ptr(old_uuid) == 0
+    assert board.find(old_uuid) is None
+    assert object_list(board, type_).find(old_uuid) is None
     after_free = next_counts(controller)
     for current_type in OBJ_TYPES:
         assert after_free[current_type] == before_free[current_type], (
@@ -201,6 +223,8 @@ def physical_single_free_realloc(
 
     replacement, new_uuid = exact_allocation(controller, type_, factory)
     assert controller.get_obj_base_ptr(old_uuid) == 0
+    assert board.find(old_uuid) is None
+    assert object_list(board, type_).find(old_uuid) is None
     assert new_uuid.uuid_cnt != old_uuid.uuid_cnt
     return replacement, new_uuid
 

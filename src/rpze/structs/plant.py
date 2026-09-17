@@ -153,6 +153,8 @@ class Plant(GameObject):
     """
     ITERATOR_FUNC_ADDRESS = 0x41c950
 
+    OBJ_TYPE = ObjType.PLANT
+
     OBJ_SIZE = ObjType.PLANT.ITEM_SIZE + 4
 
     x = property_i32(0x8, "x")

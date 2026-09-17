@@ -8,12 +8,12 @@ from typing import Self
 from .griditem import GriditemList, Griditem, GriditemType
 from .obj_base import ObjBase, property_u32, property_bool, property_i32
 from .plant import PlantList, Plant, PlantType
-from .projectile import ProjectileList
+from .projectile import ProjectileList, Projectile
 from .reanimation import ReanimationList
 from .zombie import ZombieList, ZombieType, Zombie
 from ..basic import asm
 from ..basic.exception import PvzStatusError
-from ..rp_extend import Controller, ObjType, RpBaseException
+from ..rp_extend import Controller, ObjType, ObjUuid, RpBaseException
 
 
 class GameBoard(ObjBase):
@@ -40,6 +40,35 @@ class GameBoard(ObjBase):
             base_ptr + ObjType.PROJECTILE.BOARD_ARRAY_OFFSET, controller)
         self.griditem_list: GriditemList = GriditemList(
             base_ptr + ObjType.GRID_ITEM.BOARD_ARRAY_OFFSET, controller)
+
+    def find(self, uuid: ObjUuid, /) -> Plant | Zombie | Projectile | Griditem | None:
+        """
+        通过 UUID 查找植物、僵尸、子弹或场地物品
+
+        只读取共享内存, 不读取游戏内存. 不检查 is_dead, 已标记死亡但尚未回收的对象仍会返回.
+        需要具体的返回类型时, 可用 plant_list.find(uuid) 等对应列表的方法.
+
+        Args:
+            uuid: 从同一个游戏中保存的 UUID, 不接受原生 ID 或整数
+        Returns:
+            对应的未回收对象. UUID 无效、对象已回收, 或本 Board 已失效时返回 None
+        Raises:
+            TypeError: uuid 不是 ObjUuid
+        """
+        if not isinstance(uuid, ObjUuid):
+            raise TypeError("uuid must be an ObjUuid instance")
+        if not uuid:
+            return None
+        match uuid.type:
+            case ObjType.PLANT:
+                return self.plant_list.find(uuid)
+            case ObjType.ZOMBIE:
+                return self.zombie_list.find(uuid)
+            case ObjType.PROJECTILE:
+                return self.projectile_list.find(uuid)
+            case ObjType.GRID_ITEM:
+                return self.griditem_list.find(uuid)
+        return None
 
     _p_challenge = property_u32(0x160, "Challenge对象指针")
 

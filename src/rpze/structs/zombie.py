@@ -209,6 +209,8 @@ class Zombie(ObjNode):
     """
     ITERATOR_FUNC_ADDRESS = 0x41C8F0
 
+    OBJ_TYPE = ObjType.ZOMBIE
+
     OBJ_SIZE = ObjType.ZOMBIE.ITEM_SIZE + 4
 
     int_x = property_i32(0x8, "整数 x 坐标")

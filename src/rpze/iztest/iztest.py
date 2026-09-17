@@ -16,7 +16,7 @@ from ..basic.gridstr import parse_grid_str, GridStr
 from ..basic.inject import ConnectedContext
 from ..flow.flow import FlowFactory, TickRunnerResult, FlowManager, DEFAULT_PRIORITY
 from ..flow.utils import until
-from ..rp_extend import Controller, HookPosition, RpBaseException
+from ..rp_extend import Controller, HookPosition, ObjUuid, RpBaseException
 from ..structs.game_board import GameBoard, get_board
 from ..structs.griditem import Griditem
 from ..structs.plant import PlantStatus, PlantType, Plant
@@ -140,14 +140,12 @@ def parse_zombie_place_list(place_zombie_str: str) -> list[PlaceZombieOp]:
     return [PlaceZombieOp(*op) for op in zip(types, times, rows, cols)]
 
 
-_Id: TypeAlias = tuple[int, int]
-
-
 class _IzGround:
-    def __init__(self, origin_plant_ids: list[list[_Id]], origin_brain_ids: list[_Id], izt: "IzTest") -> None:
-        self.origin_plant_ids: list[list[_Id]] = origin_plant_ids
-        self.origin_brain_ids: list[_Id] = origin_brain_ids
-        self.zombie_ids: list[_Id] = []
+    def __init__(self, origin_plant_uuids: list[list[ObjUuid]],
+                 origin_brain_uuids: list[ObjUuid], izt: "IzTest") -> None:
+        self._origin_plant_uuids: list[list[ObjUuid]] = origin_plant_uuids
+        self._origin_brain_uuids: list[ObjUuid] = origin_brain_uuids
+        self._zombie_uuids: list[ObjUuid] = []
         self.izt: "IzTest" = izt
 
     @overload
@@ -198,10 +196,10 @@ class _IzGround:
     def __getitem__(self, item):
         match item:
             case (row, -1):
-                t = self.izt.game_board.griditem_list.find(*self.origin_brain_ids[row])
+                t = self.izt.game_board.griditem_list.find(self._origin_brain_uuids[row])
                 return None if t is None or t.is_dead else t
             case (row, col):
-                t = self.izt.game_board.plant_list.find(*self.origin_plant_ids[row][col])
+                t = self.izt.game_board.plant_list.find(self._origin_plant_uuids[row][col])
                 return None if t is None or t.is_dead else t
             case grid:
                 grids = grid.split()
@@ -219,10 +217,10 @@ class _IzGround:
             不存在 or 已死亡返回 None, 否则返回僵尸
         """
         try:
-            id_ = self.zombie_ids[i]
+            uuid = self._zombie_uuids[i]
         except IndexError:
             return None
-        t = self.izt.game_board.zombie_list.find(*id_)
+        t = self.izt.game_board.zombie_list.find(uuid)
         return None if t is None or t.is_dead else t
 
 
@@ -285,9 +283,9 @@ class IzTest:
 
         # 每次运行重置的量
         self._ground: _IzGround | None = None
-        self._target_squashes: list[tuple[int, int]] = []  # 所有目标窝瓜
-        self._target_plant_ids: list[tuple[int, int]] = []  # 所有目标植物
-        self._target_brain_ids: list[tuple[int, int]] = []  # 所有目标脑子
+        self._target_squashes: list[ObjUuid] = []  # 所有目标窝瓜
+        self._target_plant_uuids: list[ObjUuid] = []  # 所有目标植物
+        self._target_brain_uuids: list[ObjUuid] = []  # 所有目标脑子
         self._last_test_ended: bool = False  # 用于判断是否结束一次测试
         self._check_end_active: bool = False  # 运行时开关，每轮测试前重置为 enable_default_check_end 的值
 
@@ -557,16 +555,16 @@ class IzTest:
         """
         board = self.game_board
         if self.wait_squashes:
-            for ids in self._target_squashes:
-                match board.plant_list.find(*ids):
+            for uuid in self._target_squashes:
+                match board.plant_list.find(uuid):
                     case None:
                         continue
                     case squash:
                         if squash.m_state is not PlantStatus.NOTREADY:
                             return None
 
-        if (all(board.griditem_list.find(*brain) is None for brain in self._target_brain_ids) and
-                all(board.plant_list.find(*plant) is None for plant in self._target_plant_ids)):
+        if (all(board.griditem_list.find(brain) is None for brain in self._target_brain_uuids) and
+                all(board.plant_list.find(plant) is None for plant in self._target_plant_uuids)):
             return self.end(True)
         if board.zombie_list.obj_num == 0:
             return self.end(False)
@@ -611,8 +609,8 @@ class IzTest:
         @self.flow_factory.connect(until(0), only_once=True, priority=place_priority)
         def _init(_):
             # 清掉所有_ObjList的栈
-            origin_plant_ids: list[list[_Id]] = [[None] * 5 for _ in range(5)]  # type: ignore
-            origin_brain_ids: list[_Id] = [None] * 5  # type: ignore
+            origin_plant_uuids = [[ObjUuid() for _ in range(5)] for _ in range(5)]
+            origin_brain_uuids = [ObjUuid() for _ in range(5)]
             board = self.game_board
             board.plant_list.free_all().reset_stack()
             board.zombie_list.free_all().reset_stack()
@@ -627,28 +625,30 @@ class IzTest:
                             continue
                         plant = board.iz_new_plant(row, col, type_)
                         # assert plant is not None
-                        origin_plant_ids[row][col] = plant.id.tpl()
+                        uuid = plant.uuid
+                        origin_plant_uuids[row][col] = uuid
                         if self.reset_generate_cd:
                             randomize_generate_cd(plant)
                         if (row, col) in self.target_plants_pos:
-                            self._target_plant_ids.append(plant.id.tpl())
+                            self._target_plant_uuids.append(uuid)
                             if self.wait_squashes and type_ is PlantType.squash:
-                                self._target_squashes.append(plant.id.tpl())
+                                self._target_squashes.append(uuid)
 
             for i in range(5):
                 brain = self.game_board.new_iz_brain(i)
-                origin_brain_ids[i] = brain.id.tpl()
+                uuid = brain.uuid
+                origin_brain_uuids[i] = uuid
                 if i in self.target_brains_pos:
-                    self._target_brain_ids.append(brain.id.tpl())
+                    self._target_brain_uuids.append(uuid)
 
-            self._ground = _IzGround(origin_plant_ids, origin_brain_ids, self)
+            self._ground = _IzGround(origin_plant_uuids, origin_brain_uuids, self)
 
         for op in self.place_zombie_list:
             @self.flow_factory.add_tick_runner(place_priority)
             def _place_zombie(fm: FlowManager, _op=op):
                 if fm.time == _op.time:
                     t = self.game_board.iz_place_zombie(_op.row, _op.col, _op.type_)
-                    self._ground.zombie_ids.append(t.id.tpl())
+                    self._ground._zombie_uuids.append(t.uuid)
                     return TickRunnerResult.DONE
                 return None
 
@@ -663,8 +663,8 @@ class IzTest:
             # 重置每轮测试的运行时状态到默认值
             # _success_count 和 _test_time 是跨轮次累计统计量, 不在此重置
             self._ground = None
-            self._target_plant_ids = []
-            self._target_brain_ids = []
+            self._target_plant_uuids = []
+            self._target_brain_uuids = []
             self._target_squashes = []
             self._last_test_ended = False
             self._check_end_active = self.enable_default_check_end

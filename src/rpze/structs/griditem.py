@@ -33,6 +33,8 @@ class Griditem(ObjNode):
     """
     场地物品. 包括脑子, 梯子等
     """
+    OBJ_TYPE = ObjType.GRID_ITEM
+
     OBJ_SIZE = ObjType.GRID_ITEM.ITEM_SIZE + 4
 
     ITERATOR_FUNC_ADDRESS = 0x41CAD0
