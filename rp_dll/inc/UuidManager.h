@@ -4,12 +4,10 @@
 
 class UuidManager
 {
-    uint32_t counter = 0;
-
     ObjArrayMeta& meta(ObjType type) const;
 
 public:
-    uint32_t nextUuidCnt();
+    uint32_t nextUuidCnt(ObjType type);
     void onAlloc(ObjType type, uint16_t index);
     void onFree(ObjType type, uint16_t index);
     void clear(ObjType type);

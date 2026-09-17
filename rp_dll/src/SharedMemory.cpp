@@ -32,7 +32,8 @@ SharedMemory::SharedMemory()
 
 	shm().boardPtr = 0;
 	memset(&shm().objMeta, 0, sizeof(shm().objMeta));
-	
+	for (size_t typeIndex = 0; typeIndex < OBJ_TYPE_COUNT; ++typeIndex)
+		shm().objMeta.arrays[typeIndex].nextUuidCnt = 1;
 	shm().globalState = HookState::NOT_CONNECTED;
 	shm().isBoardPtrValid = false;
 	shm().alreadyShared = false;

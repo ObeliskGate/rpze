@@ -86,18 +86,20 @@ namespace
 
 ObjArrayMeta& UuidManager::meta(ObjType type) const { return arrayMeta(type); }
 
-uint32_t UuidManager::nextUuidCnt()
+uint32_t UuidManager::nextUuidCnt(ObjType type)
 {
-    ++counter;
-    if (counter == 0)
-        ++counter;
-    return counter;
+    auto& next = meta(type).nextUuidCnt;
+    const auto issued = next;
+    ++next;
+    if (next == 0)
+        ++next;
+    return issued;
 }
 
 void UuidManager::onAlloc(ObjType type, uint16_t index)
 {
     assert(index < OBJ_UUID_SLOT_COUNT);
-    meta(type).uuidCnt[index] = nextUuidCnt();
+    meta(type).uuidCnt[index] = nextUuidCnt(type);
 }
 
 void UuidManager::onFree(ObjType type, uint16_t index)
@@ -147,7 +149,7 @@ void UuidManager::scanExistingObjects()
             const auto slot = target.blockPtr + stride * index;
             const auto id = *reinterpret_cast<const uint32_t*>(slot + itemSize);
             if ((id >> 16) != 0)
-                target.uuidCnt[index] = nextUuidCnt();
+                target.uuidCnt[index] = nextUuidCnt(type);
         }
     }
 }
@@ -184,7 +186,13 @@ void unpublishBoard()
 {
     auto& shm = SharedMemory::getInstance()->shm();
     getUuidManager().clearAll();
-    memset(&shm.objMeta, 0, sizeof(shm.objMeta));
+    for (size_t typeIndex = 0; typeIndex < OBJ_TYPE_COUNT; ++typeIndex)
+    {
+        auto& target = shm.objMeta.arrays[typeIndex];
+        target.dataArrayPtr = 0;
+        target.blockPtr = 0;
+        target.maxSize = 0;
+    }
     shm.boardPtr = 0;
     shm.isBoardPtrValid = false;
 }

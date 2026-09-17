@@ -12,9 +12,10 @@ enum class ObjType : uint16_t
     Zombie,
     Projectile,
     GridItem,
+    Count,
 };
 
-inline constexpr size_t OBJ_TYPE_COUNT = 4;
+inline constexpr size_t OBJ_TYPE_COUNT = static_cast<size_t>(ObjType::Count);
 inline constexpr size_t OBJ_UUID_SLOT_COUNT = 1024;
 
 struct ObjTypeInfo
@@ -23,12 +24,14 @@ struct ObjTypeInfo
     uint32_t ITEM_SIZE;
 };
 
-inline constexpr std::array<ObjTypeInfo, OBJ_TYPE_COUNT> OBJ_TYPE_INFO{{
-    {0x0AC, 0x148}, // Plant
-    {0x090, 0x158}, // Zombie
-    {0x0C8, 0x090}, // Projectile
-    {0x11C, 0x0E8}, // GridItem
-}};
+inline constexpr auto OBJ_TYPE_INFO = std::array{
+    ObjTypeInfo{0x0AC, 0x148}, // Plant
+    ObjTypeInfo{0x090, 0x158}, // Zombie
+    ObjTypeInfo{0x0C8, 0x090}, // Projectile
+    ObjTypeInfo{0x11C, 0x0E8}, // GridItem
+};
+
+static_assert(OBJ_TYPE_INFO.size() == OBJ_TYPE_COUNT);
 
 constexpr size_t objTypeIndex(ObjType type) noexcept
 {
@@ -85,6 +88,7 @@ struct ObjArrayMeta
     uint32_t dataArrayPtr;
     uint32_t blockPtr;
     uint32_t maxSize;
+    uint32_t nextUuidCnt; // Sole authoritative next value; preserved when no Board is published.
     uint32_t uuidCnt[OBJ_UUID_SLOT_COUNT];
 };
 
@@ -99,5 +103,7 @@ static_assert(sizeof(ObjUuid) == 8);
 static_assert(offsetof(ObjUuid::Fields, uuidCnt) == 0);
 static_assert(offsetof(ObjUuid::Fields, index) == 4);
 static_assert(offsetof(ObjUuid::Fields, type) == 6);
-static_assert(sizeof(ObjArrayMeta) == 0x100C);
-static_assert(sizeof(ObjMeta) == 0x4030);
+static_assert(offsetof(ObjArrayMeta, nextUuidCnt) == 3 * sizeof(uint32_t));
+static_assert(offsetof(ObjArrayMeta, uuidCnt) == 4 * sizeof(uint32_t));
+static_assert(sizeof(ObjArrayMeta) == (4 + OBJ_UUID_SLOT_COUNT) * sizeof(uint32_t));
+static_assert(sizeof(ObjMeta) == OBJ_TYPE_COUNT * sizeof(ObjArrayMeta));

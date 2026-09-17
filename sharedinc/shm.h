@@ -80,6 +80,8 @@ struct Shm
     static constexpr uint32_t OBJ_META_OFFSET = 0x2000;
     static constexpr uint32_t BUFFER_SIZE = ASM_OFFSET - BUFFER_OFFSET;
     static constexpr uint32_t ASM_SIZE = OBJ_META_OFFSET - ASM_OFFSET;
+    static_assert(sizeof(ObjMeta) <= SHARED_MEMORY_SIZE - OBJ_META_OFFSET,
+        "Shm object metadata exceeds shared memory");
     static constexpr uint32_t RESERVED_OFFSET = OBJ_META_OFFSET + sizeof(ObjMeta);
     static constexpr uint32_t RESERVED_SIZE = SHARED_MEMORY_SIZE - RESERVED_OFFSET;
 
@@ -131,7 +133,7 @@ struct Shm
 static_assert(offsetof(Shm, readWriteBuffer) == Shm::BUFFER_OFFSET, "Shm buffer offset error");
 static_assert(offsetof(Shm, asmBuffer) == Shm::ASM_OFFSET, "Shm asm buffer offset error");
 static_assert(offsetof(Shm, objMeta) == Shm::OBJ_META_OFFSET, "Shm object metadata offset error");
-static_assert(Shm::RESERVED_OFFSET == 0x6030, "Shm reserved offset error");
+static_assert(Shm::RESERVED_OFFSET <= SHARED_MEMORY_SIZE, "Shm reserved offset error");
 static_assert(sizeof(Shm) == SHARED_MEMORY_SIZE, "Shm size error");
 
 inline std::string toShmName(std::string_view name, std::optional<DWORD> pid = {}) {

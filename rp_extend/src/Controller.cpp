@@ -1,5 +1,6 @@
 #include "Controller.h"
 #include "MemoryException.h"
+#include <utility>
 
 #define RP_REPEAT_MACRO(macro) \
 	macro(bool, bool) \
@@ -55,8 +56,10 @@ PYBIND11_MODULE(rp_extend, m)
 		});
 
 	m.attr("OBJ_UUID_SLOT_COUNT") = py::int_(OBJ_UUID_SLOT_COUNT);
-	m.attr("OBJ_TYPE_INFO") = py::make_tuple(
-		OBJ_TYPE_INFO[0], OBJ_TYPE_INFO[1], OBJ_TYPE_INFO[2], OBJ_TYPE_INFO[3]);
+	py::tuple objTypeInfo(OBJ_TYPE_INFO.size());
+	for (size_t index = 0; index < OBJ_TYPE_INFO.size(); ++index)
+		objTypeInfo[index] = py::cast(OBJ_TYPE_INFO[index]);
+	m.attr("OBJ_TYPE_INFO") = std::move(objTypeInfo);
 
 	py::native_enum<HookPosition>(m, "HookPosition", "enum.Enum")
 		.value("MAIN_LOOP", HookPosition::MAIN_LOOP)
@@ -98,6 +101,7 @@ PYBIND11_MODULE(rp_extend, m)
 		.def("get_obj_array_ptr", &Controller::get_obj_array_ptr)
 		.def("get_obj_block_ptr", &Controller::get_obj_block_ptr)
 		.def("get_obj_max_size", &Controller::get_obj_max_size)
+		.def("get_obj_next_uuid_cnt", &Controller::get_obj_next_uuid_cnt)
 		.def("get_obj_base_ptr",
 			py::overload_cast<ObjType, int64_t>(&Controller::get_obj_base_ptr, py::const_),
 			py::arg("type"), py::arg("index"))
@@ -191,6 +195,11 @@ uint32_t Controller::get_obj_block_ptr(ObjType type) const
 uint32_t Controller::get_obj_max_size(ObjType type) const
 {
 	return checkedMeta(mem, type).maxSize;
+}
+
+uint32_t Controller::get_obj_next_uuid_cnt(ObjType type) const
+{
+	return checkedMeta(mem, type).nextUuidCnt;
 }
 
 uint32_t Controller::get_obj_base_ptr(ObjType type, int64_t index) const

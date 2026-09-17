@@ -91,6 +91,7 @@ public:
 	uint32_t get_obj_array_ptr(ObjType type) const;
 	uint32_t get_obj_block_ptr(ObjType type) const;
 	uint32_t get_obj_max_size(ObjType type) const;
+	uint32_t get_obj_next_uuid_cnt(ObjType type) const;
 	uint32_t get_obj_base_ptr(ObjType type, int64_t index) const;
 	uint32_t get_obj_base_ptr(const ObjUuid& uuid) const;
 	ObjUuid get_obj_uuid(ObjType type, int64_t index) const;

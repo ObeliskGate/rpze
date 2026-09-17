@@ -72,7 +72,7 @@ class ObjUuid:
 
 
 OBJ_UUID_SLOT_COUNT: int
-OBJ_TYPE_INFO: tuple[ObjTypeInfo, ObjTypeInfo, ObjTypeInfo, ObjTypeInfo]
+OBJ_TYPE_INFO: tuple[ObjTypeInfo, ...]
 
 
 class RpBaseException(Exception): ...
@@ -150,6 +150,8 @@ class Controller:
     def get_obj_block_ptr(self, type: ObjType, /) -> int: ...
 
     def get_obj_max_size(self, type: ObjType, /) -> int: ...
+
+    def get_obj_next_uuid_cnt(self, type: ObjType, /) -> int: ...  # authoritative next UUID value, preserved/readable without a Board
 
     @overload
     def get_obj_base_ptr(self, type: ObjType, index: int, /) -> int: ...
