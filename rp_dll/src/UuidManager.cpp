@@ -1,6 +1,7 @@
 #include "UuidManager.h"
 
 #include "InsertHook.h"
+#include "RndHook.h"
 #include "SharedMemory.h"
 #include "rp_dll.h"
 
@@ -13,6 +14,22 @@ namespace
     ObjArrayMeta& arrayMeta(ObjType type)
     {
         return SharedMemory::getInstance()->shm().objMeta.arrays[objTypeIndex(type)];
+    }
+
+    bool isCurrentArray(ObjType type, uint32_t dataArrayPtr)
+    {
+        return dataArrayPtr != 0 && arrayMeta(type).dataArrayPtr == dataArrayPtr;
+    }
+
+    uint32_t arrayPtrFromBoard(ObjType type, uint32_t board)
+    {
+        return board + getObjTypeInfo(type).BOARD_ARRAY_OFFSET;
+    }
+
+    void clearIfCurrent(ObjType type, uint32_t dataArrayPtr)
+    {
+        if (isCurrentArray(type, dataArrayPtr))
+            getUuidManager().clear(type);
     }
 
     void addAllocHooks()
@@ -33,53 +50,55 @@ namespace
 
     void addFreeHooks()
     {
-        // The originally identified 0x41BB4F/0x41BC23/0x41BCDB/0x41BE49
-        // sites are unconditional jumps and cannot host a MinHook trampoline.
-        // Hook the immediately preceding mSize update; the index registers are
-        // already final here and the UUID is still invalidated before return.
+        // These hooks run in Board methods: ESI is the Board this pointer,
+        // while the index register is updated at each selected instruction.
         InsertHook::addInsert(reinterpret_cast<void*>(0x41BB49), [](const HookContext& reg) {
-            getUuidManager().onFree(ObjType::Plant, static_cast<uint16_t>(reg.edx));
+            getUuidManager().onFree(ObjType::Plant, static_cast<uint16_t>(reg.edx),
+                arrayPtrFromBoard(ObjType::Plant, reg.esi));
         });
         InsertHook::addInsert(reinterpret_cast<void*>(0x41BC18), [](const HookContext& reg) {
-            getUuidManager().onFree(ObjType::Zombie, static_cast<uint16_t>(reg.ecx));
+            getUuidManager().onFree(ObjType::Zombie, static_cast<uint16_t>(reg.ecx),
+                arrayPtrFromBoard(ObjType::Zombie, reg.esi));
         });
         InsertHook::addInsert(reinterpret_cast<void*>(0x41BCD5), [](const HookContext& reg) {
-            getUuidManager().onFree(ObjType::Projectile, static_cast<uint16_t>(reg.ecx));
+            getUuidManager().onFree(ObjType::Projectile, static_cast<uint16_t>(reg.ecx),
+                arrayPtrFromBoard(ObjType::Projectile, reg.esi));
         });
         InsertHook::addInsert(reinterpret_cast<void*>(0x41BE43), [](const HookContext& reg) {
-            getUuidManager().onFree(ObjType::GridItem, static_cast<uint16_t>(reg.edi));
+            getUuidManager().onFree(ObjType::GridItem, static_cast<uint16_t>(reg.edi),
+                arrayPtrFromBoard(ObjType::GridItem, reg.esi));
         });
     }
 
     void addFreeAllHooks()
     {
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41E4D0), [](const HookContext&) {
-            getUuidManager().clear(ObjType::Zombie);
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41E4D0), [](const HookContext& reg) {
+            clearIfCurrent(ObjType::Zombie, reg.edi);
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41E590), [](const HookContext&) {
-            getUuidManager().clear(ObjType::Plant);
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41E590), [](const HookContext& reg) {
+            clearIfCurrent(ObjType::Plant, reg.eax);
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41E600), [](const HookContext&) {
-            getUuidManager().clear(ObjType::Projectile);
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41E600), [](const HookContext& reg) {
+            clearIfCurrent(ObjType::Projectile, reg.edi);
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41E7D0), [](const HookContext&) {
-            getUuidManager().clear(ObjType::GridItem);
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41E7D0), [](const HookContext& reg) {
+            clearIfCurrent(ObjType::GridItem, reg.eax);
         });
     }
 
     void addDisposeHooks()
     {
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41DD70), [](const HookContext&) {
-            getUuidManager().dispose(ObjType::Zombie);
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41DD70), [](const HookContext& reg) {
+            getUuidManager().dispose(ObjType::Zombie, reg.eax);
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41DE50), [](const HookContext&) {
-            getUuidManager().dispose(ObjType::Plant);
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41DE50), [](const HookContext& reg) {
+            getUuidManager().dispose(ObjType::Plant, reg.esi);
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41DF30), [](const HookContext&) {
-            getUuidManager().dispose(ObjType::Projectile);
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41DF30), [](const HookContext& reg) {
+            getUuidManager().dispose(ObjType::Projectile, reg.eax);
         });
-        InsertHook::addInsert(reinterpret_cast<void*>(0x41E190), [](const HookContext&) {
-            getUuidManager().dispose(ObjType::GridItem);
+        InsertHook::addInsert(reinterpret_cast<void*>(0x41E190), [](const HookContext& reg) {
+            getUuidManager().dispose(ObjType::GridItem, reg.esi);
         });
     }
 }
@@ -102,8 +121,10 @@ void UuidManager::onAlloc(ObjType type, uint16_t index)
     meta(type).uuidCnt[index] = nextUuidCnt(type);
 }
 
-void UuidManager::onFree(ObjType type, uint16_t index)
+void UuidManager::onFree(ObjType type, uint16_t index, uint32_t dataArrayPtr)
 {
+    if (!isCurrentArray(type, dataArrayPtr))
+        return;
     assert(index < OBJ_UUID_SLOT_COUNT);
     meta(type).uuidCnt[index] = 0;
 }
@@ -119,8 +140,10 @@ void UuidManager::clearAll()
         clear(static_cast<ObjType>(i));
 }
 
-void UuidManager::dispose(ObjType type)
+void UuidManager::dispose(ObjType type, uint32_t dataArrayPtr)
 {
+    if (!isCurrentArray(type, dataArrayPtr))
+        return;
     auto& target = meta(type);
     memset(target.uuidCnt, 0, sizeof(target.uuidCnt));
     target.blockPtr = 0;
@@ -175,6 +198,7 @@ void refreshArrayMeta(uint32_t board)
 
 void publishBoard(uint32_t board)
 {
+    resetRndForBoard();
     auto& shm = SharedMemory::getInstance()->shm();
     getUuidManager().clearAll();
     refreshArrayMeta(board);
@@ -182,9 +206,12 @@ void publishBoard(uint32_t board)
     shm.isBoardPtrValid = false;
 }
 
-void unpublishBoard()
+void unpublishBoard(uint32_t board)
 {
     auto& shm = SharedMemory::getInstance()->shm();
+    if (board == 0 || board != shm.boardPtr)
+        return;
+    resetRndForBoard();
     getUuidManager().clearAll();
     for (size_t typeIndex = 0; typeIndex < OBJ_TYPE_COUNT; ++typeIndex)
     {
@@ -207,8 +234,8 @@ void initializeObjectUuid()
     InsertHook::addInsert(reinterpret_cast<void*>(0x407DC7), [](const HookContext& reg) {
         publishBoard(reg.ebp);
     });
-    InsertHook::addInsert(reinterpret_cast<void*>(0x408690), [](const HookContext&) {
-        unpublishBoard();
+    InsertHook::addInsert(reinterpret_cast<void*>(0x408690), [](const HookContext& reg) {
+        unpublishBoard(reg.ecx);
     });
     InsertHook::addInsert(reinterpret_cast<void*>(0x482078), [](const HookContext& reg) {
         refreshArrayMeta(reg.edi);

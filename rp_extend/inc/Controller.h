@@ -96,6 +96,14 @@ public:
 	uint32_t get_obj_base_ptr(const ObjUuid& uuid) const;
 	ObjUuid get_obj_uuid(ObjType type, int64_t index) const;
 	ObjUuid get_obj_uuid_by_ptr(ObjType type, uint32_t ptr) const;
+
+	void rnd_set(RndHook hook, const ObjUuid& uuid, py::object value);
+	py::object rnd_get(RndHook hook, const ObjUuid& uuid) const;
+	bool rnd_remove(RndHook hook, const ObjUuid& uuid);
+	void rnd_set_default(RndHook hook, py::object value);
+	py::object rnd_get_default(RndHook hook) const;
+	bool rnd_enabled(RndHook hook) const;
+	void rnd_clear(std::optional<RndHook> hook = std::nullopt);
 };
 
 template <typename T>

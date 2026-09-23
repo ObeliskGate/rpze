@@ -61,6 +61,8 @@ class Memory
 
 	Shm& shm() const { return *pShm; }
 
+	volatile RndRegion& checkedRnd() const;
+
 	void waiting(std::string_view callerName) const;
 
 
@@ -144,6 +146,14 @@ public:
 	void setJumpingSyncMethod(SyncMethod val);
 
 	std::pair<bool, uint32_t> getPBoard() const; // 第一位返回0表示无须换新
+
+	void rndSet(RndHook hook, const ObjUuid& uuid, uint32_t bits);
+	std::optional<uint32_t> rndGet(RndHook hook, const ObjUuid& uuid) const;
+	bool rndRemove(RndHook hook, const ObjUuid& uuid);
+	void rndSetDefault(RndHook hook, std::optional<uint32_t> bits);
+	std::optional<uint32_t> rndGetDefault(RndHook hook) const;
+	bool rndEnabled(RndHook hook) const;
+	void rndClear(std::optional<RndHook> hook = std::nullopt);
 
 	const ObjArrayMeta* getObjArrayMeta(ObjType type) const
 	{

@@ -2,6 +2,7 @@
 #include "rp_dll.h"
 #include "InsertHook.h"
 #include "RpDllException.h"
+#include "RndHook.h"
 
 void init(InitArgs args)
 {
@@ -276,13 +277,13 @@ InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 	try
 	{
 		initializeObjectUuid();
+		initializeRndHooks();
 	}
 	catch (const std::exception& e)
 	{
 		std::println(std::cerr, "object UUID hook initialization failed: {}", e.what());
 		throw;
 	}
-
 }
 
 void dllExit()

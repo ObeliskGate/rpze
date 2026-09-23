@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "obj_uuid.h"
+#include "rnd.h"
 
 #define WIN32_LEAN_AND_MEAN             // 从 Windows 头文件中排除极少使用的内容
 
@@ -82,7 +83,8 @@ struct Shm
     static constexpr uint32_t ASM_SIZE = OBJ_META_OFFSET - ASM_OFFSET;
     static_assert(sizeof(ObjMeta) <= SHARED_MEMORY_SIZE - OBJ_META_OFFSET,
         "Shm object metadata exceeds shared memory");
-    static constexpr uint32_t RESERVED_OFFSET = OBJ_META_OFFSET + sizeof(ObjMeta);
+    static constexpr uint32_t RND_OFFSET = OBJ_META_OFFSET + sizeof(ObjMeta);
+    static constexpr uint32_t RESERVED_OFFSET = RND_OFFSET + sizeof(RndRegion);
     static constexpr uint32_t RESERVED_SIZE = SHARED_MEMORY_SIZE - RESERVED_OFFSET;
 
     union {
@@ -114,6 +116,7 @@ struct Shm
     volatile char readWriteBuffer[BUFFER_SIZE];
     volatile char asmBuffer[ASM_SIZE];
     ObjMeta objMeta;
+    volatile RndRegion rnd;
     uint8_t reserved[RESERVED_SIZE];
 
     template <typename T = void>
@@ -133,6 +136,8 @@ struct Shm
 static_assert(offsetof(Shm, readWriteBuffer) == Shm::BUFFER_OFFSET, "Shm buffer offset error");
 static_assert(offsetof(Shm, asmBuffer) == Shm::ASM_OFFSET, "Shm asm buffer offset error");
 static_assert(offsetof(Shm, objMeta) == Shm::OBJ_META_OFFSET, "Shm object metadata offset error");
+static_assert(offsetof(Shm, rnd) == 0x6040);
+static_assert(Shm::RESERVED_OFFSET == 0xA138 && Shm::RESERVED_SIZE == 0x5EC8);
 static_assert(Shm::RESERVED_OFFSET <= SHARED_MEMORY_SIZE, "Shm reserved offset error");
 static_assert(sizeof(Shm) == SHARED_MEMORY_SIZE, "Shm size error");
 

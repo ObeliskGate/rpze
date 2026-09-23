@@ -5,9 +5,9 @@ Set RP_GAME_PATH as usual, then run::
     python smoke/uuid.py
 
 The script asks for exactly three operator transitions: enter any I,Zombie
-level, leave to the main menu, and re-enter a new I,Zombie Board.  It clears
-paused UUID-test arrays and restores all five IZombie brains before frames, so
-empty rows are not required.
+level, leave to the main menu, and re-enter a new I,Zombie Board.  Paused UUID
+checks finish their immediate assertions before a cleanup frame; every frame
+keeps all five IZombie brains alive so ordinary game cleanup can run safely.
 """
 
 from __future__ import annotations
@@ -206,20 +206,23 @@ def physical_single_free_realloc(
     factory: Factory,
 ) -> tuple[Any, ObjUuid]:
     before_free = next_counts(controller)
-    # die()/die_no_loot() only marks an object for deletion.  Do not inspect
-    # UUID invalidation until ProcessDeleteQueue has physically reclaimed it.
+    # die()/die_no_loot() 只标记对象待删.先检查删除队列尚未运行时,
+    # 旧 UUID 仍可见;真正失效要等游戏帧完成物理回收.
     killer(obj)
+    assert next_counts(controller) == before_free
     assert board.find(old_uuid) is not None
     assert object_list(board, type_).find(old_uuid) is not None
-    board.process_delete_queue()
+
+    # 先保留"标记死亡后,真正回收前仍可见"的即时契约;随后只跑一帧,
+    # 让游戏自己的删除队列完成回收,不在 smoke 里手动调用清理入口.
+    skip_cleanup_frame(controller, board)
     assert controller.get_obj_base_ptr(old_uuid) == 0
     assert board.find(old_uuid) is None
     assert object_list(board, type_).find(old_uuid) is None
-    after_free = next_counts(controller)
-    for current_type in OBJ_TYPES:
-        assert after_free[current_type] == before_free[current_type], (
-            current_type, before_free[current_type], after_free[current_type]
-        )
+
+    # 这一帧可能有游戏自己的自然分配;回收后重新取样,不能拿帧前计数
+    # 做跨帧的绝对相等断言.后续真实分配从这个新快照开始观察.
+    assert_getters_stable(controller)
 
     replacement, new_uuid = exact_allocation(controller, type_, factory)
     assert controller.get_obj_base_ptr(old_uuid) == 0
@@ -285,10 +288,13 @@ def check_paused_consecutive_allocations(
 
     # A getter is read-only even while the game is held in the same pause.
     assert_getters_stable(controller)
-
     first.die()
     second.die()
-    board.process_delete_queue()
+
+    # die 只是标记,两个 UUID 在这一刻仍应可见;即时观察必须发生在跳帧前.
+    assert controller.get_obj_base_ptr(first_uuid) == first.base_ptr
+    assert controller.get_obj_base_ptr(second_uuid) == second.base_ptr
+    skip_cleanup_frame(controller, board)
     assert controller.get_obj_base_ptr(first_uuid) == 0
     assert controller.get_obj_base_ptr(second_uuid) == 0
 
@@ -341,7 +347,7 @@ def check_same_asm_double_creation(
 def check_same_asm_free_realloc(
     controller: Controller, board: GameBoard, current: Griditem, current_uuid: ObjUuid
 ) -> tuple[Griditem, ObjUuid]:
-    """Free one fixture physically, then allocate its replacement in one asm run."""
+    """在同一段 asm 中验证释放后立即重建时 UUID 的可见性."""
     ptr = controller.get_obj_base_ptr(current_uuid)
     assert ptr == current.base_ptr
     before = next_counts(controller)
@@ -364,8 +370,8 @@ def check_same_asm_free_realloc(
     """
     assert asm.run(code, controller)
 
-    # The process-delete call is in this same callback, so this is the first
-    # point at which the old UUID may be required to be invalid.
+    # 释放与 ProcessDeleteQueue 都在同一回调内完成;旧 UUID 的失效观察
+    # 只属于这个原子测试,不能把它当作通用清场路径.
     assert controller.get_obj_base_ptr(current_uuid) == 0
     replacement_ptr = controller.result_u32
     assert replacement_ptr
@@ -377,6 +383,8 @@ def check_same_asm_free_realloc(
     assert replacement_uuid.uuid_cnt != current_uuid.uuid_cnt
     assert controller.get_obj_base_ptr(replacement_uuid) == replacement_ptr
     assert_getters_stable(controller)
+    # 这里的同段 asm 是被测的"释放/重建原子操作",不是通用清场手段.
+    # 调用方会在完成即时 UUID 断言后补齐脑子并用真实帧清理临时对象.
     return Griditem(replacement_ptr, controller), replacement_uuid
 
 
@@ -385,6 +393,10 @@ def check_griditem_reset_stack(controller: Controller, board: GameBoard) -> None
     prepare_empty_board(controller, board)
     type_ = ObjType.GRID_ITEM
     grid_list = board.griditem_list
+
+    # reset_stack 的既有契约就是"数组已经真正为空".这是一个不跑帧的
+    # 专项行为检查;离开这个原子检查前不会让清空脑子的状态进入游戏帧.
+    grid_list.free_all()
     block = controller.get_obj_block_ptr(type_)
     assert block
     assert grid_list.obj_num == 0
@@ -406,7 +418,10 @@ def check_griditem_reset_stack(controller: Controller, board: GameBoard) -> None
     obj, uuid = exact_allocation(controller, type_, factory_for(board, type_))
     assert uuid.uuid_cnt == before_next[type_]
     obj.die()
-    board.process_delete_queue()
+    assert controller.get_obj_base_ptr(uuid) == obj.base_ptr
+    # free_all/reset_stack 的无帧断言已经完成;现在先恢复五行脑子,再由
+    # 正常游戏帧回收这个死亡对象,避免空脑数组触发游戏内部溢出.
+    skip_cleanup_frame(controller, board)
     assert controller.get_obj_base_ptr(uuid) == 0
 
 
@@ -418,10 +433,12 @@ def wait_for_projectile(
 ) -> tuple[Projectile, ObjUuid]:
     type_ = ObjType.PROJECTILE
     ensure_izombie_brains(controller, board)
-    before = next_counts(controller)
+    before_projectile = next_counts(controller)[type_]
     shooter.generate_cd = 1
     observed: ObjUuid | None = None
     for _ in range(300):
+        # 每一帧前都重新确认五行脑子仍然有效;这是 IZombie 场景的安全前提.
+        ensure_izombie_brains(controller, board)
         controller.skip_frames(1)
         candidates = [
             uuid
@@ -434,14 +451,11 @@ def wait_for_projectile(
     if observed is None:
         raise AssertionError("自然发射前提未满足")
 
-    after = next_counts(controller)
-    assert after[type_] > before[type_]
-    assert before[type_] <= observed.uuid_cnt < after[type_]
-    for other in OBJ_TYPES:
-        if other != type_:
-            assert after[other] == before[other], (
-                other, before[other], after[other]
-            )
+    after_projectile = next_counts(controller)[type_]
+    assert after_projectile > before_projectile
+    assert before_projectile <= observed.uuid_cnt < after_projectile
+    # 等待自然发射跨了真实帧,只验证本类型的发号范围;其它类型允许
+    # 游戏在这些帧里自然变化,不能拿旧快照做全类型绝对不变断言.
     assert_getters_stable(controller)
     ptr = controller.get_obj_base_ptr(observed)
     assert ptr
@@ -458,17 +472,19 @@ def check_projectile_path(controller: Controller, board: GameBoard) -> None:
     zombie, zombie_uuid = exact_allocation(
         controller, ObjType.ZOMBIE, factory_for(board, ObjType.ZOMBIE)
     )
-    before_projectile = next_counts(controller)
     projectile, projectile_uuid = wait_for_projectile(
         controller, board, plant, baseline
     )
 
     before_free = next_counts(controller)
     projectile.die()
-    board.process_delete_queue()
+    # die 后先确认对象仍在当前数组中;UUID 失效观察必须放在跳帧之后.
+    assert next_counts(controller) == before_free
+    assert controller.get_obj_base_ptr(projectile_uuid) == projectile.base_ptr
+    skip_cleanup_frame(controller, board)
     assert controller.get_obj_base_ptr(projectile_uuid) == 0
-    after_free = next_counts(controller)
-    assert after_free == before_free
+    # 这一帧可能有自然发射,后续基线必须重新采样.
+    assert_getters_stable(controller)
 
     baseline = set(live_uuids(controller, ObjType.PROJECTILE))
     replacement, replacement_uuid = wait_for_projectile(
@@ -477,35 +493,68 @@ def check_projectile_path(controller: Controller, board: GameBoard) -> None:
     assert replacement_uuid.uuid_cnt != projectile_uuid.uuid_cnt
     assert controller.get_obj_base_ptr(projectile_uuid) == 0
 
-    # Keep the natural-fire path's own other-type invariant explicit.
-    assert before_projectile[ObjType.PLANT] == next_counts(controller)[ObjType.PLANT]
-    assert before_projectile[ObjType.ZOMBIE] == next_counts(controller)[ObjType.ZOMBIE]
+    # 自然发射跨了真实帧,只确认两个出生夹具仍可按 UUID 查找,
+    # 不拿帧前快照断言其它类型的计数绝对不变.
+    assert controller.get_obj_base_ptr(plant_uuid) == plant.base_ptr
+    assert controller.get_obj_base_ptr(zombie_uuid) == zombie.base_ptr
 
     replacement.die()
     plant.die()
     zombie.die_no_loot()
-    board.process_delete_queue()
+    assert controller.get_obj_base_ptr(replacement_uuid) == replacement.base_ptr
+    assert controller.get_obj_base_ptr(plant_uuid) == plant.base_ptr
+    assert controller.get_obj_base_ptr(zombie_uuid) == zombie.base_ptr
+    skip_cleanup_frame(controller, board)
     assert controller.get_obj_base_ptr(replacement_uuid) == 0
     assert controller.get_obj_base_ptr(plant_uuid) == 0
     assert controller.get_obj_base_ptr(zombie_uuid) == 0
 
 
+def mark_nonbrain_objects_for_deletion(controller: Controller, board: GameBoard) -> None:
+    """标记非脑子对象死亡,避免用 DataArrayFreeAll 破坏下一帧场景."""
+    for type_ in (ObjType.PLANT, ObjType.ZOMBIE, ObjType.PROJECTILE, ObjType.GRID_ITEM):
+        for uuid in tuple(live_uuids(controller, type_)):
+            ptr = controller.get_obj_base_ptr(uuid)
+            assert ptr, (type_, uuid)
+            if type_ == ObjType.PLANT:
+                obj = Plant(ptr, controller)
+                if not obj.is_dead:
+                    obj.die()
+            elif type_ == ObjType.ZOMBIE:
+                obj = Zombie(ptr, controller)
+                if not obj.is_dead:
+                    obj.die_no_loot()
+            elif type_ == ObjType.PROJECTILE:
+                obj = Projectile(ptr, controller)
+                if not obj.is_dead:
+                    obj.die()
+            else:
+                obj = Griditem(ptr, controller)
+                if obj.type_ == GriditemType.IZOMBIE_BRAIN:
+                    continue
+                if not obj.is_dead:
+                    obj.die()
+
+
 def prepare_empty_board(controller: Controller, board: GameBoard) -> None:
-    """Clear every object list for paused UUID checks that run no frames."""
-    for list_ in (
-        board.plant_list,
-        board.zombie_list,
-        board.projectile_list,
-        board.griditem_list,
-    ):
-        list_.free_all()
-    board.process_delete_queue()
-    for type_ in OBJ_TYPES:
+    """清掉测试夹具,但保留五行脑子让下一帧可以安全运行."""
+    # 全局清场不再盲目 free_all 脑子;先确保五行有效,再只标记其它对象.
+    ensure_izombie_brains(controller, board)
+    mark_nonbrain_objects_for_deletion(controller, board)
+    skip_cleanup_frame(controller, board)
+
+    # 跳帧后重新取样:前三类应为空,GridItem 只允许保留五行脑子.
+    ensure_izombie_brains(controller, board)
+    for type_ in (ObjType.PLANT, ObjType.ZOMBIE, ObjType.PROJECTILE):
         assert not live_uuids(controller, type_)
+    for uuid in live_uuids(controller, ObjType.GRID_ITEM):
+        ptr = controller.get_obj_base_ptr(uuid)
+        assert ptr
+        assert Griditem(ptr, controller).type_ == GriditemType.IZOMBIE_BRAIN
 
 
 def ensure_izombie_brains(controller: Controller, board: GameBoard) -> None:
-    """Keep one live brain in each IZombie row before a frame can run."""
+    """每次真实跳帧前维持五行存活脑子,避免空脑数组进入游戏更新."""
     type_ = ObjType.GRID_ITEM
     assert controller.get_obj_array_ptr(type_)
     assert controller.get_obj_block_ptr(type_)
@@ -538,6 +587,12 @@ def ensure_izombie_brains(controller: Controller, board: GameBoard) -> None:
     assert brain_rows == set(IZOMBIE_BRAIN_ROWS), brain_rows
 
 
+def skip_cleanup_frame(controller: Controller, board: GameBoard) -> None:
+    """先保证五行脑子有效,再用一帧执行游戏自己的死亡对象回收."""
+    ensure_izombie_brains(controller, board)
+    controller.skip_frames(1)
+
+
 def prepare_runnable_board(controller: Controller, board: GameBoard) -> None:
     """Clear fixtures, then restore all five brains before running frames."""
     prepare_empty_board(controller, board)
@@ -554,9 +609,13 @@ def check_griditem_scenarios(controller: Controller, board: GameBoard) -> None:
         controller, board, first, first_uuid
     )
     assert controller.get_obj_base_ptr(second_uuid) == second.base_ptr
+
+    # 同段 asm 的即时 UUID 观察已经完成;这里改用正常帧清理两个临时梯子.
     replacement.die()
     second.die()
-    board.process_delete_queue()
+    assert controller.get_obj_base_ptr(replacement_uuid) == replacement.base_ptr
+    assert controller.get_obj_base_ptr(second_uuid) == second.base_ptr
+    skip_cleanup_frame(controller, board)
     assert controller.get_obj_base_ptr(replacement_uuid) == 0
     assert controller.get_obj_base_ptr(second_uuid) == 0
 
@@ -646,9 +705,9 @@ def check_free_all_one(
     assert before_block
     before_next = next_counts(controller)
 
+    # free_all 是这里要保留的既有 UUID 行为契约:先在没有新帧的状态下
+    # 完成"旧 UUID 全部失效,槽位清空,计数器不前进"的即时断言.
     object_list(board, type_).free_all()
-    board.process_delete_queue()
-
     for uuid in before_live:
         assert controller.get_obj_base_ptr(uuid) == 0
     max_size = min(controller.get_obj_max_size(type_), OBJ_UUID_SLOT_COUNT)
@@ -656,14 +715,21 @@ def check_free_all_one(
     assert controller.get_obj_block_ptr(type_) == before_block
     assert next_counts(controller) == before_next
 
+    # 非目标夹具也必须在即时断言点仍然可见;之后才允许游戏跑一帧.
     for other in OBJ_TYPES:
         if other == type_:
             continue
         other_obj, other_uuid = fixtures[int(other)]
         assert controller.get_obj_base_ptr(other_uuid) == other_obj.base_ptr
 
-    # Rebuild the target only after its free_all assertions.  This keeps the
-    # preserved non-target fixtures observable while the target is empty.
+    # free_all 可能清掉 IZombie 脑子;先恢复五行,再由真实游戏帧完成
+    # 其它清理.帧后不再拿 before_next 做绝对计数比较,避免混入自然分配.
+    skip_cleanup_frame(controller, board)
+    for uuid in before_live:
+        assert controller.get_obj_base_ptr(uuid) == 0
+    assert_getters_stable(controller)
+
+    # 在跳帧后的新快照上重建目标,避免把这一帧的自然分配误当成测试分配.
     if type_ == ObjType.PROJECTILE:
         plant, _ = fixtures[int(ObjType.PLANT)]
         baseline = set(live_uuids(controller, ObjType.PROJECTILE))

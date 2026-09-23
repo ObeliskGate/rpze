@@ -14,5 +14,8 @@ target("rp_extend")
 
     if is_mode("release") or is_mode("releasedbg") then
         set_policy("build.optimization.lto", true)
+        if is_plat("windows") then
+            add_shflags("/LTCG", {force = true})
+        end
         set_warnings("allextra")
     end

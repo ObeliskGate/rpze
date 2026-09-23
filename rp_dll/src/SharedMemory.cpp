@@ -34,6 +34,15 @@ SharedMemory::SharedMemory()
 	memset(&shm().objMeta, 0, sizeof(shm().objMeta));
 	for (size_t typeIndex = 0; typeIndex < OBJ_TYPE_COUNT; ++typeIndex)
 		shm().objMeta.arrays[typeIndex].nextUuidCnt = 1;
+	shm().rnd.exactCount = 0;
+	shm().rnd.reserved = 0;
+	for (auto& config : shm().rnd.configs)
+	{
+		config.enabled = 0;
+		config.defaultKind = RndDefaultKind::Original;
+		config.padding = 0;
+		config.defaultValue.u32 = 0;
+	}
 	shm().globalState = HookState::NOT_CONNECTED;
 	shm().isBoardPtrValid = false;
 	shm().alreadyShared = false;

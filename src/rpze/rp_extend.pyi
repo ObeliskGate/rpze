@@ -14,6 +14,38 @@ class HookPosition(Enum):
     CHALLENGE_I_ZOMBIE_PLACE_PLANTS = 3
     # open to disable 0x42A6C0
 
+class RndHook(Enum):
+    ZOMBIE_JACK_COUNTDOWN = 0
+    ZOMBIE_JACK_EARLY_EXPLOSION = 1
+    ZOMBIE_SPAWN_OTHER = 2
+    ZOMBIE_SPAWN_POLE = 3
+    ZOMBIE_SPAWN_ZAMBONI = 4
+    ZOMBIE_SPAWN_CATAPULT = 5
+    ZOMBIE_SPAWN_GARGANTUAR = 6
+    ZOMBIE_GARLIC_DIRECTION = 7
+    ZOMBIE_JALAPENO_COUNTDOWN = 8
+    ZOMBIE_BUNGEE_HEIGHT = 9
+    ZOMBIE_DANCER_SLIDE = 10
+    ZOMBIE_YETI_ESCAPE = 11
+    ZOMBIE_POGO_INITIAL = 12
+    BOARD_LOOT = 13
+    ZOMBIE_FREEZE_FIRST = 14
+    ZOMBIE_FREEZE_REPEAT = 15
+    BOARD_WAVE_COUNTDOWN = 16
+    BOARD_SUN_INTERVAL = 17
+    PLANT_KERNEL_BUTTER = 18
+    PLANT_BOWLING_DIRECTION = 19
+    PLANT_PRODUCTION_INITIAL = 20
+    PLANT_PRODUCTION_INTERVAL = 21
+    PLANT_ATTACK_INITIAL = 22
+    PLANT_ATTACK_INTERVAL = 23
+    CHALLENGE_IZE_PLANT_REDUCTION = 24
+    BOARD_ACTIVATION_RATIO = 25
+    ZOMBIE_SPEED_JACK = 26
+    ZOMBIE_SPEED_LADDER = 27
+    ZOMBIE_SPEED_DOLPHIN = 28
+    ZOMBIE_SPEED_NORMAL = 29
+
 
 class SyncMethod(Enum):
     SPIN = 1  # better performance for testing
@@ -77,6 +109,7 @@ class ObjUuid:
 
 OBJ_UUID_SLOT_COUNT: int  # number of UUID slots tracked per object type
 OBJ_TYPE_INFO: tuple[ObjTypeInfo, ...]  # layout metadata in ObjType order
+RND_EXACT_CAPACITY: int  # maximum number of exact UUID entries
 
 
 class RpBaseException(Exception): ...
@@ -166,6 +199,20 @@ class Controller:
     def get_obj_uuid(self, type: ObjType, index: int, /) -> ObjUuid: ...  # UUID for a slot, or invalid if out of range or unused
 
     def get_obj_uuid_by_ptr(self, type: ObjType, ptr: int, /) -> ObjUuid: ...  # UUID for an exact slot address, or invalid if unmatched or unused
+
+    def rnd_set(self, hook: RndHook, uuid: ObjUuid, value: int | float) -> None: ...
+
+    def rnd_get(self, hook: RndHook, uuid: ObjUuid) -> int | float | None: ...
+
+    def rnd_remove(self, hook: RndHook, uuid: ObjUuid) -> bool: ...
+
+    def rnd_set_default(self, hook: RndHook, value: int | float | None) -> None: ...
+
+    def rnd_get_default(self, hook: RndHook) -> int | float | None: ...
+
+    def rnd_enabled(self, hook: RndHook) -> bool: ...
+
+    def rnd_clear(self, hook: RndHook | None = None) -> None: ...
 
     def run_code(self, asm_bytes: bytes, /) -> bool: ...  # assert prepared; return False if failed
 
