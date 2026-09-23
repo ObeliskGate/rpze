@@ -5,7 +5,7 @@ includes("**/xmake.lua")
 
 
 add_rules("mode.debug", "mode.releasedbg", "mode.release")
-add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode", lsp = "clangd"})
+add_rules("plugin.compile_commands.autoupdate", {outputdir = ".", lsp = "clangd"})
 
 
 target("prebuild")
