@@ -58,6 +58,7 @@ SharedMemory::SharedMemory()
 		throw std::runtime_error(
 			std::format("failed to create mutex, err: {}", GetLastError()));
 	}
+	shm().abiVersion = SHM_ABI_VERSION;
 }
 
 SharedMemory::~SharedMemory()

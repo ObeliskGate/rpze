@@ -10,6 +10,7 @@
 #include <Windows.h> 
 
 inline constexpr size_t SHARED_MEMORY_SIZE = 0x10000;
+inline constexpr uint32_t SHM_ABI_VERSION = 1437;
 
 enum class PhaseCode : int32_t
 {
@@ -109,6 +110,8 @@ struct Shm
 
             volatile bool isBoardPtrValid;
             volatile bool alreadyShared;
+            uint8_t __padding_before_abi_version[2];
+            volatile uint32_t abiVersion;
         };
         uint8_t __padding_before_buffers[BUFFER_OFFSET];
     };
@@ -134,6 +137,7 @@ struct Shm
 #endif
 
 static_assert(offsetof(Shm, readWriteBuffer) == Shm::BUFFER_OFFSET, "Shm buffer offset error");
+static_assert(offsetof(Shm, abiVersion) == 0xB0, "Shm ABI version offset error");
 static_assert(offsetof(Shm, asmBuffer) == Shm::ASM_OFFSET, "Shm asm buffer offset error");
 static_assert(offsetof(Shm, objMeta) == Shm::OBJ_META_OFFSET, "Shm object metadata offset error");
 static_assert(offsetof(Shm, rnd) == 0x6040);

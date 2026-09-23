@@ -28,34 +28,77 @@ Memory::Memory(DWORD pid) : pid(pid)
 		0, 
 		SHARED_MEMORY_SIZE));
 	if (!pShm)
+	{
+		const auto error = GetLastError();
+		CloseHandle(hMemory);
 		throw MemoryException(
-			std::format("failed to create shared memory, err: {}", GetLastError()), pid);
+			std::format("failed to create shared memory, err: {}", error), pid);
+	}
+	const auto actualAbiVersion = shm().abiVersion;
+	if (actualAbiVersion != SHM_ABI_VERSION)
+	{
+		UnmapViewOfFile(pShm);
+		CloseHandle(hMemory);
+		throw MemoryException(std::format("shared memory ABI mismatch: expected {}, got {}",
+			SHM_ABI_VERSION, actualAbiVersion), pid);
+	}
 
 	if (shm().alreadyShared)
+	{
+		UnmapViewOfFile(pShm);
+		CloseHandle(hMemory);
 		throw MemoryException("shared memory has already been connected", pid);
-	shm().alreadyShared = true;
+	}
 
 	pCurrentPhaseCode = &shm().phaseCode;
 	pCurrentRunState = &shm().runState;
 	pCurrentSyncMethod = &shm().syncMethod;
 	hPvz = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 	if (!hPvz)
+	{
+		const auto error = GetLastError();
+		UnmapViewOfFile(pShm);
+		CloseHandle(hMemory);
 		throw MemoryException(
-			std::format("failed to find game process, err: {}", GetLastError()), pid);
+			std::format("failed to find game process, err: {}", error), pid);
+	}
 	
 
 	hMutex = OpenMutexA(MUTEX_ALL_ACCESS, 
 		FALSE,
 		toShmName("mutex", pid).c_str());
 	if (!hMutex)
+	{
+		const auto error = GetLastError();
+		CloseHandle(hPvz);
+		UnmapViewOfFile(pShm);
+		CloseHandle(hMemory);
 		throw MemoryException(
-			std::format("failed to find mutex, err: {}", GetLastError()), pid);
-
-
+			std::format("failed to find mutex, err: {}", error), pid);
+	}
+	shm().alreadyShared = true;
 	shm().globalState = HookState::CONNECTED;
-	startControl();
-	getRemoteMemoryAddress();
-	endControl();
+	try
+	{
+		startControl();
+		getRemoteMemoryAddress();
+		endControl();
+	}
+	catch (...)
+	{
+		shm().hookStateArr[getHookIndex(HookPosition::MAIN_LOOP)] = HookState::NOT_CONNECTED;
+		shm().phaseCode = PhaseCode::CONTINUE;
+		shm().jumpingPhaseCode = PhaseCode::CONTINUE;
+		if (shm().syncMethod == SyncMethod::MUTEX)
+			ReleaseMutex(hMutex);
+		shm().globalState = HookState::NOT_CONNECTED;
+		shm().alreadyShared = false;
+		CloseHandle(hMutex);
+		CloseHandle(hPvz);
+		UnmapViewOfFile(pShm);
+		CloseHandle(hMemory);
+		throw;
+	}
 
 	shm().syncMethod = SyncMethod::MUTEX; // 第一次通信切忌不能用mutex, game还没拿到锁
 	shm().jumpingSyncMethod = SyncMethod::SPIN;
