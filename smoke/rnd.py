@@ -20,6 +20,10 @@ from rpze.rp_extend import (
     RndHook,
     SyncMethod,
 )
+from rpze.iztest.zombie_info import (
+    TieWearingZombieWalkingMode,
+    get_tied_wearing_zombie_walking_mode,
+)
 from rpze.structs import game_board as game_board_module
 from rpze.structs.game_board import GameBoard, get_board
 from rpze.structs.griditem import GriditemType
@@ -482,6 +486,29 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         prepare_board(controller, board)
 
     try:
+        reset_scene()
+        board.is_dance_mode = False
+        walk_hook = RndHook.TIED_ZOMBIE_WALK_ANIM
+        controller.rnd_set_default(walk_hook, 1)
+        exact_uuid = next_uuid()
+        # Configure the predicted UUID before Board::AddZombie reaches LoadReanim.
+        controller.rnd_set(walk_hook, exact_uuid, 0)
+        exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.NORMAL)
+        exact_mode = get_tied_wearing_zombie_walking_mode(exact_zombie)
+        default_uuid = next_uuid()
+        default_zombie = direct_zombie(default_uuid, 1, ZombieType.NORMAL)
+        default_mode = get_tied_wearing_zombie_walking_mode(default_zombie)
+        expected_modes = {
+            TieWearingZombieWalkingMode.ARM_SWING,
+            TieWearingZombieWalkingMode.ARM_HANG,
+        }
+        assert {exact_mode, default_mode} == expected_modes, (exact_mode, default_mode)
+        cleanup_scene()
+        print(
+            "PASS TIED_ZOMBIE_WALK_ANIM: predicted UUID exact/default walk modes",
+            flush=True,
+        )
+
         for hook, zombie_type, offset in (
             (RndHook.ZOMBIE_SPAWN_OTHER, ZombieType.NORMAL, 780),
             (RndHook.ZOMBIE_SPAWN_POLE, ZombieType.POLEVAULTER, 870),
@@ -644,7 +671,7 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         cleanup_scene()
 
     print(
-        "PASS all 19 zombie RND hooks; births used Board::AddZombie, garlic used real frames, freeze used direct engine call",
+        "PASS all 20 zombie RND hooks; births used Board::AddZombie, garlic used real frames, freeze used direct engine call",
         flush=True,
     )
 

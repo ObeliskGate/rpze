@@ -10,7 +10,7 @@
 #include <Windows.h> 
 
 inline constexpr size_t SHARED_MEMORY_SIZE = 0x10000;
-inline constexpr uint32_t SHM_ABI_VERSION = 1437;
+inline constexpr uint32_t SHM_ABI_VERSION = 1438;
 
 enum class PhaseCode : int32_t
 {
@@ -141,7 +141,7 @@ static_assert(offsetof(Shm, abiVersion) == 0xB0, "Shm ABI version offset error")
 static_assert(offsetof(Shm, asmBuffer) == Shm::ASM_OFFSET, "Shm asm buffer offset error");
 static_assert(offsetof(Shm, objMeta) == Shm::OBJ_META_OFFSET, "Shm object metadata offset error");
 static_assert(offsetof(Shm, rnd) == 0x6040);
-static_assert(Shm::RESERVED_OFFSET == 0xA138 && Shm::RESERVED_SIZE == 0x5EC8);
+static_assert(Shm::RESERVED_OFFSET == 0xA140 && Shm::RESERVED_SIZE == 0x5EC0);
 static_assert(Shm::RESERVED_OFFSET <= SHARED_MEMORY_SIZE, "Shm reserved offset error");
 static_assert(sizeof(Shm) == SHARED_MEMORY_SIZE, "Shm size error");
 

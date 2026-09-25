@@ -45,6 +45,7 @@ class RndHook(Enum):
     ZOMBIE_SPEED_LADDER = 27
     ZOMBIE_SPEED_DOLPHIN = 28
     ZOMBIE_SPEED_NORMAL = 29
+    TIED_ZOMBIE_WALK_ANIM = 30
 
 
 class SyncMethod(Enum):

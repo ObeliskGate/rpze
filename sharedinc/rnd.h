@@ -36,6 +36,7 @@ enum class RndHook : uint16_t
     ZOMBIE_SPEED_LADDER,
     ZOMBIE_SPEED_DOLPHIN,
     ZOMBIE_SPEED_NORMAL,
+    TIED_ZOMBIE_WALK_ANIM,
     Count
 };
 
@@ -97,10 +98,11 @@ inline constexpr auto RND_HOOK_INFO = std::array{
     RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
     RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
     RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
-    RndHookInfo{RndValueKind::F32, RndTarget::Zombie}
+    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
+    RndHookInfo{RndValueKind::I32, RndTarget::Zombie}
 };
 
-static_assert(RND_HOOK_COUNT == 30 && RND_HOOK_INFO.size() == RND_HOOK_COUNT);
+static_assert(RND_HOOK_COUNT == 31 && RND_HOOK_INFO.size() == RND_HOOK_COUNT);
 
 union RndValue
 {
@@ -163,7 +165,7 @@ RND_LAYOUT(RndValue, 4);
 RND_LAYOUT(RndHookInfo, 2);
 RND_LAYOUT(RndExactSlot, 16);
 RND_LAYOUT(RndHookConfig, 8);
-RND_LAYOUT(RndRegion, 0x40F8);
+RND_LAYOUT(RndRegion, 0x4100);
 #undef RND_LAYOUT
 
 static_assert(offsetof(RndValue, i32) == 0 && offsetof(RndValue, u32) == 0 && offsetof(RndValue, f32) == 0);
@@ -171,4 +173,4 @@ static_assert(offsetof(RndHookInfo, valueKind) == 0 && offsetof(RndHookInfo, tar
 static_assert(offsetof(RndExactSlot, uuid) == 0 && offsetof(RndExactSlot, value) == 8 && offsetof(RndExactSlot, hook) == 12 && offsetof(RndExactSlot, padding) == 14);
 static_assert(offsetof(RndHookConfig, enabled) == 0 && offsetof(RndHookConfig, defaultKind) == 1 && offsetof(RndHookConfig, padding) == 2 && offsetof(RndHookConfig, defaultValue) == 4);
 static_assert(offsetof(RndRegion, exactCount) == 0 && offsetof(RndRegion, reserved) == 4);
-static_assert(offsetof(RndRegion, configs) == 0x8 && offsetof(RndRegion, slots) == 0xF8);
+static_assert(offsetof(RndRegion, configs) == 0x8 && offsetof(RndRegion, slots) == 0x100);

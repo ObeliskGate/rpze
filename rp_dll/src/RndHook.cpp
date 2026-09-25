@@ -35,7 +35,7 @@ namespace
         std::array<uint8_t, 27> signature;
     };
 
-    constexpr std::array<IntegerHookSpec, 26> INTEGER_HOOKS{{
+    constexpr std::array<IntegerHookSpec, 27> INTEGER_HOOKS{{
         {
             RndHook::ZOMBIE_JACK_COUNTDOWN, "ZOMBIE_JACK_COUNTDOWN",
             0x522FD2, 0x522FD7, fromEdi,
@@ -157,6 +157,11 @@ namespace
             {0xE8, 0x41, 0xFB, 0x14, 0x00}
         },
         {
+            RndHook::TIED_ZOMBIE_WALK_ANIM, "TIED_ZOMBIE_WALK_ANIM",
+            0x52F3D4, 0x52F3D9, fromEdi,
+            {0xE8, 0x27, 0x00, 0x08, 0x00}
+        },
+        {
             RndHook::CHALLENGE_IZE_PLANT_REDUCTION, "CHALLENGE_IZE_PLANT_REDUCTION",
             0x42AFA6, 0x42AFAB, nullptr,
             {0xE8, 0x55, 0x44, 0x18, 0x00}
@@ -219,9 +224,9 @@ namespace
     constexpr uintptr_t INTEGER_TARGET = 0x5AF400;
     constexpr uintptr_t FLOAT_TARGET = 0x511CB0;
 
-    static_assert(INTEGER_HOOKS.size() == 26);
+    static_assert(INTEGER_HOOKS.size() == 27);
     static_assert(FLOAT_HOOKS.size() == 5);
-    static_assert(RND_HOOK_COUNT == 30);
+    static_assert(RND_HOOK_COUNT == 31);
 
     [[noreturn]] void fatalRnd(std::string_view hookName, uintptr_t address,
         std::string_view reason)
