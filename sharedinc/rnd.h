@@ -4,9 +4,9 @@
 
 inline constexpr size_t RND_EXACT_CAPACITY = 1024;
 
-enum class RndHook : uint16_t
+enum class UuidRndHook : uint16_t
 {
-    ZOMBIE_JACK_COUNTDOWN,
+    ZOMBIE_JACK_COUNTDOWN = 0,
     ZOMBIE_JACK_EARLY_EXPLOSION,
     ZOMBIE_SPAWN_OTHER,
     ZOMBIE_SPAWN_POLE,
@@ -19,19 +19,14 @@ enum class RndHook : uint16_t
     ZOMBIE_DANCER_SLIDE,
     ZOMBIE_YETI_ESCAPE,
     ZOMBIE_POGO_INITIAL,
-    BOARD_LOOT,
     ZOMBIE_FREEZE_FIRST,
     ZOMBIE_FREEZE_REPEAT,
-    BOARD_WAVE_COUNTDOWN,
-    BOARD_SUN_INTERVAL,
     PLANT_KERNEL_BUTTER,
     PLANT_BOWLING_DIRECTION,
     PLANT_PRODUCTION_INITIAL,
     PLANT_PRODUCTION_INTERVAL,
     PLANT_ATTACK_INITIAL,
     PLANT_ATTACK_INTERVAL,
-    CHALLENGE_IZE_PLANT_REDUCTION,
-    BOARD_ACTIVATION_RATIO,
     ZOMBIE_SPEED_JACK,
     ZOMBIE_SPEED_LADDER,
     ZOMBIE_SPEED_DOLPHIN,
@@ -40,7 +35,39 @@ enum class RndHook : uint16_t
     Count
 };
 
+enum class RndHook : uint16_t
+{
+    BOARD_LOOT = 0,
+    BOARD_WAVE_COUNTDOWN,
+    BOARD_SUN_INTERVAL,
+    CHALLENGE_IZE_PLANT_REDUCTION,
+    BOARD_ACTIVATION_RATIO,
+    Count
+};
+
+inline constexpr size_t UUID_RND_HOOK_COUNT = static_cast<size_t>(UuidRndHook::Count);
 inline constexpr size_t RND_HOOK_COUNT = static_cast<size_t>(RndHook::Count);
+inline constexpr size_t RND_CONFIG_COUNT = UUID_RND_HOOK_COUNT + RND_HOOK_COUNT;
+
+constexpr size_t rndConfigIndex(UuidRndHook hook) noexcept
+{
+    return static_cast<size_t>(hook);
+}
+
+constexpr size_t rndConfigIndex(RndHook hook) noexcept
+{
+    return UUID_RND_HOOK_COUNT + static_cast<size_t>(hook);
+}
+
+constexpr bool isValidRndHook(UuidRndHook hook) noexcept
+{
+    return static_cast<size_t>(hook) < UUID_RND_HOOK_COUNT;
+}
+
+constexpr bool isValidRndHook(RndHook hook) noexcept
+{
+    return static_cast<size_t>(hook) < RND_HOOK_COUNT;
+}
 
 enum class RndDefaultKind : uint8_t
 {
@@ -82,27 +109,28 @@ inline constexpr auto RND_HOOK_INFO = std::array{
     RndHookInfo{RndValueKind::I32, RndTarget::Zombie},
     RndHookInfo{RndValueKind::I32, RndTarget::Zombie},
     RndHookInfo{RndValueKind::I32, RndTarget::Zombie},
-    RndHookInfo{RndValueKind::I32, RndTarget::Board},
     RndHookInfo{RndValueKind::I32, RndTarget::Zombie},
     RndHookInfo{RndValueKind::I32, RndTarget::Zombie},
+    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
+    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
+    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
+    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
+    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
+    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
+    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
+    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
+    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
+    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
+    RndHookInfo{RndValueKind::I32, RndTarget::Zombie},
     RndHookInfo{RndValueKind::I32, RndTarget::Board},
     RndHookInfo{RndValueKind::I32, RndTarget::Board},
-    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
-    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
-    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
-    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
-    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
-    RndHookInfo{RndValueKind::I32, RndTarget::Plant},
+    RndHookInfo{RndValueKind::I32, RndTarget::Board},
     RndHookInfo{RndValueKind::I32, RndTarget::Challenge},
-    RndHookInfo{RndValueKind::F32, RndTarget::Board},
-    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
-    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
-    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
-    RndHookInfo{RndValueKind::F32, RndTarget::Zombie},
-    RndHookInfo{RndValueKind::I32, RndTarget::Zombie}
+    RndHookInfo{RndValueKind::F32, RndTarget::Board}
 };
 
-static_assert(RND_HOOK_COUNT == 31 && RND_HOOK_INFO.size() == RND_HOOK_COUNT);
+static_assert(UUID_RND_HOOK_COUNT == 26 && RND_HOOK_COUNT == 5 && RND_CONFIG_COUNT == 31);
+static_assert(RND_HOOK_INFO.size() == RND_CONFIG_COUNT);
 
 union RndValue
 {
@@ -115,7 +143,7 @@ struct RndExactSlot
 {
     ObjUuid uuid;
     RndValue value;
-    RndHook hook;
+    UuidRndHook hook;
     uint16_t padding;
 };
 
@@ -130,7 +158,7 @@ struct RndHookConfig
 struct RndRegion
 {
     uint32_t exactCount, reserved;
-    RndHookConfig configs[RND_HOOK_COUNT];
+    RndHookConfig configs[RND_CONFIG_COUNT];
     RndExactSlot slots[RND_EXACT_CAPACITY];
 };
 
@@ -139,7 +167,7 @@ inline ObjUuid rndUuidSnapshot(const volatile ObjUuid& uuid) noexcept
     return {uuid.fields.uuidCnt, uuid.fields.index, uuid.fields.type};
 }
 
-inline size_t rndLowerBound(const volatile RndRegion& region, RndHook hook,
+inline size_t rndLowerBound(const volatile RndRegion& region, UuidRndHook hook,
                            const ObjUuid& uuid) noexcept
 {
     size_t first = 0, count = region.exactCount;

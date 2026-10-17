@@ -147,13 +147,21 @@ public:
 
 	std::pair<bool, uint32_t> getPBoard() const; // 第一位返回0表示无须换新
 
-	void rndSet(RndHook hook, const ObjUuid& uuid, uint32_t bits);
-	std::optional<uint32_t> rndGet(RndHook hook, const ObjUuid& uuid) const;
-	bool rndRemove(RndHook hook, const ObjUuid& uuid);
-	void rndSetDefault(RndHook hook, std::optional<uint32_t> bits);
-	std::optional<uint32_t> rndGetDefault(RndHook hook) const;
+	void rndUuidSet(UuidRndHook hook, const ObjUuid& uuid, uint32_t bits);
+	std::optional<uint32_t> rndUuidGet(UuidRndHook hook, const ObjUuid& uuid) const;
+	bool rndUuidRemove(UuidRndHook hook, const ObjUuid& uuid);
+	std::vector<ObjUuid> rndUuidKeys(UuidRndHook hook) const;
+	size_t rndUuidCount(UuidRndHook hook) const;
+	void rndUuidClear(UuidRndHook hook);
+	void rndUuidSetDefault(UuidRndHook hook, std::optional<uint32_t> bits);
+	std::optional<uint32_t> rndUuidGetDefault(UuidRndHook hook) const;
+	void rndSet(RndHook hook, std::optional<uint32_t> bits);
+	std::optional<uint32_t> rndGet(RndHook hook) const;
+	bool rndEnabled(UuidRndHook hook) const;
 	bool rndEnabled(RndHook hook) const;
-	void rndClear(std::optional<RndHook> hook = std::nullopt);
+	void rndClear();
+	void rndClear(UuidRndHook hook);
+	void rndClear(RndHook hook);
 
 	const ObjArrayMeta* getObjArrayMeta(ObjType type) const
 	{

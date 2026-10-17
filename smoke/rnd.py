@@ -19,10 +19,11 @@ from rpze.rp_extend import (
     ObjUuid,
     RndHook,
     SyncMethod,
+    UuidRndHook,
 )
 from rpze.iztest.zombie_info import (
-    TieWearingZombieWalkingMode,
-    get_tied_wearing_zombie_walking_mode,
+    TiedZombieWalkingMode,
+    get_tied_zombie_walking_mode,
 )
 from rpze.structs import game_board as game_board_module
 from rpze.structs.game_board import GameBoard, get_board
@@ -68,15 +69,15 @@ def prepare_board(controller: Controller, board: GameBoard) -> None:
 
 def integer_birth(controller: Controller, board: GameBoard) -> None:
     """验证整数 RND 的出生即时字段,死亡回收和槽位复用契约."""
-    hook = RndHook.PLANT_ATTACK_INITIAL
+    hook = UuidRndHook.PLANT_ATTACK_INITIAL
     # 这是根据当前计数器和空闲链的预测,不是向游戏预留 UUID 或槽位.
     predicted = ObjUuid(
         controller.get_obj_next_uuid_cnt(ObjType.PLANT),
         board.plant_list.next_index,
         ObjType.PLANT,
     )
-    controller.rnd_set_default(hook, 11)
-    controller.rnd_set(hook, predicted, 7)
+    controller.rnd_uuid_set_default(hook, 11)
+    controller.rnd_uuid_set(hook, predicted, 7)
     plant = board.new_plant(0, 0, PlantType.PEASHOOTER)
 
     # 出生返回后先检查 UUID 和字段;帧推进可能改变字段,不能代替这个即时契约.
@@ -88,7 +89,7 @@ def integer_birth(controller: Controller, board: GameBoard) -> None:
     other = board.new_plant(1, 0, PlantType.PEASHOOTER)
     other_uuid = other.uuid
     assert other.generate_cd == 11, other.generate_cd
-    assert controller.rnd_get(hook, other_uuid) is None
+    assert controller.rnd_uuid_get(hook, other_uuid) is None
     assert_izombie_brains(board)
     controller.skip_frames(1)
 
@@ -108,8 +109,8 @@ def integer_birth(controller: Controller, board: GameBoard) -> None:
     # 复用同一个槽位仍是新的一次分配,不能命中过期 UUID 的配置.
     assert_izombie_brains(board)
     controller.skip_frames(1)
-    assert controller.rnd_get(hook, predicted) == 7
-    assert controller.rnd_remove(hook, predicted)
+    assert controller.rnd_uuid_get(hook, predicted) == 7
+    assert controller.rnd_uuid_remove(hook, predicted)
     controller.rnd_clear(hook)
     assert not controller.rnd_enabled(hook)
 
@@ -136,10 +137,10 @@ def plant_hooks(controller: Controller, board: GameBoard) -> None:
     from rpze.structs.projectile import ProjectileType
 
     hooks = (
-        RndHook.PLANT_ATTACK_INTERVAL,
-        RndHook.PLANT_PRODUCTION_INITIAL,
-        RndHook.PLANT_PRODUCTION_INTERVAL,
-        RndHook.PLANT_KERNEL_BUTTER,
+        UuidRndHook.PLANT_ATTACK_INTERVAL,
+        UuidRndHook.PLANT_PRODUCTION_INITIAL,
+        UuidRndHook.PLANT_PRODUCTION_INTERVAL,
+        UuidRndHook.PLANT_KERNEL_BUTTER,
     )
     plants = []
     zombies = []
@@ -181,15 +182,15 @@ def plant_hooks(controller: Controller, board: GameBoard) -> None:
         """
         assert asm.run(code, controller)
 
-    def configure(hook: RndHook, exact_uuid: ObjUuid, exact: int, default: int) -> None:
-        controller.rnd_set_default(hook, default)
-        controller.rnd_set(hook, exact_uuid, exact)
+    def configure(hook: UuidRndHook, exact_uuid: ObjUuid, exact: int, default: int) -> None:
+        controller.rnd_uuid_set_default(hook, default)
+        controller.rnd_uuid_set(hook, exact_uuid, exact)
 
     try:
         # 攻击间隔在完整植物帧中先减到零,续值再经过 RND 后写回倒计时.
         cleanup_scene()
         exact_uuid = next_plant_uuid()
-        configure(RndHook.PLANT_ATTACK_INTERVAL, exact_uuid, 11, 7)
+        configure(UuidRndHook.PLANT_ATTACK_INTERVAL, exact_uuid, 11, 7)
         exact = board.new_plant(0, 0, PlantType.PEASHOOTER)
         assert exact.uuid == exact_uuid
         board.iz_setup_plant(exact)
@@ -207,7 +208,7 @@ def plant_hooks(controller: Controller, board: GameBoard) -> None:
 
         # 生产初值只在出生例程内取一次,精确 UUID 和其他对象分别走不同结果.
         exact_uuid = next_plant_uuid()
-        configure(RndHook.PLANT_PRODUCTION_INITIAL, exact_uuid, 17, 23)
+        configure(UuidRndHook.PLANT_PRODUCTION_INITIAL, exact_uuid, 17, 23)
         exact = board.new_plant(0, 0, PlantType.SUNFLOWER)
         default = board.new_plant(1, 0, PlantType.SUNFLOWER)
         plants.extend((exact, default))
@@ -220,7 +221,7 @@ def plant_hooks(controller: Controller, board: GameBoard) -> None:
         # 生产间隔例程会排除 IZombie 模式;暂时切到已知的普通关卡模式,
         # 调用完整入口,再无条件恢复原模式.
         exact_uuid = next_plant_uuid()
-        configure(RndHook.PLANT_PRODUCTION_INTERVAL, exact_uuid, 11, 7)
+        configure(UuidRndHook.PLANT_PRODUCTION_INTERVAL, exact_uuid, 11, 7)
         exact = board.new_plant(0, 0, PlantType.SUNFLOWER)
         default = board.new_plant(1, 0, PlantType.SUNFLOWER)
         plants.extend((exact, default))
@@ -240,7 +241,7 @@ def plant_hooks(controller: Controller, board: GameBoard) -> None:
 
         # 玉米投手在真实攻击帧中创建子弹,精确对象出黄油,其他对象出玉米粒.
         exact_uuid = next_plant_uuid()
-        configure(RndHook.PLANT_KERNEL_BUTTER, exact_uuid, 0, 1)
+        configure(UuidRndHook.PLANT_KERNEL_BUTTER, exact_uuid, 0, 1)
         exact = board.new_plant(0, 0, PlantType.KERNELPULT)
         default = board.new_plant(1, 0, PlantType.KERNELPULT)
         assert exact.uuid == exact_uuid
@@ -275,15 +276,123 @@ def plant_hooks(controller: Controller, board: GameBoard) -> None:
 def configuration(controller: Controller) -> None:
     """在暂停态原子验证配置,容量,覆盖顺序,隔离和参数校验."""
     c = controller
-    a, b = RndHook.PLANT_ATTACK_INITIAL, RndHook.ZOMBIE_SPAWN_OTHER
+    a, b = UuidRndHook.PLANT_ATTACK_INITIAL, UuidRndHook.ZOMBIE_SPAWN_OTHER
+    # 集合原语只包含精确项,保留预测或已失效 UUID,与默认策略独立.
+    u1, u2 = ObjUuid(1, 0, ObjType.PLANT), ObjUuid(2, 0, ObjType.PLANT)
+    z = ObjUuid(1, 0, ObjType.ZOMBIE)
+    missing = ObjUuid(3, 0, ObjType.PLANT)
+    c.rnd_clear()
+    assert c.rnd_uuid_keys(a) == [] and c.rnd_uuid_count(a) == 0
+    c.rnd_uuid_set_default(a, 11)
+    c.rnd_uuid_set(a, u2, 7)
+    c.rnd_uuid_set(a, u1, 0)
+    c.rnd_uuid_set(b, z, 23)
+    assert c.rnd_uuid_keys(a) == [u1, u2] and c.rnd_uuid_count(a) == 2
+    assert c.rnd_uuid_get(a, missing) is None
+    assert c.rnd_uuid_keys(b) == [z] and c.rnd_uuid_count(b) == 1
+    c.rnd_uuid_set(a, u1, 5)
+    assert c.rnd_uuid_get(a, u1) == 5
+    assert c.rnd_uuid_keys(a) == [u1, u2] and c.rnd_uuid_count(a) == 2
+    snapshot = c.rnd_uuid_keys(a)
+    assert c.rnd_uuid_remove(a, u1)
+    assert snapshot == [u1, u2] and c.rnd_uuid_keys(a) == [u2]
+    assert c.rnd_uuid_count(a) == 1
+    assert {snapshot[0]: 5}[ObjUuid(1, 0, ObjType.PLANT)] == 5
+    c.rnd_uuid_clear(a)
+    assert c.rnd_uuid_keys(a) == [] and c.rnd_uuid_count(a) == 0
+    assert c.rnd_uuid_get(a, u2) is None
+    assert c.rnd_uuid_get_default(a) == 11 and c.rnd_enabled(a)
+    assert c.rnd_uuid_keys(b) == [z] and c.rnd_uuid_get(b, z) == 23
+    c.rnd_uuid_clear(a)
+    assert c.rnd_uuid_keys(a) == [] and c.rnd_uuid_count(a) == 0
+    assert c.rnd_uuid_get_default(a) == 11 and c.rnd_enabled(a)
+    c.rnd_uuid_set_default(a, None)
+    assert not c.rnd_enabled(a)
+    c.rnd_uuid_set(a, u1, 0)
+    c.rnd_uuid_clear(a)
+    assert not c.rnd_enabled(a) and c.rnd_uuid_count(a) == 0
+    c.rnd_uuid_set_default(a, 11)
+    c.rnd_uuid_set(a, u1, 5)
+    c.rnd_clear(a)
+    assert c.rnd_uuid_keys(a) == [] and c.rnd_uuid_count(a) == 0
+    assert c.rnd_uuid_get_default(a) is None and not c.rnd_enabled(a)
+    assert c.rnd_uuid_keys(b) == [z] and c.rnd_uuid_get(b, z) == 23
+
+    for h in RndHook:
+        value = 0.5 if h == RndHook.BOARD_ACTIVATION_RATIO else 17
+        c.rnd_set(h, value)
+        assert c.rnd_get(h) == value and c.rnd_enabled(h)
+        c.rnd_set(h, None)
+        assert c.rnd_get(h) is None and not c.rnd_enabled(h)
+        c.rnd_set(h, value)
+        c.rnd_clear(h)
+        assert c.rnd_get(h) is None and not c.rnd_enabled(h)
+
+    g = RndHook.BOARD_LOOT
+    c.rnd_set(g, 17)
+    c.rnd_uuid_set_default(a, 11)
+    c.rnd_uuid_set(a, u1, 5)
+
+    def configuration_snapshot():
+        return (
+            [(h, c.rnd_uuid_keys(h), c.rnd_uuid_get_default(h), c.rnd_enabled(h),
+              [c.rnd_uuid_get(h, key) for key in c.rnd_uuid_keys(h)])
+             for h in UuidRndHook],
+            [(h, c.rnd_get(h), c.rnd_enabled(h)) for h in RndHook],
+        )
+
+    before = configuration_snapshot()
+    for wrong in (g, a.value):
+        for operation in (
+            lambda: c.rnd_uuid_set(wrong, u1, 1),
+            lambda: c.rnd_uuid_get(wrong, u1),
+            lambda: c.rnd_uuid_remove(wrong, u1),
+            lambda: c.rnd_uuid_keys(wrong),
+            lambda: c.rnd_uuid_count(wrong),
+            lambda: c.rnd_uuid_clear(wrong),
+            lambda: c.rnd_uuid_set_default(wrong, 1),
+            lambda: c.rnd_uuid_get_default(wrong),
+        ):
+            try:
+                operation()
+            except TypeError:
+                pass
+            else:
+                raise AssertionError("UUID API accepted the wrong hook type")
+            assert configuration_snapshot() == before
+    for wrong in (a, g.value):
+        for operation in (
+            lambda: c.rnd_set(wrong, 1),
+            lambda: c.rnd_get(wrong),
+        ):
+            try:
+                operation()
+            except TypeError:
+                pass
+            else:
+                raise AssertionError("ordinary API accepted the wrong hook type")
+            assert configuration_snapshot() == before
+    for operation in (lambda: c.rnd_enabled(a.value), lambda: c.rnd_clear(g.value)):
+        try:
+            operation()
+        except TypeError:
+            pass
+        else:
+            raise AssertionError("common API accepted an integer hook")
+        assert configuration_snapshot() == before
+    c.rnd_clear(None)
+    assert all(not c.rnd_enabled(h) for h in (*UuidRndHook, *RndHook))
+    assert all(c.rnd_uuid_keys(h) == [] and c.rnd_uuid_get_default(h) is None
+               for h in UuidRndHook)
+    assert all(c.rnd_get(h) is None for h in RndHook)
     u = ObjUuid(1, 0, ObjType.PLANT)
-    c.rnd_set(a, u, 0)
-    assert c.rnd_enabled(a) and c.rnd_get(a, u) == 0
-    c.rnd_set_default(a, 11)
-    c.rnd_set_default(a, None)
-    assert c.rnd_enabled(a) and c.rnd_get_default(a) is None
-    assert c.rnd_remove(a, u) and not c.rnd_enabled(a)
-    assert not c.rnd_remove(a, u)
+    c.rnd_uuid_set(a, u, 0)
+    assert c.rnd_enabled(a) and c.rnd_uuid_get(a, u) == 0
+    c.rnd_uuid_set_default(a, 11)
+    c.rnd_uuid_set_default(a, None)
+    assert c.rnd_enabled(a) and c.rnd_uuid_get_default(a) is None
+    assert c.rnd_uuid_remove(a, u) and not c.rnd_enabled(a)
+    assert not c.rnd_uuid_remove(a, u)
     # 容量契约:精确填满表后,新键必须失败;已有键仍可读写和删除.
     entries = [
         (
@@ -295,47 +404,52 @@ def configuration(controller: Controller) -> None:
         for i in range(RND_EXACT_CAPACITY)
     ]
     for h, uuid, value in reversed(entries):
-        c.rnd_set(h, uuid, value)
-    c.rnd_set_default(a, 19)
+        c.rnd_uuid_set(h, uuid, value)
+    for h in (a, b):
+        expected = sorted((uuid for hook, uuid, _ in entries if hook == h),
+                          key=lambda uuid: uuid.value)
+        assert c.rnd_uuid_keys(h) == expected
+        assert c.rnd_uuid_count(h) == 512
+    c.rnd_uuid_set_default(a, 19)
     extra = ObjUuid(99999, 0, ObjType.PLANT)
     try:
-        c.rnd_set(a, extra, 23)
+        c.rnd_uuid_set(a, extra, 23)
     except ControllerError:
         pass
     else:
         raise AssertionError("full table accepted a new key")
     for h, uuid, value in entries:
-        assert c.rnd_get(h, uuid) == value
-    assert c.rnd_get_default(a) == 19 and c.rnd_enabled(a) and c.rnd_enabled(b)
+        assert c.rnd_uuid_get(h, uuid) == value
+    assert c.rnd_uuid_get_default(a) == 19 and c.rnd_enabled(a) and c.rnd_enabled(b)
     h, uuid, _ = entries[len(entries) // 2]
-    c.rnd_set(h, uuid, 41)
-    assert c.rnd_get(h, uuid) == 41
+    c.rnd_uuid_set(h, uuid, 41)
+    assert c.rnd_uuid_get(h, uuid) == 41
     for index in (0, len(entries) // 2, len(entries) - 1):
         h, uuid, _ = entries[index]
-        assert c.rnd_remove(h, uuid)
-        assert c.rnd_get(h, uuid) is None
+        assert c.rnd_uuid_remove(h, uuid)
+        assert c.rnd_uuid_get(h, uuid) is None
     c.rnd_clear(a)
     assert not c.rnd_enabled(a) and c.rnd_enabled(b)
     for h, uuid, value in entries:
         if h == b and uuid != entries[0][1] and uuid != entries[len(entries) // 2][1]:
-            assert c.rnd_get(h, uuid) == value
-    c.rnd_set(a, extra, 7)
+            assert c.rnd_uuid_get(h, uuid) == value
+    c.rnd_uuid_set(a, extra, 7)
     c.rnd_clear()
-    assert all(not c.rnd_enabled(h) for h in RndHook)
-    f = RndHook.ZOMBIE_SPEED_NORMAL
+    assert all(not c.rnd_enabled(h) for h in (*UuidRndHook, *RndHook))
+    f = UuidRndHook.ZOMBIE_SPEED_NORMAL
     for value in (0.0, -0.0, 2.0 ** -149, 0.125):
-        c.rnd_set_default(f, value)
-        assert struct.pack("<f", c.rnd_get_default(f)) == struct.pack("<f", value)
+        c.rnd_uuid_set_default(f, value)
+        assert struct.pack("<f", c.rnd_uuid_get_default(f)) == struct.pack("<f", value)
     c.rnd_clear()
-    failures = [(TypeError, lambda: c.rnd_set(a, u, 1.5)),
-                (ValueError, lambda: c.rnd_set(a, ObjUuid(), 1)),
-                (ValueError, lambda: c.rnd_set(a, ObjUuid(1, 1024, ObjType.PLANT), 1)),
-                (ValueError, lambda: c.rnd_set(a, ObjUuid(1, 0, ObjType.ZOMBIE), 1)),
-                (OverflowError, lambda: c.rnd_set(a, u, 2**31)),
-                (OverflowError, lambda: c.rnd_set(a, u, -2**31-1)),
-                (ValueError, lambda: c.rnd_set_default(f, math.nan)),
-                (ValueError, lambda: c.rnd_set_default(f, math.inf)),
-                (OverflowError, lambda: c.rnd_set_default(f, 1e100))]
+    failures = [(TypeError, lambda: c.rnd_uuid_set(a, u, 1.5)),
+                (ValueError, lambda: c.rnd_uuid_set(a, ObjUuid(), 1)),
+                (ValueError, lambda: c.rnd_uuid_set(a, ObjUuid(1, 1024, ObjType.PLANT), 1)),
+                (ValueError, lambda: c.rnd_uuid_set(a, ObjUuid(1, 0, ObjType.ZOMBIE), 1)),
+                (OverflowError, lambda: c.rnd_uuid_set(a, u, 2**31)),
+                (OverflowError, lambda: c.rnd_uuid_set(a, u, -2**31-1)),
+                (ValueError, lambda: c.rnd_uuid_set_default(f, math.nan)),
+                (ValueError, lambda: c.rnd_uuid_set_default(f, math.inf)),
+                (OverflowError, lambda: c.rnd_uuid_set_default(f, 1e100))]
     for error, operation in failures:
         try:
             operation()
@@ -343,46 +457,57 @@ def configuration(controller: Controller) -> None:
             pass
         else:
             raise AssertionError(f"expected {error.__name__}")
-        assert all(not c.rnd_enabled(h) for h in RndHook)
+        assert all(not c.rnd_enabled(h) for h in (*UuidRndHook, *RndHook))
     class StopsControl:
         def __index__(self):
             c.end()
             return 7
     try:
-        c.rnd_set(a, u, StopsControl())
+        c.rnd_uuid_set(a, u, StopsControl())
     except ControllerError:
         pass
     else:
         raise AssertionError("index protocol bypassed prepared check")
     finally:
         c.start()
-    assert c.rnd_get(a, u) is None and not c.rnd_enabled(a)
+    assert c.rnd_uuid_get(a, u) is None and not c.rnd_enabled(a)
     class IndexFailure(Exception):
         pass
     class BrokenIndex:
         def __index__(self):
             raise IndexFailure("index failure must propagate")
     try:
-        c.rnd_set(a, u, BrokenIndex())
+        c.rnd_uuid_set(a, u, BrokenIndex())
     except IndexFailure:
         pass
     else:
         raise AssertionError("index protocol exception was lost")
-    print("PASS configuration: capacity/overwrite/order/isolation/validation/fp32 bits", flush=True)
+    print("PASS configuration: UUID snapshot/count/clear, ordinary values, type boundaries, "
+          "capacity/overwrite/order/isolation/validation/fp32 bits", flush=True)
 
 
 def prepared_state(controller: Controller) -> None:
     """非 prepared 状态拒绝配置;恢复控制后原配置仍在."""
     c = controller
-    h = RndHook.PLANT_ATTACK_INITIAL
+    h = UuidRndHook.PLANT_ATTACK_INITIAL
     u = ObjUuid(1, 0, ObjType.PLANT)
-    operations = (lambda: c.rnd_set(h, u, 1),
-                  lambda: c.rnd_get(h, u),
-                  lambda: c.rnd_remove(h, u),
-                  lambda: c.rnd_set_default(h, 1),
-                  lambda: c.rnd_get_default(h),
+    g = RndHook.BOARD_LOOT
+    operations = (lambda: c.rnd_uuid_set(h, u, 1),
+                  lambda: c.rnd_uuid_get(h, u),
+                  lambda: c.rnd_uuid_remove(h, u),
+                  lambda: c.rnd_uuid_keys(h),
+                  lambda: c.rnd_uuid_count(h),
+                  lambda: c.rnd_uuid_clear(h),
+                  lambda: c.rnd_uuid_set_default(h, 1),
+                  lambda: c.rnd_uuid_set_default(h, None),
+                  lambda: c.rnd_uuid_get_default(h),
+                  lambda: c.rnd_set(g, 1),
+                  lambda: c.rnd_set(g, None),
+                  lambda: c.rnd_get(g),
                   lambda: c.rnd_enabled(h),
-                  lambda: c.rnd_clear(h), lambda: c.rnd_clear())
+                  lambda: c.rnd_enabled(g),
+                  lambda: c.rnd_clear(h), lambda: c.rnd_clear(g),
+                  lambda: c.rnd_clear(), lambda: c.rnd_clear(None))
     def rejected() -> None:
         for operation in operations:
             try:
@@ -391,13 +516,18 @@ def prepared_state(controller: Controller) -> None:
                 pass
             else:
                 raise AssertionError("unprepared operation accepted")
-    c.rnd_set_default(h, 11)
+    c.rnd_uuid_set_default(h, 11)
+    c.rnd_uuid_set(h, u, 7)
+    c.rnd_set(g, 17)
     c.end()
     try:
         rejected()
     finally:
         c.start()
-    assert c.rnd_get_default(h) == 11
+    assert c.rnd_uuid_get_default(h) == 11
+    assert c.rnd_uuid_keys(h) == [u] and c.rnd_uuid_count(h) == 1
+    assert c.rnd_uuid_get(h, u) == 7 and c.rnd_enabled(h)
+    assert c.rnd_get(g) == 17 and c.rnd_enabled(g)
     c.rnd_clear()
     print("PASS all API prepared gates; end/start preserves configuration", flush=True)
 
@@ -488,19 +618,19 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
     try:
         reset_scene()
         board.is_dance_mode = False
-        walk_hook = RndHook.TIED_ZOMBIE_WALK_ANIM
-        controller.rnd_set_default(walk_hook, 1)
+        walk_hook = UuidRndHook.TIED_ZOMBIE_WALK_ANIM
+        controller.rnd_uuid_set_default(walk_hook, 1)
         exact_uuid = next_uuid()
         # Configure the predicted UUID before Board::AddZombie reaches LoadReanim.
-        controller.rnd_set(walk_hook, exact_uuid, 0)
+        controller.rnd_uuid_set(walk_hook, exact_uuid, 0)
         exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.NORMAL)
-        exact_mode = get_tied_wearing_zombie_walking_mode(exact_zombie)
+        exact_mode = get_tied_zombie_walking_mode(exact_zombie)
         default_uuid = next_uuid()
         default_zombie = direct_zombie(default_uuid, 1, ZombieType.NORMAL)
-        default_mode = get_tied_wearing_zombie_walking_mode(default_zombie)
+        default_mode = get_tied_zombie_walking_mode(default_zombie)
         expected_modes = {
-            TieWearingZombieWalkingMode.ARM_SWING,
-            TieWearingZombieWalkingMode.ARM_HANG,
+            TiedZombieWalkingMode.ARM_SWING,
+            TiedZombieWalkingMode.ARM_HANG,
         }
         assert {exact_mode, default_mode} == expected_modes, (exact_mode, default_mode)
         cleanup_scene()
@@ -510,16 +640,16 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         )
 
         for hook, zombie_type, offset in (
-            (RndHook.ZOMBIE_SPAWN_OTHER, ZombieType.NORMAL, 780),
-            (RndHook.ZOMBIE_SPAWN_POLE, ZombieType.POLEVAULTER, 870),
-            (RndHook.ZOMBIE_SPAWN_ZAMBONI, ZombieType.ZAMBONI, 800),
-            (RndHook.ZOMBIE_SPAWN_CATAPULT, ZombieType.CATAPULT, 825),
-            (RndHook.ZOMBIE_SPAWN_GARGANTUAR, ZombieType.GARGANTUAR, 845),
+            (UuidRndHook.ZOMBIE_SPAWN_OTHER, ZombieType.NORMAL, 780),
+            (UuidRndHook.ZOMBIE_SPAWN_POLE, ZombieType.POLEVAULTER, 870),
+            (UuidRndHook.ZOMBIE_SPAWN_ZAMBONI, ZombieType.ZAMBONI, 800),
+            (UuidRndHook.ZOMBIE_SPAWN_CATAPULT, ZombieType.CATAPULT, 825),
+            (UuidRndHook.ZOMBIE_SPAWN_GARGANTUAR, ZombieType.GARGANTUAR, 845),
         ):
             reset_scene()
-            controller.rnd_set_default(hook, default_int)
+            controller.rnd_uuid_set_default(hook, default_int)
             exact_uuid = next_uuid()
-            controller.rnd_set(hook, exact_uuid, exact_int)
+            controller.rnd_uuid_set(hook, exact_uuid, exact_int)
             exact_zombie = direct_zombie(exact_uuid, 2, zombie_type)
             assert exact_zombie.x == offset + exact_int
             default_uuid = next_uuid()
@@ -528,11 +658,11 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
             cleanup_scene()
 
         reset_scene()
-        controller.rnd_set_default(RndHook.ZOMBIE_SPEED_JACK, 2.0)
-        controller.rnd_set_default(RndHook.ZOMBIE_JACK_COUNTDOWN, default_int)
-        controller.rnd_set_default(RndHook.ZOMBIE_JACK_EARLY_EXPLOSION, 1)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_SPEED_JACK, 2.0)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_JACK_COUNTDOWN, default_int)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_JACK_EARLY_EXPLOSION, 1)
         exact_uuid = next_uuid()
-        controller.rnd_set(RndHook.ZOMBIE_JACK_COUNTDOWN, exact_uuid, exact_int)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_JACK_COUNTDOWN, exact_uuid, exact_int)
         exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.JACK_IN_THE_BOX)
         assert exact_zombie.dx == 2.0
         assert controller.read_i32(exact_zombie.base_ptr + 0x68) == 466
@@ -542,11 +672,11 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         cleanup_scene()
 
         reset_scene()
-        controller.rnd_set_default(RndHook.ZOMBIE_SPEED_JACK, 2.0)
-        controller.rnd_set_default(RndHook.ZOMBIE_JACK_COUNTDOWN, exact_int)
-        controller.rnd_set_default(RndHook.ZOMBIE_JACK_EARLY_EXPLOSION, 1)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_SPEED_JACK, 2.0)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_JACK_COUNTDOWN, exact_int)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_JACK_EARLY_EXPLOSION, 1)
         exact_uuid = next_uuid()
-        controller.rnd_set(RndHook.ZOMBIE_JACK_EARLY_EXPLOSION, exact_uuid, 0)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_JACK_EARLY_EXPLOSION, exact_uuid, 0)
         exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.JACK_IN_THE_BOX)
         assert exact_zombie.dx == 2.0
         assert controller.read_i32(exact_zombie.base_ptr + 0x68) == 154
@@ -556,9 +686,9 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         cleanup_scene()
 
         reset_scene()
-        controller.rnd_set_default(RndHook.ZOMBIE_BUNGEE_HEIGHT, default_int)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_BUNGEE_HEIGHT, default_int)
         exact_uuid = next_uuid()
-        controller.rnd_set(RndHook.ZOMBIE_BUNGEE_HEIGHT, exact_uuid, exact_int)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_BUNGEE_HEIGHT, exact_uuid, exact_int)
         exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.BUNGEE)
         assert controller.read_u32(exact_zombie.base_ptr + 0x84) == float_bits(3017.0)
         default_uuid = next_uuid()
@@ -567,14 +697,14 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         cleanup_scene()
 
         for hook, zombie_type, exact_phase, default_phase in (
-            (RndHook.ZOMBIE_DANCER_SLIDE, ZombieType.DANCER, 317, 1077),
-            (RndHook.ZOMBIE_YETI_ESCAPE, ZombieType.YETI, 1517, 2277),
-            (RndHook.ZOMBIE_POGO_INITIAL, ZombieType.POGO, 18, 778),
+            (UuidRndHook.ZOMBIE_DANCER_SLIDE, ZombieType.DANCER, 317, 1077),
+            (UuidRndHook.ZOMBIE_YETI_ESCAPE, ZombieType.YETI, 1517, 2277),
+            (UuidRndHook.ZOMBIE_POGO_INITIAL, ZombieType.POGO, 18, 778),
         ):
             reset_scene()
-            controller.rnd_set_default(hook, default_int)
+            controller.rnd_uuid_set_default(hook, default_int)
             exact_uuid = next_uuid()
-            controller.rnd_set(hook, exact_uuid, exact_int)
+            controller.rnd_uuid_set(hook, exact_uuid, exact_int)
             exact_zombie = direct_zombie(exact_uuid, 2, zombie_type)
             assert controller.read_i32(exact_zombie.base_ptr + 0x68) == exact_phase
             default_uuid = next_uuid()
@@ -583,11 +713,11 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
             cleanup_scene()
 
         reset_scene()
-        controller.rnd_set_default(RndHook.ZOMBIE_SPEED_NORMAL, 1.0)
-        controller.rnd_set_default(RndHook.ZOMBIE_JALAPENO_COUNTDOWN, default_int)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_SPEED_NORMAL, 1.0)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_JALAPENO_COUNTDOWN, default_int)
         exact_uuid = next_uuid()
-        controller.rnd_set(RndHook.ZOMBIE_SPEED_NORMAL, exact_uuid, 1.0)
-        controller.rnd_set(RndHook.ZOMBIE_JALAPENO_COUNTDOWN, exact_uuid, exact_int)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_SPEED_NORMAL, exact_uuid, 1.0)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_JALAPENO_COUNTDOWN, exact_uuid, exact_int)
         exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.JALAPENO_HEAD)
         assert exact_zombie.dx == 1.0
         assert controller.read_i32(exact_zombie.base_ptr + 0x68) == 584
@@ -597,15 +727,15 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         cleanup_scene()
 
         reset_scene()
-        controller.rnd_set_default(RndHook.ZOMBIE_GARLIC_DIRECTION, 1)
-        controller.rnd_set_default(RndHook.ZOMBIE_SPEED_NORMAL, 2.0)
-        controller.rnd_set_default(RndHook.ZOMBIE_SPAWN_OTHER, 0)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_GARLIC_DIRECTION, 1)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_SPEED_NORMAL, 2.0)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_SPAWN_OTHER, 0)
         garlic = board.new_plant(2, 8, PlantType.GARLIC)
         assert garlic is not None
         plants.append(garlic)
         exact_uuid = next_uuid()
-        controller.rnd_set(RndHook.ZOMBIE_GARLIC_DIRECTION, exact_uuid, 0)
-        controller.rnd_set(RndHook.ZOMBIE_SPAWN_OTHER, exact_uuid, 0)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_GARLIC_DIRECTION, exact_uuid, 0)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_SPAWN_OTHER, exact_uuid, 0)
         exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.NORMAL)
         controller.skip_frames(300)
         assert exact_zombie.row == 3
@@ -619,9 +749,9 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         cleanup_scene()
 
         reset_scene()
-        controller.rnd_set_default(RndHook.ZOMBIE_FREEZE_FIRST, default_int)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_FREEZE_FIRST, default_int)
         exact_uuid = next_uuid()
-        controller.rnd_set(RndHook.ZOMBIE_FREEZE_FIRST, exact_uuid, exact_int)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_FREEZE_FIRST, exact_uuid, exact_int)
         exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.NORMAL)
         call_engine(0x5323c0, exact_zombie)
         assert exact_zombie.freeze_cd == 417
@@ -633,11 +763,11 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         cleanup_scene()
 
         reset_scene()
-        controller.rnd_set_default(RndHook.ZOMBIE_FREEZE_FIRST, exact_int)
-        controller.rnd_set_default(RndHook.ZOMBIE_FREEZE_REPEAT, default_int)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_FREEZE_FIRST, exact_int)
+        controller.rnd_uuid_set_default(UuidRndHook.ZOMBIE_FREEZE_REPEAT, default_int)
         exact_uuid = next_uuid()
-        controller.rnd_set(RndHook.ZOMBIE_FREEZE_FIRST, exact_uuid, exact_int)
-        controller.rnd_set(RndHook.ZOMBIE_FREEZE_REPEAT, exact_uuid, 23)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_FREEZE_FIRST, exact_uuid, exact_int)
+        controller.rnd_uuid_set(UuidRndHook.ZOMBIE_FREEZE_REPEAT, exact_uuid, 23)
         exact_zombie = direct_zombie(exact_uuid, 2, ZombieType.NORMAL)
         call_engine(0x5323c0, exact_zombie)
         assert exact_zombie.freeze_cd == 417
@@ -652,15 +782,15 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
         cleanup_scene()
 
         for hook, zombie_type in (
-            (RndHook.ZOMBIE_SPEED_JACK, ZombieType.JACK_IN_THE_BOX),
-            (RndHook.ZOMBIE_SPEED_LADDER, ZombieType.LADDER),
-            (RndHook.ZOMBIE_SPEED_DOLPHIN, ZombieType.DOLPHIN_RIDER),
-            (RndHook.ZOMBIE_SPEED_NORMAL, ZombieType.NORMAL),
+            (UuidRndHook.ZOMBIE_SPEED_JACK, ZombieType.JACK_IN_THE_BOX),
+            (UuidRndHook.ZOMBIE_SPEED_LADDER, ZombieType.LADDER),
+            (UuidRndHook.ZOMBIE_SPEED_DOLPHIN, ZombieType.DOLPHIN_RIDER),
+            (UuidRndHook.ZOMBIE_SPEED_NORMAL, ZombieType.NORMAL),
         ):
             reset_scene()
-            controller.rnd_set_default(hook, 0.25)
+            controller.rnd_uuid_set_default(hook, 0.25)
             exact_uuid = next_uuid()
-            controller.rnd_set(hook, exact_uuid, 0.125)
+            controller.rnd_uuid_set(hook, exact_uuid, 0.125)
             exact_zombie = direct_zombie(exact_uuid, 2, zombie_type)
             assert controller.read_u32(exact_zombie.base_ptr + 0x34) == 0x3e000000
             default_uuid = next_uuid()
@@ -678,14 +808,14 @@ def zombie_hooks(controller: Controller, board: GameBoard) -> None:
 
 def float_birth(controller: Controller, board: GameBoard) -> None:
     """验证浮点 RND 的出生即时位模式,并在完整帧后验证死亡回收."""
-    h = RndHook.ZOMBIE_SPEED_NORMAL
+    h = UuidRndHook.ZOMBIE_SPEED_NORMAL
     uuid = ObjUuid(
         controller.get_obj_next_uuid_cnt(ObjType.ZOMBIE),
         board.zombie_list.next_index,
         ObjType.ZOMBIE,
     )
-    controller.rnd_set_default(h, 0.25)
-    controller.rnd_set(h, uuid, 0.125)
+    controller.rnd_uuid_set_default(h, 0.25)
+    controller.rnd_uuid_set(h, uuid, 0.125)
     zombie = board.iz_place_zombie(0, 8, ZombieType.NORMAL)
 
     # 出生字段必须在跳帧前即时读取,之后的帧只负责让引擎完成清理.
@@ -722,15 +852,15 @@ def float_birth(controller: Controller, board: GameBoard) -> None:
 
 def board_lifecycle_regression(controller: Controller, board: GameBoard) -> GameBoard:
     """Keep a newborn object's UUID/RND live across deferred Board disposal."""
-    hook = RndHook.PLANT_ATTACK_INITIAL
+    hook = UuidRndHook.PLANT_ATTACK_INITIAL
     old_board_ptr = board.base_ptr
     old_uuid = ObjUuid(
         controller.get_obj_next_uuid_cnt(ObjType.PLANT),
         board.plant_list.next_index,
         ObjType.PLANT,
     )
-    controller.rnd_set_default(hook, 137)
-    controller.rnd_set(hook, old_uuid, -271)
+    controller.rnd_uuid_set_default(hook, 137)
+    controller.rnd_uuid_set(hook, old_uuid, -271)
     old_plant = board.new_plant(0, 0, PlantType.PEASHOOTER)
     assert old_plant.uuid == old_uuid
     assert old_plant.generate_cd == -271
@@ -758,7 +888,7 @@ def board_lifecycle_regression(controller: Controller, board: GameBoard) -> Game
     new_board = get_board(controller)
     assert new_board is not board and new_board.base_ptr == new_board_ptr
     assert controller.get_obj_base_ptr(old_uuid) == 0
-    assert all(not controller.rnd_enabled(h) for h in RndHook)
+    assert all(not controller.rnd_enabled(h) for h in (*UuidRndHook, *RndHook))
 
     # Build the five-brain fixture without advancing a frame: the next frame
     # must be the one that disposes the old Board and exercises identity guards.
@@ -779,21 +909,21 @@ def board_lifecycle_regression(controller: Controller, board: GameBoard) -> Game
         new_board.plant_list.next_index,
         ObjType.PLANT,
     )
-    controller.rnd_set_default(hook, 137)
-    controller.rnd_set(hook, new_uuid, -271)
+    controller.rnd_uuid_set_default(hook, 137)
+    controller.rnd_uuid_set(hook, new_uuid, -271)
     new_plant = new_board.new_plant(0, 0, PlantType.PEASHOOTER)
     assert new_plant.uuid == new_uuid
     assert new_plant.generate_cd == -271
     new_plant_ptr = new_plant.base_ptr
     assert controller.get_obj_base_ptr(new_uuid) == new_plant_ptr
-    assert controller.rnd_get_default(hook) == 137
-    assert controller.rnd_get(hook, new_uuid) == -271
+    assert controller.rnd_uuid_get_default(hook) == 137
+    assert controller.rnd_uuid_get(hook, new_uuid) == -271
 
     controller.skip_frames(1)
     assert controller.get_obj_base_ptr(old_uuid) == 0
     assert controller.get_obj_base_ptr(new_uuid) == new_plant_ptr
-    assert controller.rnd_get_default(hook) == 137
-    assert controller.rnd_get(hook, new_uuid) == -271
+    assert controller.rnd_uuid_get_default(hook) == 137
+    assert controller.rnd_uuid_get(hook, new_uuid) == -271
     print(
         "PASS Board replacement deferred dispose: newborn UUID/pointer and exact/default RND survive",
         flush=True,
@@ -825,7 +955,7 @@ def main() -> None:
                 input('进入 IZombie 后按 Enter: ')
                 controller.start()
                 board = get_board(controller)
-            assert all(not controller.rnd_enabled(hook) for hook in RndHook)
+            assert all(not controller.rnd_enabled(hook) for hook in (*UuidRndHook, *RndHook))
             prepare_board(controller, board)
             configuration(controller)
             integer_birth(controller, board)

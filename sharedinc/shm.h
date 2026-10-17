@@ -10,7 +10,7 @@
 #include <Windows.h> 
 
 inline constexpr size_t SHARED_MEMORY_SIZE = 0x10000;
-inline constexpr uint32_t SHM_ABI_VERSION = 1438;
+inline constexpr uint32_t SHM_ABI_VERSION = 1439;
 
 enum class PhaseCode : int32_t
 {

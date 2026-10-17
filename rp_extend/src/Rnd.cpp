@@ -4,21 +4,38 @@
 
 namespace
 {
-	size_t checkedRndHookIndex(RndHook hook, DWORD pid)
+	size_t checkedRndHookIndex(UuidRndHook hook, DWORD pid)
 	{
-		const auto index = static_cast<size_t>(hook);
-		if (index >= RND_HOOK_COUNT)
+		if (!isValidRndHook(hook))
 			throw MemoryException("rnd: invalid hook", pid);
-		return index;
+		return rndConfigIndex(hook);
 	}
 
-	bool hasRndExact(const volatile RndRegion& region, RndHook hook) noexcept
+	size_t checkedRndHookIndex(RndHook hook, DWORD pid)
+	{
+		if (!isValidRndHook(hook))
+			throw MemoryException("rnd: invalid hook", pid);
+		return rndConfigIndex(hook);
+	}
+
+	std::pair<size_t, size_t> rndExactRange(
+		const volatile RndRegion& region, UuidRndHook hook) noexcept
+	{
+		const auto first = rndLowerBound(region, hook, ObjUuid{});
+		const auto exactCount = static_cast<size_t>(region.exactCount);
+		size_t last = first;
+		while (last < exactCount && region.slots[last].hook == hook)
+			++last;
+		return { first, last };
+	}
+
+	bool hasRndExact(const volatile RndRegion& region, UuidRndHook hook) noexcept
 	{
 		const auto first = rndLowerBound(region, hook, ObjUuid{});
 		return first < region.exactCount && region.slots[first].hook == hook;
 	}
 
-	bool matchesRndSlot(const volatile RndExactSlot& slot, RndHook hook,
+	bool matchesRndSlot(const volatile RndExactSlot& slot, UuidRndHook hook,
 		const ObjUuid& uuid) noexcept
 	{
 		return slot.hook == hook &&
@@ -45,7 +62,7 @@ volatile RndRegion& Memory::checkedRnd() const
 	return region;
 }
 
-void Memory::rndSet(RndHook hook, const ObjUuid& uuid, uint32_t bits)
+void Memory::rndUuidSet(UuidRndHook hook, const ObjUuid& uuid, uint32_t bits)
 {
 	auto& region = checkedRnd();
 	const auto hookIndex = checkedRndHookIndex(hook, pid);
@@ -75,7 +92,7 @@ void Memory::rndSet(RndHook hook, const ObjUuid& uuid, uint32_t bits)
 	region.configs[hookIndex].enabled = 1;
 }
 
-std::optional<uint32_t> Memory::rndGet(RndHook hook, const ObjUuid& uuid) const
+std::optional<uint32_t> Memory::rndUuidGet(UuidRndHook hook, const ObjUuid& uuid) const
 {
 	auto& region = checkedRnd();
 	checkedRndHookIndex(hook, pid);
@@ -85,7 +102,7 @@ std::optional<uint32_t> Memory::rndGet(RndHook hook, const ObjUuid& uuid) const
 	return region.slots[position].value.u32;
 }
 
-bool Memory::rndRemove(RndHook hook, const ObjUuid& uuid)
+bool Memory::rndUuidRemove(UuidRndHook hook, const ObjUuid& uuid)
 {
 	auto& region = checkedRnd();
 	const auto hookIndex = checkedRndHookIndex(hook, pid);
@@ -104,7 +121,44 @@ bool Memory::rndRemove(RndHook hook, const ObjUuid& uuid)
 	return true;
 }
 
-void Memory::rndSetDefault(RndHook hook, std::optional<uint32_t> bits)
+std::vector<ObjUuid> Memory::rndUuidKeys(UuidRndHook hook) const
+{
+	auto& region = checkedRnd();
+	checkedRndHookIndex(hook, pid);
+	const auto [first, last] = rndExactRange(region, hook);
+	std::vector<ObjUuid> keys;
+	keys.reserve(last - first);
+	for (size_t index = first; index < last; ++index)
+		keys.push_back(rndUuidSnapshot(region.slots[index].uuid));
+	return keys;
+}
+
+size_t Memory::rndUuidCount(UuidRndHook hook) const
+{
+	auto& region = checkedRnd();
+	checkedRndHookIndex(hook, pid);
+	const auto [first, last] = rndExactRange(region, hook);
+	return last - first;
+}
+
+void Memory::rndUuidClear(UuidRndHook hook)
+{
+	auto& region = checkedRnd();
+	const auto hookIndex = checkedRndHookIndex(hook, pid);
+	const auto [first, last] = rndExactRange(region, hook);
+	if (last != first)
+	{
+		const auto exactCount = static_cast<size_t>(region.exactCount);
+		auto* slots = const_cast<RndExactSlot*>(region.slots);
+		std::memmove(slots + first, slots + last,
+			(exactCount - last) * sizeof(RndExactSlot));
+		region.exactCount = static_cast<uint32_t>(exactCount - (last - first));
+	}
+	region.configs[hookIndex].enabled = static_cast<uint8_t>(
+		region.configs[hookIndex].defaultKind == RndDefaultKind::Fixed);
+}
+
+void Memory::rndUuidSetDefault(UuidRndHook hook, std::optional<uint32_t> bits)
 {
 	auto& region = checkedRnd();
 	const auto hookIndex = checkedRndHookIndex(hook, pid);
@@ -115,7 +169,7 @@ void Memory::rndSetDefault(RndHook hook, std::optional<uint32_t> bits)
 	config.enabled = static_cast<uint8_t>(bits.has_value() || hasRndExact(region, hook));
 }
 
-std::optional<uint32_t> Memory::rndGetDefault(RndHook hook) const
+std::optional<uint32_t> Memory::rndUuidGetDefault(UuidRndHook hook) const
 {
 	auto& region = checkedRnd();
 	const auto hookIndex = checkedRndHookIndex(hook, pid);
@@ -125,6 +179,34 @@ std::optional<uint32_t> Memory::rndGetDefault(RndHook hook) const
 	return config.defaultValue.u32;
 }
 
+void Memory::rndSet(RndHook hook, std::optional<uint32_t> bits)
+{
+	auto& region = checkedRnd();
+	const auto hookIndex = checkedRndHookIndex(hook, pid);
+	auto& config = region.configs[hookIndex];
+	config.defaultKind = bits.has_value() ? RndDefaultKind::Fixed : RndDefaultKind::Original;
+	config.padding = 0;
+	config.defaultValue.u32 = bits.value_or(0);
+	config.enabled = static_cast<uint8_t>(bits.has_value());
+}
+
+std::optional<uint32_t> Memory::rndGet(RndHook hook) const
+{
+	auto& region = checkedRnd();
+	const auto hookIndex = checkedRndHookIndex(hook, pid);
+	const auto& config = region.configs[hookIndex];
+	if (config.defaultKind != RndDefaultKind::Fixed)
+		return std::nullopt;
+	return config.defaultValue.u32;
+}
+
+bool Memory::rndEnabled(UuidRndHook hook) const
+{
+	auto& region = checkedRnd();
+	const auto hookIndex = checkedRndHookIndex(hook, pid);
+	return region.configs[hookIndex].enabled != 0;
+}
+
 bool Memory::rndEnabled(RndHook hook) const
 {
 	auto& region = checkedRnd();
@@ -132,36 +214,38 @@ bool Memory::rndEnabled(RndHook hook) const
 	return region.configs[hookIndex].enabled != 0;
 }
 
-void Memory::rndClear(std::optional<RndHook> hook)
+void Memory::rndClear()
 {
 	auto& region = checkedRnd();
-	auto* slots = const_cast<RndExactSlot*>(region.slots);
-	const auto exactCount = static_cast<size_t>(region.exactCount);
+	for (size_t index = 0; index < RND_CONFIG_COUNT; ++index)
+		region.configs[index].enabled = 0;
+	for (size_t index = 0; index < RND_CONFIG_COUNT; ++index)
+		resetRndConfig(region.configs[index]);
+	region.exactCount = 0;
+}
 
-	if (!hook.has_value())
-	{
-		for (size_t index = 0; index < RND_HOOK_COUNT; ++index)
-			region.configs[index].enabled = 0;
-		for (size_t index = 0; index < RND_HOOK_COUNT; ++index)
-			resetRndConfig(region.configs[index]);
-		region.exactCount = 0;
-		return;
-	}
-
-	const auto selected = *hook;
-	const auto hookIndex = checkedRndHookIndex(selected, pid);
+void Memory::rndClear(UuidRndHook hook)
+{
+	auto& region = checkedRnd();
+	const auto hookIndex = checkedRndHookIndex(hook, pid);
 	region.configs[hookIndex].enabled = 0;
 
-	const auto first = rndLowerBound(region, selected, ObjUuid{});
-	size_t last = first;
-	while (last < exactCount && region.slots[last].hook == selected)
-		++last;
+	const auto [first, last] = rndExactRange(region, hook);
 	if (last != first)
 	{
+		const auto exactCount = static_cast<size_t>(region.exactCount);
+		auto* slots = const_cast<RndExactSlot*>(region.slots);
 		std::memmove(slots + first, slots + last,
 			(exactCount - last) * sizeof(RndExactSlot));
 		region.exactCount = static_cast<uint32_t>(exactCount - (last - first));
 	}
 
+	resetRndConfig(region.configs[hookIndex]);
+}
+
+void Memory::rndClear(RndHook hook)
+{
+	auto& region = checkedRnd();
+	const auto hookIndex = checkedRndHookIndex(hook, pid);
 	resetRndConfig(region.configs[hookIndex]);
 }

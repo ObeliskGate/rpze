@@ -14,7 +14,7 @@ class HookPosition(Enum):
     CHALLENGE_I_ZOMBIE_PLACE_PLANTS = 3
     # open to disable 0x42A6C0
 
-class RndHook(Enum):
+class UuidRndHook(Enum):
     ZOMBIE_JACK_COUNTDOWN = 0
     ZOMBIE_JACK_EARLY_EXPLOSION = 1
     ZOMBIE_SPAWN_OTHER = 2
@@ -28,24 +28,27 @@ class RndHook(Enum):
     ZOMBIE_DANCER_SLIDE = 10
     ZOMBIE_YETI_ESCAPE = 11
     ZOMBIE_POGO_INITIAL = 12
-    BOARD_LOOT = 13
-    ZOMBIE_FREEZE_FIRST = 14
-    ZOMBIE_FREEZE_REPEAT = 15
-    BOARD_WAVE_COUNTDOWN = 16
-    BOARD_SUN_INTERVAL = 17
-    PLANT_KERNEL_BUTTER = 18
-    PLANT_BOWLING_DIRECTION = 19
-    PLANT_PRODUCTION_INITIAL = 20
-    PLANT_PRODUCTION_INTERVAL = 21
-    PLANT_ATTACK_INITIAL = 22
-    PLANT_ATTACK_INTERVAL = 23
-    CHALLENGE_IZE_PLANT_REDUCTION = 24
-    BOARD_ACTIVATION_RATIO = 25
-    ZOMBIE_SPEED_JACK = 26
-    ZOMBIE_SPEED_LADDER = 27
-    ZOMBIE_SPEED_DOLPHIN = 28
-    ZOMBIE_SPEED_NORMAL = 29
-    TIED_ZOMBIE_WALK_ANIM = 30
+    ZOMBIE_FREEZE_FIRST = 13
+    ZOMBIE_FREEZE_REPEAT = 14
+    PLANT_KERNEL_BUTTER = 15
+    PLANT_BOWLING_DIRECTION = 16
+    PLANT_PRODUCTION_INITIAL = 17
+    PLANT_PRODUCTION_INTERVAL = 18
+    PLANT_ATTACK_INITIAL = 19
+    PLANT_ATTACK_INTERVAL = 20
+    ZOMBIE_SPEED_JACK = 21
+    ZOMBIE_SPEED_LADDER = 22
+    ZOMBIE_SPEED_DOLPHIN = 23
+    ZOMBIE_SPEED_NORMAL = 24
+    TIED_ZOMBIE_WALK_ANIM = 25
+
+
+class RndHook(Enum):
+    BOARD_LOOT = 0
+    BOARD_WAVE_COUNTDOWN = 1
+    BOARD_SUN_INTERVAL = 2
+    CHALLENGE_IZE_PLANT_REDUCTION = 3
+    BOARD_ACTIVATION_RATIO = 4
 
 
 class SyncMethod(Enum):
@@ -201,19 +204,29 @@ class Controller:
 
     def get_obj_uuid_by_ptr(self, type: ObjType, ptr: int, /) -> ObjUuid: ...  # UUID for an exact slot address, or invalid if unmatched or unused
 
-    def rnd_set(self, hook: RndHook, uuid: ObjUuid, value: int | float) -> None: ...
+    def rnd_uuid_set(self, hook: UuidRndHook, uuid: ObjUuid, value: int | float) -> None: ...
 
-    def rnd_get(self, hook: RndHook, uuid: ObjUuid) -> int | float | None: ...
+    def rnd_uuid_get(self, hook: UuidRndHook, uuid: ObjUuid) -> int | float | None: ...
 
-    def rnd_remove(self, hook: RndHook, uuid: ObjUuid) -> bool: ...
+    def rnd_uuid_remove(self, hook: UuidRndHook, uuid: ObjUuid) -> bool: ...
 
-    def rnd_set_default(self, hook: RndHook, value: int | float | None) -> None: ...
+    def rnd_uuid_keys(self, hook: UuidRndHook) -> list[ObjUuid]: ...
 
-    def rnd_get_default(self, hook: RndHook) -> int | float | None: ...
+    def rnd_uuid_count(self, hook: UuidRndHook) -> int: ...
 
-    def rnd_enabled(self, hook: RndHook) -> bool: ...
+    def rnd_uuid_clear(self, hook: UuidRndHook) -> None: ...
 
-    def rnd_clear(self, hook: RndHook | None = None) -> None: ...
+    def rnd_uuid_set_default(self, hook: UuidRndHook, value: int | float | None) -> None: ...
+
+    def rnd_uuid_get_default(self, hook: UuidRndHook) -> int | float | None: ...
+
+    def rnd_set(self, hook: RndHook, value: int | float | None) -> None: ...
+
+    def rnd_get(self, hook: RndHook) -> int | float | None: ...
+
+    def rnd_enabled(self, hook: UuidRndHook | RndHook) -> bool: ...
+
+    def rnd_clear(self, hook: UuidRndHook | RndHook | None = None) -> None: ...
 
     def run_code(self, asm_bytes: bytes, /) -> bool: ...  # assert prepared; return False if failed
 

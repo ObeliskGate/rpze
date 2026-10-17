@@ -72,38 +72,41 @@ PYBIND11_MODULE(rp_extend, m)
 		.value("CHALLENGE_I_ZOMBIE_PLACE_PLANTS", HookPosition::CHALLENGE_I_ZOMBIE_PLACE_PLANTS)
 		.finalize();
 
+	py::native_enum<UuidRndHook>(m, "UuidRndHook", "enum.Enum")
+		.value("ZOMBIE_JACK_COUNTDOWN", UuidRndHook::ZOMBIE_JACK_COUNTDOWN)
+		.value("ZOMBIE_JACK_EARLY_EXPLOSION", UuidRndHook::ZOMBIE_JACK_EARLY_EXPLOSION)
+		.value("ZOMBIE_SPAWN_OTHER", UuidRndHook::ZOMBIE_SPAWN_OTHER)
+		.value("ZOMBIE_SPAWN_POLE", UuidRndHook::ZOMBIE_SPAWN_POLE)
+		.value("ZOMBIE_SPAWN_ZAMBONI", UuidRndHook::ZOMBIE_SPAWN_ZAMBONI)
+		.value("ZOMBIE_SPAWN_CATAPULT", UuidRndHook::ZOMBIE_SPAWN_CATAPULT)
+		.value("ZOMBIE_SPAWN_GARGANTUAR", UuidRndHook::ZOMBIE_SPAWN_GARGANTUAR)
+		.value("ZOMBIE_GARLIC_DIRECTION", UuidRndHook::ZOMBIE_GARLIC_DIRECTION)
+		.value("ZOMBIE_JALAPENO_COUNTDOWN", UuidRndHook::ZOMBIE_JALAPENO_COUNTDOWN)
+		.value("ZOMBIE_BUNGEE_HEIGHT", UuidRndHook::ZOMBIE_BUNGEE_HEIGHT)
+		.value("ZOMBIE_DANCER_SLIDE", UuidRndHook::ZOMBIE_DANCER_SLIDE)
+		.value("ZOMBIE_YETI_ESCAPE", UuidRndHook::ZOMBIE_YETI_ESCAPE)
+		.value("ZOMBIE_POGO_INITIAL", UuidRndHook::ZOMBIE_POGO_INITIAL)
+		.value("ZOMBIE_FREEZE_FIRST", UuidRndHook::ZOMBIE_FREEZE_FIRST)
+		.value("ZOMBIE_FREEZE_REPEAT", UuidRndHook::ZOMBIE_FREEZE_REPEAT)
+		.value("PLANT_KERNEL_BUTTER", UuidRndHook::PLANT_KERNEL_BUTTER)
+		.value("PLANT_BOWLING_DIRECTION", UuidRndHook::PLANT_BOWLING_DIRECTION)
+		.value("PLANT_PRODUCTION_INITIAL", UuidRndHook::PLANT_PRODUCTION_INITIAL)
+		.value("PLANT_PRODUCTION_INTERVAL", UuidRndHook::PLANT_PRODUCTION_INTERVAL)
+		.value("PLANT_ATTACK_INITIAL", UuidRndHook::PLANT_ATTACK_INITIAL)
+		.value("PLANT_ATTACK_INTERVAL", UuidRndHook::PLANT_ATTACK_INTERVAL)
+		.value("ZOMBIE_SPEED_JACK", UuidRndHook::ZOMBIE_SPEED_JACK)
+		.value("ZOMBIE_SPEED_LADDER", UuidRndHook::ZOMBIE_SPEED_LADDER)
+		.value("ZOMBIE_SPEED_DOLPHIN", UuidRndHook::ZOMBIE_SPEED_DOLPHIN)
+		.value("ZOMBIE_SPEED_NORMAL", UuidRndHook::ZOMBIE_SPEED_NORMAL)
+		.value("TIED_ZOMBIE_WALK_ANIM", UuidRndHook::TIED_ZOMBIE_WALK_ANIM)
+		.finalize();
+
 	py::native_enum<RndHook>(m, "RndHook", "enum.Enum")
-		.value("ZOMBIE_JACK_COUNTDOWN", RndHook::ZOMBIE_JACK_COUNTDOWN)
-		.value("ZOMBIE_JACK_EARLY_EXPLOSION", RndHook::ZOMBIE_JACK_EARLY_EXPLOSION)
-		.value("ZOMBIE_SPAWN_OTHER", RndHook::ZOMBIE_SPAWN_OTHER)
-		.value("ZOMBIE_SPAWN_POLE", RndHook::ZOMBIE_SPAWN_POLE)
-		.value("ZOMBIE_SPAWN_ZAMBONI", RndHook::ZOMBIE_SPAWN_ZAMBONI)
-		.value("ZOMBIE_SPAWN_CATAPULT", RndHook::ZOMBIE_SPAWN_CATAPULT)
-		.value("ZOMBIE_SPAWN_GARGANTUAR", RndHook::ZOMBIE_SPAWN_GARGANTUAR)
-		.value("ZOMBIE_GARLIC_DIRECTION", RndHook::ZOMBIE_GARLIC_DIRECTION)
-		.value("ZOMBIE_JALAPENO_COUNTDOWN", RndHook::ZOMBIE_JALAPENO_COUNTDOWN)
-		.value("ZOMBIE_BUNGEE_HEIGHT", RndHook::ZOMBIE_BUNGEE_HEIGHT)
-		.value("ZOMBIE_DANCER_SLIDE", RndHook::ZOMBIE_DANCER_SLIDE)
-		.value("ZOMBIE_YETI_ESCAPE", RndHook::ZOMBIE_YETI_ESCAPE)
-		.value("ZOMBIE_POGO_INITIAL", RndHook::ZOMBIE_POGO_INITIAL)
 		.value("BOARD_LOOT", RndHook::BOARD_LOOT)
-		.value("ZOMBIE_FREEZE_FIRST", RndHook::ZOMBIE_FREEZE_FIRST)
-		.value("ZOMBIE_FREEZE_REPEAT", RndHook::ZOMBIE_FREEZE_REPEAT)
 		.value("BOARD_WAVE_COUNTDOWN", RndHook::BOARD_WAVE_COUNTDOWN)
 		.value("BOARD_SUN_INTERVAL", RndHook::BOARD_SUN_INTERVAL)
-		.value("PLANT_KERNEL_BUTTER", RndHook::PLANT_KERNEL_BUTTER)
-		.value("PLANT_BOWLING_DIRECTION", RndHook::PLANT_BOWLING_DIRECTION)
-		.value("PLANT_PRODUCTION_INITIAL", RndHook::PLANT_PRODUCTION_INITIAL)
-		.value("PLANT_PRODUCTION_INTERVAL", RndHook::PLANT_PRODUCTION_INTERVAL)
-		.value("PLANT_ATTACK_INITIAL", RndHook::PLANT_ATTACK_INITIAL)
-		.value("PLANT_ATTACK_INTERVAL", RndHook::PLANT_ATTACK_INTERVAL)
 		.value("CHALLENGE_IZE_PLANT_REDUCTION", RndHook::CHALLENGE_IZE_PLANT_REDUCTION)
 		.value("BOARD_ACTIVATION_RATIO", RndHook::BOARD_ACTIVATION_RATIO)
-		.value("ZOMBIE_SPEED_JACK", RndHook::ZOMBIE_SPEED_JACK)
-		.value("ZOMBIE_SPEED_LADDER", RndHook::ZOMBIE_SPEED_LADDER)
-		.value("ZOMBIE_SPEED_DOLPHIN", RndHook::ZOMBIE_SPEED_DOLPHIN)
-		.value("ZOMBIE_SPEED_NORMAL", RndHook::ZOMBIE_SPEED_NORMAL)
-		.value("TIED_ZOMBIE_WALK_ANIM", RndHook::TIED_ZOMBIE_WALK_ANIM)
 		.finalize();
 
 	m.attr("RND_EXACT_CAPACITY") = py::int_(RND_EXACT_CAPACITY);
@@ -150,17 +153,28 @@ PYBIND11_MODULE(rp_extend, m)
 			py::arg("uuid"))
 		.def("get_obj_uuid", &Controller::get_obj_uuid)
 		.def("get_obj_uuid_by_ptr", &Controller::get_obj_uuid_by_ptr)
-		.def("rnd_set", &Controller::rnd_set,
+		.def("rnd_uuid_set", &Controller::rnd_uuid_set,
 			py::arg("hook"), py::arg("uuid"), py::arg("value"))
-		.def("rnd_get", &Controller::rnd_get,
+		.def("rnd_uuid_get", &Controller::rnd_uuid_get,
 			py::arg("hook"), py::arg("uuid"))
-		.def("rnd_remove", &Controller::rnd_remove,
+		.def("rnd_uuid_remove", &Controller::rnd_uuid_remove,
 			py::arg("hook"), py::arg("uuid"))
-		.def("rnd_set_default", &Controller::rnd_set_default,
+		.def("rnd_uuid_keys", &Controller::rnd_uuid_keys, py::arg("hook"))
+		.def("rnd_uuid_count", &Controller::rnd_uuid_count, py::arg("hook"))
+		.def("rnd_uuid_clear", &Controller::rnd_uuid_clear, py::arg("hook"))
+		.def("rnd_uuid_set_default", &Controller::rnd_uuid_set_default,
 			py::arg("hook"), py::arg("value"))
-		.def("rnd_get_default", &Controller::rnd_get_default, py::arg("hook"))
-		.def("rnd_enabled", &Controller::rnd_enabled, py::arg("hook"))
-		.def("rnd_clear", &Controller::rnd_clear, py::arg("hook") = std::nullopt)
+		.def("rnd_uuid_get_default", &Controller::rnd_uuid_get_default, py::arg("hook"))
+		.def("rnd_set", &Controller::rnd_set, py::arg("hook"), py::arg("value"))
+		.def("rnd_get", &Controller::rnd_get, py::arg("hook"))
+		.def("rnd_enabled",
+			py::overload_cast<UuidRndHook>(&Controller::rnd_enabled, py::const_), py::arg("hook"))
+		.def("rnd_enabled",
+			py::overload_cast<RndHook>(&Controller::rnd_enabled, py::const_), py::arg("hook"))
+		.def("rnd_clear", [](Controller& self, py::none) { self.rnd_clear(); },
+			py::arg("hook") = py::none())
+		.def("rnd_clear", py::overload_cast<UuidRndHook>(&Controller::rnd_clear), py::arg("hook"))
+		.def("rnd_clear", py::overload_cast<RndHook>(&Controller::rnd_clear), py::arg("hook"))
 		.def("run_code", &Controller::run_code)
 		.def("start", &Controller::start)
 		.def("end", &Controller::end)
@@ -232,12 +246,23 @@ namespace
 		return std::min(meta.maxSize, static_cast<uint32_t>(OBJ_UUID_SLOT_COUNT));
 	}
 
+	size_t checkedRndHookIndex(UuidRndHook hook)
+	{
+		if (!isValidRndHook(hook))
+			throw py::value_error("invalid UuidRndHook");
+		return rndConfigIndex(hook);
+	}
+
 	size_t checkedRndHookIndex(RndHook hook)
 	{
-		const auto index = static_cast<size_t>(hook);
-		if (index >= RND_HOOK_COUNT)
+		if (!isValidRndHook(hook))
 			throw py::value_error("invalid RndHook");
-		return index;
+		return rndConfigIndex(hook);
+	}
+
+	const RndHookInfo& checkedRndHookInfo(UuidRndHook hook)
+	{
+		return RND_HOOK_INFO[checkedRndHookIndex(hook)];
 	}
 
 	const RndHookInfo& checkedRndHookInfo(RndHook hook)
@@ -245,11 +270,9 @@ namespace
 		return RND_HOOK_INFO[checkedRndHookIndex(hook)];
 	}
 
-	void checkedRndUuid(RndHook hook, const ObjUuid& uuid)
+	void checkedRndUuid(UuidRndHook hook, const ObjUuid& uuid)
 	{
 		const auto& info = checkedRndHookInfo(hook);
-		if (info.target != RndTarget::Plant && info.target != RndTarget::Zombie)
-			throw py::value_error("this RndHook does not accept an object UUID");
 		if (!uuid || uuid.fields.index >= OBJ_UUID_SLOT_COUNT ||
 			!isValidObjType(uuid.fields.type))
 			throw py::value_error("invalid object UUID");
@@ -257,7 +280,7 @@ namespace
 			? ObjType::Plant
 			: ObjType::Zombie;
 		if (uuid.fields.type != expectedType)
-			throw py::value_error("UUID type does not match RndHook target");
+			throw py::value_error("UUID type does not match UuidRndHook target");
 	}
 
 	int32_t parseRndI32(const py::object& value)
@@ -313,17 +336,15 @@ namespace
 		return narrowed;
 	}
 
-	uint32_t encodeRndValue(RndHook hook, const py::object& value)
+	uint32_t encodeRndValue(RndValueKind kind, const py::object& value)
 	{
-		const auto kind = checkedRndHookInfo(hook).valueKind;
 		if (kind == RndValueKind::I32)
 			return std::bit_cast<uint32_t>(parseRndI32(value));
 		return std::bit_cast<uint32_t>(parseRndF32(value));
 	}
 
-	py::object decodeRndValue(RndHook hook, uint32_t bits)
+	py::object decodeRndValue(RndValueKind kind, uint32_t bits)
 	{
-		const auto kind = checkedRndHookInfo(hook).valueKind;
 		if (kind == RndValueKind::I32)
 			return py::int_(std::bit_cast<int32_t>(bits));
 		return py::float_(std::bit_cast<float>(bits));
@@ -392,46 +413,90 @@ ObjUuid Controller::get_obj_uuid_by_ptr(ObjType type, uint32_t ptr) const
 	return {meta.uuidCnt[index], static_cast<uint16_t>(index), type};
 }
 
-void Controller::rnd_set(RndHook hook, const ObjUuid& uuid, py::object value)
+void Controller::rnd_uuid_set(UuidRndHook hook, const ObjUuid& uuid, py::object value)
 {
 	checkedRndUuid(hook, uuid);
-	const auto bits = encodeRndValue(hook, value);
-	mem.rndSet(hook, uuid, bits);
+	const auto bits = encodeRndValue(checkedRndHookInfo(hook).valueKind, value);
+	mem.rndUuidSet(hook, uuid, bits);
 }
 
-py::object Controller::rnd_get(RndHook hook, const ObjUuid& uuid) const
+py::object Controller::rnd_uuid_get(UuidRndHook hook, const ObjUuid& uuid) const
 {
 	checkedRndUuid(hook, uuid);
-	const auto bits = mem.rndGet(hook, uuid);
+	const auto bits = mem.rndUuidGet(hook, uuid);
 	if (!bits.has_value())
 		return py::none();
-	return decodeRndValue(hook, *bits);
+	return decodeRndValue(checkedRndHookInfo(hook).valueKind, *bits);
 }
 
-bool Controller::rnd_remove(RndHook hook, const ObjUuid& uuid)
+bool Controller::rnd_uuid_remove(UuidRndHook hook, const ObjUuid& uuid)
 {
 	checkedRndUuid(hook, uuid);
-	return mem.rndRemove(hook, uuid);
+	return mem.rndUuidRemove(hook, uuid);
 }
 
-void Controller::rnd_set_default(RndHook hook, py::object value)
+std::vector<ObjUuid> Controller::rnd_uuid_keys(UuidRndHook hook) const
 {
 	checkedRndHookInfo(hook);
+	return mem.rndUuidKeys(hook);
+}
+
+size_t Controller::rnd_uuid_count(UuidRndHook hook) const
+{
+	checkedRndHookInfo(hook);
+	return mem.rndUuidCount(hook);
+}
+
+void Controller::rnd_uuid_clear(UuidRndHook hook)
+{
+	checkedRndHookInfo(hook);
+	mem.rndUuidClear(hook);
+}
+
+void Controller::rnd_uuid_set_default(UuidRndHook hook, py::object value)
+{
+	const auto kind = checkedRndHookInfo(hook).valueKind;
 	if (value.is_none())
 	{
-		mem.rndSetDefault(hook, std::nullopt);
+		mem.rndUuidSetDefault(hook, std::nullopt);
 		return;
 	}
-	mem.rndSetDefault(hook, encodeRndValue(hook, value));
+	mem.rndUuidSetDefault(hook, encodeRndValue(kind, value));
 }
 
-py::object Controller::rnd_get_default(RndHook hook) const
+py::object Controller::rnd_uuid_get_default(UuidRndHook hook) const
 {
-	checkedRndHookInfo(hook);
-	const auto bits = mem.rndGetDefault(hook);
+	const auto kind = checkedRndHookInfo(hook).valueKind;
+	const auto bits = mem.rndUuidGetDefault(hook);
 	if (!bits.has_value())
 		return py::none();
-	return decodeRndValue(hook, *bits);
+	return decodeRndValue(kind, *bits);
+}
+
+void Controller::rnd_set(RndHook hook, py::object value)
+{
+	const auto kind = checkedRndHookInfo(hook).valueKind;
+	if (value.is_none())
+	{
+		mem.rndSet(hook, std::nullopt);
+		return;
+	}
+	mem.rndSet(hook, encodeRndValue(kind, value));
+}
+
+py::object Controller::rnd_get(RndHook hook) const
+{
+	const auto kind = checkedRndHookInfo(hook).valueKind;
+	const auto bits = mem.rndGet(hook);
+	if (!bits.has_value())
+		return py::none();
+	return decodeRndValue(kind, *bits);
+}
+
+bool Controller::rnd_enabled(UuidRndHook hook) const
+{
+	checkedRndHookInfo(hook);
+	return mem.rndEnabled(hook);
 }
 
 bool Controller::rnd_enabled(RndHook hook) const
@@ -440,9 +505,19 @@ bool Controller::rnd_enabled(RndHook hook) const
 	return mem.rndEnabled(hook);
 }
 
-void Controller::rnd_clear(std::optional<RndHook> hook)
+void Controller::rnd_clear()
 {
-	if (hook.has_value())
-		checkedRndHookInfo(*hook);
+	mem.rndClear();
+}
+
+void Controller::rnd_clear(UuidRndHook hook)
+{
+	checkedRndHookInfo(hook);
+	mem.rndClear(hook);
+}
+
+void Controller::rnd_clear(RndHook hook)
+{
+	checkedRndHookInfo(hook);
 	mem.rndClear(hook);
 }

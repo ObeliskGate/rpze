@@ -281,7 +281,7 @@ InsertHook::addInsert(reinterpret_cast<void*>(0x420150),
 	}
 	catch (const std::exception& e)
 	{
-		std::println(std::cerr, "object UUID hook initialization failed: {}", e.what());
+		std::println(std::cerr, "hook initialization failed: {}", e.what());
 		throw;
 	}
 }

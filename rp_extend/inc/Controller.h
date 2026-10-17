@@ -97,13 +97,21 @@ public:
 	ObjUuid get_obj_uuid(ObjType type, int64_t index) const;
 	ObjUuid get_obj_uuid_by_ptr(ObjType type, uint32_t ptr) const;
 
-	void rnd_set(RndHook hook, const ObjUuid& uuid, py::object value);
-	py::object rnd_get(RndHook hook, const ObjUuid& uuid) const;
-	bool rnd_remove(RndHook hook, const ObjUuid& uuid);
-	void rnd_set_default(RndHook hook, py::object value);
-	py::object rnd_get_default(RndHook hook) const;
+	void rnd_uuid_set(UuidRndHook hook, const ObjUuid& uuid, py::object value);
+	py::object rnd_uuid_get(UuidRndHook hook, const ObjUuid& uuid) const;
+	bool rnd_uuid_remove(UuidRndHook hook, const ObjUuid& uuid);
+	std::vector<ObjUuid> rnd_uuid_keys(UuidRndHook hook) const;
+	size_t rnd_uuid_count(UuidRndHook hook) const;
+	void rnd_uuid_clear(UuidRndHook hook);
+	void rnd_uuid_set_default(UuidRndHook hook, py::object value);
+	py::object rnd_uuid_get_default(UuidRndHook hook) const;
+	void rnd_set(RndHook hook, py::object value);
+	py::object rnd_get(RndHook hook) const;
+	bool rnd_enabled(UuidRndHook hook) const;
 	bool rnd_enabled(RndHook hook) const;
-	void rnd_clear(std::optional<RndHook> hook = std::nullopt);
+	void rnd_clear();
+	void rnd_clear(UuidRndHook hook);
+	void rnd_clear(RndHook hook);
 };
 
 template <typename T>

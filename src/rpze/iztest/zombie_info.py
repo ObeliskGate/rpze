@@ -4,13 +4,13 @@ from ..structs.game_board import get_board
 from ..structs.zombie import Zombie
 
 
-class TieWearingZombieWalkingMode(Enum):
+class TiedZombieWalkingMode(Enum):
     ARM_SWING = auto()
     ARM_HANG = auto()
     DANCE = auto()
 
 
-def get_tied_wearing_zombie_walking_mode(zombie: Zombie) -> TieWearingZombieWalkingMode:
+def get_tied_zombie_walking_mode(zombie: Zombie) -> TiedZombieWalkingMode:
     """
     获取穿着领带的僵尸行走模式
 
@@ -27,11 +27,11 @@ def get_tied_wearing_zombie_walking_mode(zombie: Zombie) -> TieWearingZombieWalk
 
     match reanim.m_frame_start:
         case 44:
-            return TieWearingZombieWalkingMode.ARM_SWING
+            return TiedZombieWalkingMode.ARM_SWING
         case 91:
-            return TieWearingZombieWalkingMode.ARM_HANG
+            return TiedZombieWalkingMode.ARM_HANG
         case 454:
-            return TieWearingZombieWalkingMode.DANCE
+            return TiedZombieWalkingMode.DANCE
         case _:
             raise ValueError(f"Unknown walking mode for zombie with reanim frame start {reanim.m_frame_start}")
 
